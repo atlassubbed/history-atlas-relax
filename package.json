@@ -7,7 +7,16 @@
     "test": "mocha --colors --recursive './test/**/*.test.js'"
   },
   "main": "./src/index.js",
-  "keywords": [],
+  "keywords": [
+    "atlassubbed",
+    "async",
+    "diff",
+    "diffing",
+    "reconciliation",
+    "vdom",
+    "frame",
+    "lifecycle"
+  ],
   "author": "atlassubbed <atlassubbed@gmail.com>",
   "devDependencies": {
     "chai": "^4.1.2",
