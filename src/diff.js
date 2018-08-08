@@ -28,6 +28,8 @@ const add = (temp, effs, frame) => {
   return temp;
 }
 
+// XXX deprecate pos-tracking? 
+//   There's a bug here were we will end up with out-of-sync pos indexes
 // remove existing (sub)frame
 const remove = (frame, ownsRemoval) => {
   emit("willRemove", frame)

@@ -2,6 +2,15 @@ const { describe, it } = require("mocha")
 const { expect } = require("chai")
 const Tracker = require("./Tracker");
 const { Frame, diff } = require("../src/index");
+const { 
+  voidBlackboxes: voids, 
+  irreducibleBlackboxes: primes, 
+  reducibleBlackboxes: comps, 
+  functionals: funcs
+} = require("./assets/templates");
+
+const allBlackboxes = voids.concat(primes, comps)
+const allRoots = primes.concat(comps, funcs).filter(n => !n.array)
 
 describe("diff", function(){
   it("should not add void templates", function(){
@@ -40,4 +49,11 @@ describe("diff", function(){
     expect(result).to.be.false;
     expect(tracker.events).to.be.empty;
   })
+
+  allRoots.forEach(rootTemplate => {
+    // if is blackbox, test add/remove/change for single root
+    // else if functional, test the functional with each kind of allBlackboxes child.
+    //   for add/remove/changed on both the parent and child
+  })
+
 })

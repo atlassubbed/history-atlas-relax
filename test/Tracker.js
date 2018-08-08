@@ -2,13 +2,15 @@
 module.exports = class Tracker {
   constructor(){this.events = []}
   reset(){this.events = []}
-  willAdd(frame){this.capture("willAdd", frame)}
-  didAdd(frame){this.capture("didAdd", frame)}
-  willReceive(frame, data){this.capture("willReceive", frame, {data})}
-  willUpdate(frame, data){this.capture("willUpdate", frame, {data})}
-  didUpdate(frame, data){this.capture("didUpdate", frame, {data})}
-  willRemove(frame){this.capture("willRemove", frame)}
-  didRemove(frame){this.capture("didRemove", frame)}
+  willAdd(frame){this.capture("wA", frame)}
+  // XXX assert that position, parent and child are correct?
+  didAdd(frame){this.capture("dA", frame)}
+  willReceive(frame, data){this.capture("wRD", frame, {data})}
+  willUpdate(frame, data){this.capture("wU", frame, {data})}
+  didUpdate(frame, data){this.capture("dU", frame, {data})}
+  willRemove(frame){this.capture("wR", frame)}
+  // XXX assert that position, parent and child are correct?
+  didRemove(frame){this.capture("dR", frame)}
   capture(type, frame, meta){
     let name = frame.name, id = frame.data;
     if (typeof name === "function") name = name.name;
