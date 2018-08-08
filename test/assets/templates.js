@@ -27,11 +27,11 @@ const voidBlackboxes = [
     added: () => [], removed: () => [], changed: () => []
   },
   {
-    name: "void", array: true, get: ({v}) => {
+    name: "void (array)", get: ({v}) => {
       const arr = [true, false, v ? false : null, undefined];
       if (v) arr.push(null);
       rturn arr;
-    },
+    }, 
     added: () => [], removed: () => [], changed: () => []
   }
 ]
@@ -68,7 +68,7 @@ const irreducibleBlackboxes = [
     ]
   },
   {
-    name: "literal", array:true, get: ({v}) => {
+    name: "literal (array)", get: ({v}) => {
       const arr = ["old", v ? 234 : -234, "last"]
       if (v) arr.push(Infinity);
       return arr;
@@ -103,7 +103,7 @@ const irreducibleBlackboxes = [
     ]
   },
   {
-    name: "irreducible", array: true, get: data => {
+    name: "irreducible (array)", get: data => {
       const newData = data.v ? Object.assign({f1: 314}, data) : data;
       const arr = [
         {name: "div", data: newData}, 

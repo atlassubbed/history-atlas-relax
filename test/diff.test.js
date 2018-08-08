@@ -10,7 +10,7 @@ const {
 } = require("./assets/templates");
 
 const allBlackboxes = voids.concat(primes, comps)
-const allRoots = primes.concat(comps, funcs).filter(n => !n.array)
+const allRoots = primes.concat(comps, funcs).filter(n => n.name.indexOf("array") < 0)
 
 describe("diff", function(){
   it("should not add void templates", function(){
