@@ -2,6 +2,7 @@ const { describe, it } = require("mocha")
 const { expect } = require("chai")
 const Tracker = require("./Tracker");
 const { Frame, diff } = require("../src/index");
+const { has } = require("./util")
 const { 
   voidBlackboxes: voids, 
   irreducibleBlackboxes: primes, 
@@ -9,8 +10,8 @@ const {
   functionals: functionalRoots
 } = require("./assets/templates");
 
-const allBlackboxes = voids.concat(primes, comps)
-const blackboxRoots = primes.concat(comps).filter(n => n.name.indexOf("(array)") < 0)
+const allBlackboxes = [...voids, ...primes, ...comps];
+const blackboxRoots = [...primes, ...comps].filter(n => !has(n.name, "(array)"))
 
 describe("diff", function(){
   it("should not add void templates", function(){
@@ -49,41 +50,44 @@ describe("diff", function(){
     expect(result).to.be.false;
     expect(tracker.events).to.be.empty;
   })
-
-  blackboxRoots.forEach(rootTemplate => {
-    const { name: id, get, added, changed, removed } = rootTemplate;
-    describe(`${id}`, function(){
-      it("should be added correctly", function(){
-        const tracker = new Tracker(), data = {v: 0, id};
-        const template = get(data)
-        const result = diff(template, null, tracker);
-        expect(result).to.be.an.instanceOf(Frame);
-        expect(tracker.events).to.deep.equal(added(data))
-      })
-      it("should be removed correctly", function(){
-        const tracker = new Tracker(), data = {v: 0, id};
-        const template = get(data)
-        const frame = diff(template, null, tracker);
-        tracker.reset();
-        const result = diff(null, frame, tracker);
-        expect(result).to.be.true;
-        expect(tracker.events).to.deep.equal(removed(data))
-      })
-      it("should be updated correctly", function(){
-        const tracker = new Tracker(), data = {v: 0, id}, newData = {v: 1, id}
-        const template = get(data), newTemplate = get(newData)
-        const frame = diff(template, null, tracker);
-        tracker.reset();
-        const result = diff(newTemplate, frame, tracker);
-        expect(result).to.be.an.instanceOf(Frame);
-        expect(tracker.events).to.deep.equal(changed(newData))
+  describe("blackboxes", function(){
+    blackboxRoots.forEach(rootTemplate => {
+      const { name: id, get, added, changed, removed } = rootTemplate;
+      describe(`${id}`, function(){
+        it("should be added correctly", function(){
+          const tracker = new Tracker(), data = {v: 0, id};
+          const template = get(data)
+          const result = diff(template, null, tracker);
+          expect(result).to.be.an.instanceOf(Frame);
+          expect(tracker.events).to.deep.equal(added(data))
+        })
+        it("should be removed correctly", function(){
+          const tracker = new Tracker(), data = {v: 0, id};
+          const template = get(data)
+          const frame = diff(template, null, tracker);
+          tracker.reset();
+          const result = diff(null, frame, tracker);
+          expect(result).to.be.true;
+          expect(tracker.events).to.deep.equal(removed(data))
+        })
+        it("should be updated correctly", function(){
+          const tracker = new Tracker(), data = {v: 0, id}, newData = {v: 1, id}
+          const template = get(data), newTemplate = get(newData)
+          const frame = diff(template, null, tracker);
+          tracker.reset();
+          const result = diff(newTemplate, frame, tracker);
+          expect(result).to.be.an.instanceOf(Frame);
+          expect(tracker.events).to.deep.equal(changed(newData))
+        })
       })
     })
   })
 
-  functionalRoots.forEach(rootTemplate => {
-    // test the functional with each allBlackboxes child.
-    // test add/remove/changed on both the parent and child
+  describe("functionals", function(){
+    functionalRoots.forEach(rootTemplate => {
+      // test the functional with each allBlackboxes child.
+      // test add/remove/changed on both the parent and child
+    })
   })
 
 })

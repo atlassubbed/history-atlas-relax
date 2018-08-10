@@ -5,10 +5,9 @@ const { Frame } = require("../../src/index");
 //    1. Reducibility
 //      1. Irreducible
 //      2. Reducible
-//        1. Stateful -- TODO merged
+//        1. Stateful
 //          1. Extended (class MyFrame extends Frame {...})
-//          2. Merged (Frame.define(MyFrame))
-//          3. Pseudo (class MyFrame {...})
+//          2. TODO: Merged (Frame.define(MyFrame))
 //        2. Stateless
 //    2. Rank
 //      1. 0
@@ -43,14 +42,19 @@ class StatefulBlackboxScalar extends Frame {
   }
 }
 
-class StatefulPseudoBlackboxScalar {
+const StatelessBlackboxVector = data => {
+  return [
+    {name: "div", data},
+    {name: "p", data}
+  ]
+}
+
+class StatefulBlackboxVector extends Frame {
   evaluate(data){
-    return {
-      name: "div", data, next: [
-        {name: "p", data},
-        {name: "span", data}
-      ]
-    }
+    return [
+      {name: "div", data},
+      {name: "p", data}
+    ]
   }
 }
 
@@ -76,43 +80,6 @@ class StatefulFunctionalScalar extends Frame {
   }
 }
 
-class StatefulPseudoFunctionalScalar {
-  evaluate(data, next){
-    return {
-      name: "div", data, next: [
-        {name: "p", data},
-        {name: "span", data},
-        {name: "a", data, next}
-      ]
-    }
-  }
-}
-
-const StatelessBlackboxVector = data => {
-  return [
-    {name: "div", data},
-    {name: "p", data}
-  ]
-}
-
-class StatefulBlackboxVector extends Frame {
-  evaluate(data){
-    return [
-      {name: "div", data},
-      {name: "p", data}
-    ]
-  }
-}
-
-class StatefulPseudoBlackboxVector {
-  evaluate(data){
-    return [
-      {name: "div", data},
-      {name: "p", data}
-    ]
-  }
-}
-
 const StatelessFunctionalVector = (data, next) => {
   return [
     {name: "div", data},
@@ -131,28 +98,10 @@ class StatefulFunctionalVector extends Frame {
   }
 }
 
-class StatefulPseudoFunctionalVector {
-  evaluate(data, next){
-    return [
-      {name: "div", data},
-      {name: "p", data},
-      ...toArr(next)
-    ]
-  }
-}
-
 module.exports = {
   IrreducibleFunctional,
-  StatelessBlackboxScalar,
-  StatefulBlackboxScalar,
-  StatefulPseudoBlackboxScalar,
-  StatelessFunctionalScalar,
-  StatefulFunctionalScalar,
-  StatefulPseudoFunctionalScalar,
-  StatelessBlackboxVector,
-  StatefulBlackboxVector,
-  StatefulPseudoBlackboxVector,
-  StatelessFunctionalVector,
-  StatefulFunctionalVector,
-  StatefulPseudoFunctionalVector
+  BlackboxScalars: [StatelessBlackboxScalar, StatefulBlackboxScalar],
+  BlackboxVectors: [StatelessBlackboxVector, StatefulBlackboxVector],
+  FunctionalScalars: [StatelessFunctionalScalar, StatefulFunctionalScalar],
+  FunctionalVectors: [StatelessFunctionalVector, StatefulFunctionalVector]
 }

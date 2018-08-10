@@ -1,5 +1,11 @@
-const Frames = require("./Frames");
-const { voidCase } = require("../util");
+const { 
+  IrreducibleFunctional,
+  BlackboxScalars, 
+  BlackboxVectors, 
+  FunctionalScalars, 
+  FunctionalVectors
+} = require("./Frames");
+const { has } = require("../util")
 
 // Classification of templates:
 //     1. Void -- map to the null frame
@@ -53,6 +59,15 @@ const irreducibleBlackboxes = [
     changed: () => [
       {wU: null, id: "23412", data: "34532"},
       {dU: null, id: "34532", data: "23412"}
+    ]
+  },
+  {
+    name: "literal (empty string)", get: ({v}) => v ? " " : "",
+    added: () => [{wA: null, id: ""}, {dA: null, id: ""}], 
+    removed: () => [{wR: null, id: ""}, {dR: null, id: ""}],
+    changed: () => [
+      {wU: null, id: "", data: " "},
+      {dU: null, id: " ", data: ""}
     ]
   },
   {
@@ -131,9 +146,7 @@ const irreducibleBlackboxes = [
     name: "irreducible (nested)", get: data => {
       const newData = data.v ? Object.assign({f2: 2}, data) : data;
       return {
-        name: "div", data: newData, next: [
-          {name: "p", data}
-        ]
+        name: "div", data: newData, next: {name: "p", data}
       }
     },
     added: ({id}) => [
@@ -186,18 +199,67 @@ const irreducibleBlackboxes = [
 ]
 
 const reducibleBlackboxes = [
-
+  ...BlackboxScalars.map(Scalar => {
+    const { name } = Scalar;
+    const type = has(name, "Stateful") ? "stateful" : "stateless";
+    const desc = `reducible (${type}, returns one)`
+    return {
+      name: desc, get: data => ({name: Scalar, data}),
+      added: ({id}) => [
+        {wA: name, id},
+        {wA: "div", id}, {wA: "p", id}, {dA: "p", id},
+        {wA: "span", id}, {dA: "span", id}, {dA: "div", id},
+        {dA: name, id}
+      ],
+      removed: ({id}) => [
+        {wR: name, id},
+        {wR: "div", id}, {wR: "p", id}, {wR: "span", id},
+        {dR: name, id}
+      ],
+      changed: ({id, v}) => [
+        {wU: name, id, data: {id, v}},
+        {wU: "div", id, data: {id, v}}, 
+        {wU: "p", id, data: {id, v}}, 
+        {dU: "p", id, data: {id, v:0}}, 
+        {wU: "span", id, data: {id, v}},
+        {dU: "span", id, data: {id, v:0}}, 
+        {dU: "div", id, data: {id, v:0}},
+        {dU: name, id, data: {id, v:0}}
+      ],
+    }
+  }),
+  ...BlackboxVectors.map(Vector => {
+    const { name } = Vector;
+    const type = has(name, "Stateful") ? "stateful" : "stateless";
+    const desc = `reducible (${type}, returns many)`
+    return {
+      name: desc, get: data => ({name: Vector, data}),
+      added: ({id}) => [
+        {wA: name, id},
+        {wA: "div", id}, {dA: "div", id},
+        {wA: "p", id}, {dA: "p", id},
+        {dA: name, id}
+      ],
+      removed: ({id}) => [
+        {wR: name, id},
+        {wR: "div", id}, {wR: "p", id},
+        {dR: name, id}
+      ],
+      changed: ({id, v}) => [
+        {wU: name, id, data: {id, v}},
+        {wU: "div", id, data: {id, v}},
+        {dU: "div", id, data: {id, v:0}},
+        {wU: "p", id, data: {id, v}}, 
+        {dU: "p", id, data: {id, v:0}}, 
+        {dU: name, id, data: {id, v:0}}
+      ],
+    }
+  }),
 ]
-
-// in added/changed/removed use "null" element 
-// to signify placeholder for passed children
-const functionals = [
-
-].map(f => Object.assign({functional: true}, f))
 
 module.exports = { 
   voidBlackboxes, 
   irreducibleBlackboxes, 
   reducibleBlackboxes, 
-  functionals
+  functionals: []
 }
