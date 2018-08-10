@@ -14,7 +14,7 @@ module.exports = class Tracker {
   capture(type, frame, meta){
     let name = frame.name, id = frame.data;
     if (typeof name === "function") name = name.name;
-    if (id && typeof id === "object") id = id.id;
+    if (id && typeof id === "object") id = id.id
     this.events.push(Object.assign({[type]: name, id}, meta));
   }
 }

@@ -30,7 +30,7 @@ const voidBlackboxes = [
     name: "void (array)", get: ({v}) => {
       const arr = [true, false, v ? false : null, undefined];
       if (v) arr.push(null);
-      rturn arr;
+      return arr;
     }, 
     added: () => [], removed: () => [], changed: () => []
   }
@@ -38,23 +38,21 @@ const voidBlackboxes = [
 
 const irreducibleBlackboxes = [
   {
-    name: "literal (zero)", get: ({v}) => v ? 0.0 : 0,
-    added: () => [{wA: null, id: 0}, {dA: null, id: 0}], 
-    removed: () => [{wR: null, id: 0}, {dR: null, id: 0}],
+    name: "literal (zero)", get: ({v}) => v ? 0.1 : 0,
+    added: () => [{wA: null, id: "0"}, {dA: null, id: "0"}], 
+    removed: () => [{wR: null, id: "0"}, {dR: null, id: "0"}],
     changed: () => [
-      {wRD: null, id: 0, data: 0.0},
-      {wU: null, id: 0, data: 0.0},
-      {dU: null, id: 0.0, data: 0}
+      {wU: null, id: "0", data: "0.1"},
+      {dU: null, id: "0.1", data: "0"}
     ]
   },
   {
     name: "literal (number)", get: ({v}) => v ? 34532 : 23412,
-    added: () => [{wA: null, id: 23412}, {dA: null, id: 23412}], 
-    removed: () => [{wR: null, id: 23412}, {dR: null, id: 23412}],
+    added: () => [{wA: null, id: "23412"}, {dA: null, id: "23412"}], 
+    removed: () => [{wR: null, id: "23412"}, {dR: null, id: "23412"}],
     changed: () => [
-      {wRD: null, id: 23412, data: 34532},
-      {wU: null, id: 23412, data: 34532},
-      {dU: null, id: 34532, data: 23412}
+      {wU: null, id: "23412", data: "34532"},
+      {dU: null, id: "34532", data: "23412"}
     ]
   },
   {
@@ -62,7 +60,6 @@ const irreducibleBlackboxes = [
     added: () => [{wA: null, id: "old"}, {dA: null, id: "old"}], 
     removed: () => [{wR: null, id: "old"}, {dR: null, id: "old"}],
     changed: () => [
-      {wRD: null, id: "old", data: "new"},
       {wU: null, id: "old", data: "new"},
       {dU: null, id: "new", data: "old"}
     ]
@@ -72,7 +69,7 @@ const irreducibleBlackboxes = [
       const arr = ["old", v ? 234 : -234, "last"]
       if (v) arr.push(Infinity);
       return arr;
-    }
+    },
     added: () => [
       {wA: null, id: "old"}, {dA: null, id: "old"},
       {wA: null, id: -234}, {dA: null, id: -234},
@@ -84,7 +81,6 @@ const irreducibleBlackboxes = [
       {wR: null, id: "last"}, {dR: null, id: "last"}
     ], 
     changed: () => [
-      {wRD: null, id: -234, data: 234},
       {wU: null, id: -234, data: 234},
       {dU: null, id: 234, data: -234},
       {wA: null, id: Infinity},
@@ -95,11 +91,11 @@ const irreducibleBlackboxes = [
     name: "irreducible (single)", get: data => {
       return {name: data.v ? "div" : "p", data};
     },
-    added: ({id}) => [{wA: "div", id}, {dA: "div", id}],
-    removed: ({id}) => [{wR: "div", id}, {dR: "div", id}],
+    added: ({id}) => [{wA: "p", id}, {dA: "p", id}],
+    removed: ({id}) => [{wR: "p", id}, {dR: "p", id}],
     changed: ({id}) => [
-      {wR: "div", id}, {dR: "div", id},
-      {wA: "p", id}, {dA: "p", id}
+      {wR: "p", id}, {dR: "p", id},
+      {wA: "div", id}, {dA: "div", id}
     ]
   },
   {
@@ -121,8 +117,7 @@ const irreducibleBlackboxes = [
       {wR: "p", id}, {dR: "p", id}
     ],
     changed: ({id, v}) => [
-      {wRU: "div", id, data: {f1: 314, id, v}},
-      {wU: "div", id, data: {f1, 314, id, v}},
+      {wU: "div", id, data: {f1: 314, id, v}},
       {dU: "div", id, data: {id, v: 0}},
       {wR: "p", id},
       {dR: "p", id},
@@ -134,6 +129,28 @@ const irreducibleBlackboxes = [
   },
   {
     name: "irreducible (nested)", get: data => {
+      const newData = data.v ? Object.assign({f2: 2}, data) : data;
+      return {
+        name: "div", data: newData, next: [
+          {name: "p", data}
+        ]
+      }
+    },
+    added: ({id}) => [
+      {wA: "div", id}, {wA: "p", id}, {dA: "p", id}, {dA: "div", id}
+    ],
+    removed: ({id}) => [
+      {wR: "div", id}, {wR: "p", id}, {dR: "div", id}
+    ],
+    changed: ({id, v}) => [
+      {wU: "div", id, data: {f2: 2, id, v}},
+      {wU: "p", id, data: {id, v}},
+      {dU: "p", id, data: {id, v: 0}},
+      {dU: "div", id, data: {id, v:0}}
+    ]
+  },
+  {
+    name: "irreducible (nested array)", get: data => {
       const newData = data.v ? Object.assign({f2: 2}, data) : data;
       return {
         name: "div", data: newData, next: [
@@ -155,11 +172,14 @@ const irreducibleBlackboxes = [
       {dR: "div", id}
     ],
     changed: ({id, v}) => [
-      {wRD: "div", id, data: {f2: 2, id, v}},
       {wU: "div", id, data: {f2: 2, id, v}},
+      {wU: "p", id, data: {id, v}},
       {wR: "a", id}, {dR: "a", id},
       {wA: "span", id}, {dA: "span", id},
+      {dU: "p", id, data: {id, v:0}},
+      {wU: "tag", id, data: {id, v}},
       {wR: "tag2", id}, {dR: "tag2", id},
+      {dU: "tag", id, data: {id, v:0}},
       {dU: "div", id, data: {id, v:0}}
     ]
   }
@@ -173,7 +193,7 @@ const reducibleBlackboxes = [
 // to signify placeholder for passed children
 const functionals = [
 
-].forEach(f => f.functional = true);
+].map(f => Object.assign({functional: true}, f))
 
 module.exports = { 
   voidBlackboxes, 

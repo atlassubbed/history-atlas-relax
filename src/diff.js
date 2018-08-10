@@ -3,13 +3,13 @@ const { isVoid, isArr, isFn, isComp, norm } = require("./util")
 const { Frame: { isFrame }, toFrame } = require("./Frame");
 
 // emit lifecycle event to relevant effects
+//   * effects are executed in reverse-order
 const emit = (type, frame, data, temp) => {
   const effs = frame.effects;
   // XXX if !effs, call lifecycle method directly on frame?
   if (!effs) return;
   let n = effs.length, eff;
-  // XXX effects run in reverse-specified order
-  // XXX lifecycle events should only trigger on irreducible frames?
+  // XXX should lifecycle events only trigger on irreducible frames?
   while(n--) if (eff = effs[n]) 
     eff[type] && eff[type](frame, data, temp);
 }
@@ -41,10 +41,12 @@ const remove = (frame, ownsRemoval) => {
     remove(c), c.parent = c.pos = null;
   }
   frame.children = null;
-  if (ownsRemoval) emit(frame, "didRemove")
+  if (ownsRemoval) emit("didRemove", frame)
 }
 
 // replace existing subframe with new subframe
+//   * the removed node owns its removal, but we avoid splicing twice
+//     in favor of setting the index directly to the new frame
 // temp is already normalized
 const replace = (temp, effs, frame) => {
   temp = toFrame(temp, effs);
@@ -60,71 +62,95 @@ const replace = (temp, effs, frame) => {
   return frame;
 }
 
-// potentially update (sub)frame
+// propagates potential changes down the frame's subtree
+//   * don't check/patch for shallow/deep equality on irreducibles
+//     as we cannot infer what constitutes a change for an effect
+//   * memoizing templates precludes the need for shouldUpdate
+//   * willUpdate/didUpdate ~= willSubdiff/didSubdiff
 // temp is already normalized
 const update = (temp, frame) => {
   const pD = frame.data, pT = frame.next,
     nD = temp.data == null ? null : temp.data, 
-    nT = temp.next == null ? null : temp.next,
-    isFnl = isComp(frame),
-    // XXX burden the deep-equals work onto the effects
-    //   since they may need a customized patch
-    //   which can't really be inferred here
-    isUpdate = isFnl || !equals(nD, pD, true);
-  // XXX shouldUpdate/shouldReact/shouldDiff should skip everything below?
-  //   shouldUpdate should only be checked on nodes that don't have children args
+    nT = temp.next == null ? null : temp.next;
   frame.key = temp.key == null ? null : temp.key
-  emit("willReceive", frame, nD, nT)
-  // XXX rename to willDiff?
-  if (isUpdate) emit("willUpdate", frame, nD, nT);
+  emit("willUpdate", frame, nD, nT);
   frame.next = nT;
   frame.data = nD; // XXX don't set the data until we diff?
-  frame = subdiff(frame); // XXX shouldUpdate should only skip the diff?
-  // XXX rename to didDiff?
-  if (isUpdate) emit("didUpdate", frame, pD, pT);
+  frame = subdiff(frame);
+  emit("didUpdate", frame, pD, pT);
   return frame;
 }
 
+// temp is normalized
+const diff = (temp, effs, frame, parent) => {
+  if (frame && !temp) return !remove(frame, true)
+  if (temp && !frame) return add(temp, effs, parent)
+  if (temp.name !== frame.name) return replace(temp, effs, frame)
+  return update(temp, frame)
+}
+
 // XXX remove thrown error here, automatically flatten arrays on the fly
-//   don't do it in hyperscript function
+//   don't attempt to flatten `next` in hyperscript function
 const subdiff = frame => {
   const { data, next, effects } = frame;
   let template = frame.evaluate(data, next)
-  let nN, pN, nT, pF, ni = 0, pi = 0;
-  if (isVoid(template)) nN = 0;
-  else if (isArr(template)) nN = template.length;
-  else nN = 1, template = [template];
-  pN = frame.children ? frame.children.length : 0
-  while(ni < nN || pi < pN){
-    nT = template && template[ni];
-    if (ni++ < nN){
-      if (isArr(nT)) 
-        throw new Error("next must be flat");
-      if (!(nT = norm(nT))) continue;
-    }
-    nT ? pi++ : pN--;
-    pF = frame.children && frame.children[pi];
-    if (pF && !nT){
-      remove(pF, true)
-    } else if (nT && !pF){
-      add(nT, effects, frame)
-    } else if (nT.name !== pF.name){
-      replace(nT, effects, pF)
-    } else {
-      update(nT, pF);
-    }
+
+
+  // OPTIMIZED
+  // let nN, pN, nT, pF, ni = 0, pi = 0;
+  // if (isVoid(template)) nN = 0;
+  // else if (isArr(template)) nN = template.length;
+  // else nN = 1, template = [template];
+  // pN = frame.children ? frame.children.length : 0
+  // while(ni < nN || pi < pN){
+  //   nT = template && template[ni];
+  //   if (ni++ < nN){
+  //     if (isArr(nT)) 
+  //       throw new Error("next must be flat");
+  //     if (!(nT = norm(nT))) continue;
+  //   }
+  //   nT ? pi++ : pN--;
+  //   pF = frame.children && frame.children[pi];
+  //   if (pF && !nT){
+  //     remove(pF, true)
+  //   } else if (nT && !pF){
+  //     add(nT, effects, frame)
+  //   } else if (nT.name !== pF.name){
+  //     replace(nT, effects, pF)
+  //   } else {
+  //     update(nT, pF);
+  //   }
+  // }
+
+
+
+
+  // NOT OPTIMIZED
+  const nextTemplates = (isArr(template) ? template : [template]).filter(t => {
+    if (isArr(t)) throw new Error("next must be flat");
+    return !isVoid(t);
+  }).map(t => norm(t))
+
+  let max = Math.max(nextTemplates.length, (frame.children || []).length);
+  for (let i = 0; i < max; i++){
+    const nT = nextTemplates[i], pF = (frame.children || [])[i];
+    void diff(nT, effects, pF, frame)
   }
+
+
+
+
+
+
+
   if (frame.children && !frame.children.length)
     frame.children = null;
   return frame;
 }
 
 module.exports = (temp, frame, effs) => {
-  if (isArr(temp)) return false;
-  temp = norm(temp);
-  if (!isFrame(frame)) return temp && add(temp, effs);
-  if (frame.parent) return false;
-  if (!temp) return !remove(frame, true);
-  if (temp.name === frame.name) return update(temp, frame)
-  return replace(temp, effs, frame)
+  if (isArr(temp = norm(temp))) return false;
+  if (!isFrame(frame)) frame = null
+  else if (frame.parent) return false;
+  return (frame || temp) && diff(temp, effs, frame);
 }

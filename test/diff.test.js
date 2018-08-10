@@ -6,11 +6,11 @@ const {
   voidBlackboxes: voids, 
   irreducibleBlackboxes: primes, 
   reducibleBlackboxes: comps, 
-  functionals: funcs
+  functionals: functionalRoots
 } = require("./assets/templates");
 
 const allBlackboxes = voids.concat(primes, comps)
-const allRoots = primes.concat(comps, funcs).filter(n => n.name.indexOf("array") < 0)
+const blackboxRoots = primes.concat(comps).filter(n => n.name.indexOf("array") < 0)
 
 describe("diff", function(){
   it("should not add void templates", function(){
@@ -50,10 +50,40 @@ describe("diff", function(){
     expect(tracker.events).to.be.empty;
   })
 
-  allRoots.forEach(rootTemplate => {
-    // if is blackbox, test add/remove/change for single root
-    // else if functional, test the functional with each kind of allBlackboxes child.
-    //   for add/remove/changed on both the parent and child
+  blackboxRoots.forEach(rootTemplate => {
+    const { name: id, get, added, changed, removed } = rootTemplate;
+    describe(`${id}`, function(){
+      it("should be added correctly", function(){
+        const tracker = new Tracker(), data = {v: 0, id};
+        const template = get(data)
+        const result = diff(template, null, tracker);
+        expect(result).to.be.an.instanceOf(Frame);
+        expect(tracker.events).to.deep.equal(added(data))
+      })
+      it("should be removed correctly", function(){
+        const tracker = new Tracker(), data = {v: 0, id};
+        const template = get(data)
+        const frame = diff(template, null, tracker);
+        tracker.reset();
+        const result = diff(null, frame, tracker);
+        expect(result).to.be.true;
+        expect(tracker.events).to.deep.equal(removed(data))
+      })
+      it("should be updated correctly", function(){
+        const tracker = new Tracker(), data = {v: 0, id}, newData = {v: 1, id}
+        const template = get(data), newTemplate = get(newData)
+        const frame = diff(template, null, tracker);
+        tracker.reset();
+        const result = diff(newTemplate, frame, tracker);
+        expect(result).to.be.an.instanceOf(Frame);
+        expect(tracker.events).to.deep.equal(changed(newData))
+      })
+    })
+  })
+
+  functionalRoots.forEach(rootTemplate => {
+    // test the functional with each allBlackboxes child.
+    // test add/remove/changed on both the parent and child
   })
 
 })
