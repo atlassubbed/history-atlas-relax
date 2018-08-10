@@ -96,7 +96,7 @@ const subdiff = frame => {
   let template = frame.evaluate(data, next)
 
 
-  // OPTIMIZED
+  // OPTIMIZED attempt -- this is currently buggy, use NOT OPTIMIZED below
   // let nN, pN, nT, pF, ni = 0, pi = 0;
   // if (isVoid(template)) nN = 0;
   // else if (isArr(template)) nN = template.length;

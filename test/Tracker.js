@@ -5,7 +5,6 @@ module.exports = class Tracker {
   willAdd(frame){this.capture("wA", frame)}
   // XXX assert that position, parent and child are correct?
   didAdd(frame){this.capture("dA", frame)}
-  willReceive(frame, data){this.capture("wRD", frame, {data})}
   willUpdate(frame, data){this.capture("wU", frame, {data})}
   didUpdate(frame, data){this.capture("dU", frame, {data})}
   willRemove(frame){this.capture("wR", frame)}
