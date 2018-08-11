@@ -237,5 +237,4 @@ describe("diff", function(){
       })
     })
   })
-
 })

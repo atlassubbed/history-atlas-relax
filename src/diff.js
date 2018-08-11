@@ -20,7 +20,7 @@ const add = (temp, effs, frame) => {
   temp = toFrame(temp, effs);
   if (frame){
     const i = (frame.children = frame.children || []).push(temp);
-    temp.parent = frame, temp.pos = i;
+    temp.parent = frame, temp.pos = i - 1;
   }
   emit("willAdd", temp)
   subdiff(temp);
