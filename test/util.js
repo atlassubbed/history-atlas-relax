@@ -25,4 +25,8 @@ const type = str => {
   return str.slice(0, i).trim();
 }
 
-module.exports = { toArr, has, fill, type }
+const isScalar = str => {
+  return !(has(str, "(array)") || has(str, "(tensor)"))
+}
+
+module.exports = { toArr, has, fill, type, isScalar }

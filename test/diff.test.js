@@ -2,16 +2,16 @@ const { describe, it } = require("mocha")
 const { expect } = require("chai")
 const Tracker = require("./Tracker");
 const { Frame, diff } = require("../src/index");
-const { has, fill, type } = require("./util")
+const { isScalar, fill, type } = require("./util")
 const { 
   voidBlackboxes: voids, 
   irreducibleBlackboxes: primes, 
   reducibleBlackboxes: comps, 
   functionals: functionalRoots
-} = require("./assets/templates");
+} = require("./assets/diffCases");
 
 const allBlackboxes = [...voids, ...primes, ...comps];
-const blackboxRoots = [...primes, ...comps].filter(n => !has(n.name, "(array)"))
+const blackboxRoots = [...primes, ...comps].filter(n => isScalar(n.name))
 const allNontrivialBlackboxes = allBlackboxes.filter(n => !n.name.startsWith("void"))
 
 describe("diff", function(){
@@ -215,7 +215,7 @@ describe("diff", function(){
                 const newFrame = diff(newTemplate, frame, tracker);
                 expect(newFrame).to.be.an.instanceOf(Frame).to.equal(frame);
                 let events;
-                if (!has(nextId, "(array)") || nextId.startsWith("void")){
+                if (isScalar(nextId) || nextId.startsWith("void")){
                   events = [...nextRemoved(data), ...replaceAdded(data)]
                 } else {
                   events = fill(replaceAdded(data), nextRemoved(data), "dR", true)

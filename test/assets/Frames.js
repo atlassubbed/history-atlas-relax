@@ -14,11 +14,16 @@ const { Frame } = require("../../src/index");
 //      2. 1
 //      3. 2+ -- handle tensors in template blackbox cases
 //    3. Composability
-//      1. Blackbox
+//      1. Blackbox -- TODO: keys, memozation and tensors
 //      2. Functional
 //
 // All frames have a reducibility, rank and composability.
 // Not all of the combinations are valid frames.
+
+// Classification of templates:
+//     1. Void -- map to the null frame
+//     2. Literal -- sterile
+//     3. Object -- TODO: Test nameless nodes treated as literals
 
 const IrreducibleFunctional = "div";
 

@@ -1,4 +1,3 @@
-const equals = require("atlas-deep-equals")
 const { isVoid, isArr, isFn, isComp, norm, pop } = require("./util")
 const { Frame: { isFrame }, toFrame } = require("./Frame");
 
@@ -9,7 +8,6 @@ const emit = (type, frame, data, temp) => {
   // XXX if !effs, call lifecycle method directly on frame?
   if (!effs) return;
   let n = effs.length, eff;
-  // XXX should lifecycle events only trigger on irreducible frames?
   while(n--) if (eff = effs[n]) 
     eff[type] && eff[type](frame, data, temp);
 }
@@ -95,7 +93,6 @@ const subdiff = frame => {
   const { data, next, effects } = frame;
   let template = frame.evaluate(data, next)
 
-
   // OPTIMIZED attempt -- this is currently buggy, use NOT OPTIMIZED below
   // let nN, pN, nT, pF, ni = 0, pi = 0;
   // if (isVoid(template)) nN = 0;
@@ -122,19 +119,21 @@ const subdiff = frame => {
   //   }
   // }
 
-
-
-
   // NOT OPTIMIZED
-  const nextTemplates = (isArr(template) ? template : [template]).filter(t => {
-    if (isArr(t)) throw new Error("next must be flat");
-    return !isVoid(t);
-  }).map(t => norm(t))
 
   const children = (frame.children || []).slice();
-  let max = Math.max(nextTemplates.length, children.length);
+  template = isArr(template) ? template : [template];
+  let nextTemplates = []
+  while(template.length){
+    const next = template.pop();
+    if (isArr(next)) template.push(...next)
+    else if (!isVoid(next)) nextTemplates.push(norm(next));
+  }
+  // instead of reversing nextTemplates, count backwards
+  let maxTempIndex = nextTemplates.length - 1;
+  let max = Math.max(maxTempIndex + 1, children.length);
   for (let i = 0; i < max; i++){
-    const nT = nextTemplates[i], pF = children[i];
+    const nT = nextTemplates[maxTempIndex - i], pF = children[i];
     void diff(nT, effects, pF, frame)
   }
 
