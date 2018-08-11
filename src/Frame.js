@@ -60,8 +60,8 @@ const toFrame = (temp, effs) => {
   const Subframe = temp.name
   if (isFrame(Subframe.prototype)) return new Subframe(temp, effs);
   const frame = new Frame(temp, effs);
-  // XXX don't bind to frame here, since this should be stateless
-  frame.evaluate = Subframe.bind(frame);
+  // don't bind Subframe to frame, since it is stateless
+  frame.evaluate = Subframe;
   return frame;
 }
 

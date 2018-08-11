@@ -1,5 +1,5 @@
 const equals = require("atlas-deep-equals")
-const { isVoid, isArr, isFn, isComp, norm } = require("./util")
+const { isVoid, isArr, isFn, isComp, norm, pop } = require("./util")
 const { Frame: { isFrame }, toFrame } = require("./Frame");
 
 // emit lifecycle event to relevant effects
@@ -35,7 +35,7 @@ const remove = (frame, ownsRemoval) => {
   emit("willRemove", frame)
   const { parent, children } = frame;
   if (ownsRemoval && parent)
-    void parent.children.splice(frame.pos,1);
+    void pop(parent.children, frame)
   frame.parent = frame.pos = null;
   if (children) for (let c of children){
     remove(c), c.parent = c.pos = null;
@@ -131,20 +131,16 @@ const subdiff = frame => {
     return !isVoid(t);
   }).map(t => norm(t))
 
-  let max = Math.max(nextTemplates.length, (frame.children || []).length);
+  const children = (frame.children || []).slice();
+  let max = Math.max(nextTemplates.length, children.length);
   for (let i = 0; i < max; i++){
-    const nT = nextTemplates[i], pF = (frame.children || [])[i];
+    const nT = nextTemplates[i], pF = children[i];
     void diff(nT, effects, pF, frame)
   }
 
-
-
-
-
-
-
-  if (frame.children && !frame.children.length)
+  if (frame.children && !frame.children.length){
     frame.children = null;
+  }
   return frame;
 }
 
