@@ -123,15 +123,15 @@ const subdiff = frame => {
 
   const children = (frame.children || []).slice();
   template = isArr(template) ? template : [template];
-  let nextTemplates = []
+  const nextTemplates = []
   while(template.length){
     const next = template.pop();
     if (isArr(next)) template.push(...next)
     else if (!isVoid(next)) nextTemplates.push(norm(next));
   }
   // instead of reversing nextTemplates, count backwards
-  let maxTempIndex = nextTemplates.length - 1;
-  let max = Math.max(maxTempIndex + 1, children.length);
+  const maxTempIndex = nextTemplates.length - 1;
+  const max = Math.max(maxTempIndex + 1, children.length);
   for (let i = 0; i < max; i++){
     const nT = nextTemplates[maxTempIndex - i], pF = children[i];
     void diff(nT, effects, pF, frame)
