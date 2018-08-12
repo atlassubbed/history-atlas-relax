@@ -4,11 +4,15 @@ const Tracker = require("./Tracker");
 const { Frame, diff } = require("../src/index");
 const { isScalar, fill, type } = require("./util")
 const { 
-  voidBlackboxes: voids, 
   irreducibleBlackboxes: primes, 
   reducibleBlackboxes: comps, 
-  functionals: functionalRoots
 } = require("./assets/diffCases");
+const { 
+  updatingBlackboxes, 
+  functionals: functionalRoots,
+  voidBlackboxes: voids
+} = require("./assets/subdiffCases")
+
 
 const allBlackboxes = [...voids, ...primes, ...comps];
 const blackboxRoots = [...primes, ...comps].filter(n => isScalar(n.name))
@@ -231,6 +235,20 @@ describe("diff", function(){
               expect(diff(t1))
                 .to.be.an.instanceOf(Frame)
                 .to.deep.equal(diff(t2, diff(t3)))
+            })
+          })
+        })
+        describe("subdiffs mixed children", function(){
+          updatingBlackboxes.forEach(({desc, get: nextGet, changed: nextChanged}) => {
+            it(`should ${desc}`, function(){
+              const tracker = new Tracker(), data = {id: desc, v: 0}, newData = {id: desc, v: 1}
+              const template = get(data), newTemplate = get(data);
+              template.next = nextGet(data), newTemplate.next = nextGet(newData)
+              const frame = diff(template, null, tracker)
+              tracker.reset();
+              const newFrame = diff(newTemplate, frame, tracker);
+              expect(newFrame).to.be.an.instanceOf(Frame).to.equal(frame);
+              expect(tracker.events).to.deep.equal(fill(nextChanged(newData), changed(data)))
             })
           })
         })

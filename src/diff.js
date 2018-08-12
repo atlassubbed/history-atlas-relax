@@ -133,7 +133,9 @@ const subdiff = frame => {
   const maxTempIndex = nextTemplates.length - 1;
   const max = Math.max(maxTempIndex + 1, children.length);
   for (let i = 0; i < max; i++){
-    const nT = nextTemplates[maxTempIndex - i], pF = children[i];
+    const nT = nextTemplates[maxTempIndex - i];
+    // TODO: check keys here or in flatten above?
+    const pF = children[i];
     void diff(nT, effects, pF, frame)
   }
 
