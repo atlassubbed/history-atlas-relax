@@ -1,112 +1,103 @@
 const { toArr } = require("../util");
 const { Frame } = require("../../src/index");
 
-// Classification of Frames:
-//    1. Reducibility
-//      1. Irreducible
-//      2. Reducible
-//        1. Stateful
-//          1. Extended (class MyFrame extends Frame {...})
-//          2. TODO: Merged (Frame.define(MyFrame))
-//        2. Stateless
-//    2. Rank
-//      1. 0
-//      2. 1
-//      3. 2+ -- handle tensors in template blackbox cases
-//    3. Composability
-//      1. Blackbox -- TODO: keys, memozation and tensors
-//      2. Functional
-//
-// All frames have a reducibility, rank and composability.
-// Not all of the combinations are valid frames.
-
-// Classification of templates:
-//     1. Void -- map to the null frame
-//     2. Literal -- sterile
-//     3. Object -- TODO: Test nameless nodes treated as literals
+// Frame classification:
+//   1. Reducibility (irreducible, reducible (stateful (modern, legacy), stateless))
+//   2. Rank (0, 1, 2+)
+//   3. Composability (blackbox, functional)
+// Template classification:
+//   1. Void (in diff's kernel)
+//   2. Literal (sterile)
+//   3. Object
 
 const IrreducibleFunctional = "div";
 
-const StatelessBlackboxScalar = data => {
-  return {
-    name: "div", data, next: [
-      {name: "p", data},
-      {name: "span", data}
-    ]
-  }
-}
-
+const StatelessBlackboxScalar = data => ({
+  name: "div", data, next: [
+    {name: "p", data},
+    {name: "span", data}
+  ]
+})
 class StatefulBlackboxScalar extends Frame {
   evaluate(data){
-    return {
-      name: "div", data, next: [
-        {name: "p", data},
-        {name: "span", data}
-      ]
-    }
+    return StatelessBlackboxScalar(data)
   }
 }
-
-const StatelessBlackboxVector = data => {
-  return [
-    {name: "div", data},
-    {name: "p", data}
-  ]
+function LegacyBlackboxScalar(temp, effs){
+  Frame.call(this, temp, effs)
 }
+Frame.define(LegacyBlackboxScalar, {
+  evaluate(data){
+    return StatelessBlackboxScalar(data)
+  }
+})
 
+const StatelessBlackboxVector = data => [
+  {name: "div", data},
+  {name: "p", data}
+]
 class StatefulBlackboxVector extends Frame {
   evaluate(data){
-    return [
-      {name: "div", data},
-      {name: "p", data}
-    ]
+    return StatelessBlackboxVector(data)
   }
 }
-
-const StatelessFunctionalScalar = (data, next) => {
-  return {
-    name: "div", data, next: [
-      {name: "p", data},
-      {name: "span", data},
-      {name: "a", data, next}
-    ]
-  }
+function LegacyBlackboxVector(temp, effs){
+  Frame.call(this, temp, effs)
 }
+Frame.define(LegacyBlackboxVector, {
+  evaluate(data){
+    return StatelessBlackboxVector(data)
+  }
+})
 
+const StatelessFunctionalScalar = (data, next) => ({
+  name: "div", data, next: [
+    {name: "p", data},
+    {name: "span", data},
+    {name: "a", data, next}
+  ]
+})
 class StatefulFunctionalScalar extends Frame {
   evaluate(data, next){
-    return {
-      name: "div", data, next: [
-        {name: "p", data},
-        {name: "span", data},
-        {name: "a", data, next}
-      ]
-    }
+    return StatelessFunctionalScalar(data, next);
   }
 }
-
-const StatelessFunctionalVector = (data, next) => {
-  return [
-    {name: "div", data},
-    {name: "p", data},
-    ...toArr(next)
-  ]
+function LegacyFunctionalScalar(temp, effs){
+  Frame.call(this, temp, effs)
 }
+Frame.define(LegacyFunctionalScalar, {
+  evaluate(data, next){
+    return StatelessFunctionalScalar(data, next);
+  }
+})
 
+const StatelessFunctionalVector = (data, next) => [
+  {name: "div", data},
+  {name: "p", data},
+  ...toArr(next)
+]
 class StatefulFunctionalVector extends Frame {
   evaluate(data, next){
-    return [
-      {name: "div", data},
-      {name: "p", data},
-      ...toArr(next)
-    ]
+    return StatelessFunctionalVector(data, next);
   }
 }
+function LegacyFunctionalVector(temp, effs){
+  Frame.call(this, temp, effs)
+}
+Frame.define(LegacyFunctionalVector, {
+  evaluate(data, next){
+    return StatelessFunctionalVector(data, next)
+  }
+})
 
 module.exports = {
   IrreducibleFunctional,
-  BlackboxScalars: [StatelessBlackboxScalar, StatefulBlackboxScalar],
-  BlackboxVectors: [StatelessBlackboxVector, StatefulBlackboxVector],
-  FunctionalScalars: [StatelessFunctionalScalar, StatefulFunctionalScalar],
-  FunctionalVectors: [StatelessFunctionalVector, StatefulFunctionalVector]
+  Blackboxes: [
+    StatelessBlackboxScalar, StatefulBlackboxScalar, LegacyBlackboxScalar,
+    StatelessBlackboxVector, StatefulBlackboxVector, LegacyBlackboxVector
+  ],
+  Functionals: [
+    StatelessFunctionalScalar, StatefulFunctionalScalar, LegacyFunctionalScalar,
+    StatelessFunctionalVector, StatefulFunctionalVector, LegacyFunctionalVector
+  ]
 }

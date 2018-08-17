@@ -1,66 +1,38 @@
-const { isComp, isFn, isArr } = require("./util")
-const RSV = ["name", "data", "next", "key"]
-const nRSV = RSV.length
+const { isComp, isFn, isArr, toArr, id } = require("./util")
 
-// XXX don't recommend Subframe extends Frame API for performance reasons...
-//   switch class Frame {} to raw constructor syntax...
-
+// APIs for creating frame classes
+//   1. class MyFrame extends Frame {...}
+//   2. class MyFrame {constructor(t, e){Frame.call(this, t, e)} evaluate(){...}}
+//   3. const MyFrame = (d, n) => {...}
+//   4. const MyFrame = Frame.define(MyFrame, methods)
 // not to be instantiated by caller
-
-// const Frame = function(temp, effs){
-//   this.parent = this.children = this.pos = null;
-//   this.state = this.keys = null;
-//   // XXX move this into toFrame, 
-//   //   since pseudo-frames (classes with an evaluate method)
-//   //   may not do this in their constructors...
-//   this.effects = effs ? isArr(effs) ? effs : [effs] : null;
-//   for (let i = nRSV, k, v; i--;)
-//     this[k = RSV[i]] = (v = temp[k]) == null ? null : v
-// }
-
-// // XXX don't need this, just use next inline in subdiff?
-// Frame.prototype.evaluate = function(data, next){
-//   return next;
-// }
-
-// Frame.isFrame = f => !!f && isFn(f.evaluate);
-
-class Frame {
-  constructor(temp, effs){
-    this.parent = this.children = this.pos = null;
-    this.state = this.keys = null;
-    // XXX move this into toFrame, 
-    //   since pseudo-frames (classes with an evaluate method)
-    //   may not do this in their constructors...
-    this.effects = effs ? isArr(effs) ? effs : [effs] : null;
-    for (let i = nRSV, k, v; i--;)
-      this[k = RSV[i]] = (v = temp[k]) == null ? null : v
-  }
-  // XXX move entangle, setState, setTau into an object
-  //   and set the prototype in toFrame or in createFrame???
-  //   then, the caller doesn't have to use "extends"
-  //   and can just define a basic class however they want
-  //   ultimately, this.setState, this.setTau, this.entangle
-  //   should still be callable in their class without them implementing it
-  entangle(){}
-  setState(){}
-  setTau(){}
-  evaluate(data, next){ return next }
-  static isFrame(f){return !!f && isFn(f.evaluate)}
-  // static helper "define" for pre-es6 code?
-  // in "define", merge the optionsObject with Object.create(Frame.prototype)
-  // then set that to the prototype of the new class.
+const Frame = function(temp, effs){
+  if (!temp) return;
+  this.parent = this.state = this.keys = null;
+  this.children = null;
+  this.effects = effs, this.temp = temp;
+  this.name = temp.name, this.key = temp.key;
+}
+Frame.prototype.evaluate = function(data, next){ return next }
+Frame.prototype.entangle = function(){}
+Frame.prototype.setTau = function(){}
+Frame.prototype.setState = function(){}
+Frame.isFrame = f => !!f && isFn(f.evaluate);
+Frame.define = (Subframe, proto) => {
+  if (Subframe === Frame) 
+    throw new Error("cannot re-define base")
+  Subframe.prototype = Object.assign(new Frame(), proto);
+  Subframe.prototype.constructor = Subframe
 }
 
 const isFrame = Frame.isFrame;
-
 // temp is already normalized
 const toFrame = (temp, effs) => {
   if (!isComp(temp)) return new Frame(temp, effs);
   const Subframe = temp.name
-  if (isFrame(Subframe.prototype)) return new Subframe(temp, effs);
+  if (isFrame(Subframe.prototype)) 
+    return new Subframe(temp, effs);
   const frame = new Frame(temp, effs);
-  // don't bind Subframe to frame, since it is stateless
   frame.evaluate = Subframe;
   return frame;
 }

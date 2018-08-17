@@ -1,254 +1,245 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
-const Tracker = require("./Tracker");
+const Renderer = require("./Renderer");
 const { Frame, diff } = require("../src/index");
-const { isScalar, fill, type } = require("./util")
+const { isScalar, type, inject } = require("./util")
 const { 
   irreducibleBlackboxes: primes, 
-  reducibleBlackboxes: comps, 
-} = require("./assets/diffCases");
-const { 
-  updatingBlackboxes, 
+  reducibleBlackboxes: comps,
   functionals: functionalRoots,
-  voidBlackboxes: voids
-} = require("./assets/subdiffCases")
+  voidBlackboxes: voids 
+} = require("./assets/diff-cases");
+const { updatingBlackboxes } = require("./assets/subdiff-cases")
 
-
-const allBlackboxes = [...voids, ...primes, ...comps];
-const blackboxRoots = [...primes, ...comps].filter(n => isScalar(n.name))
-const allNontrivialBlackboxes = allBlackboxes.filter(n => !n.name.startsWith("void"))
+const allBlackboxes = [...voids, ...primes, ...comps]
+const allNontrivialBlackboxes = allBlackboxes.filter(n => type(n.name) !== "void")
+const blackboxRoots = allNontrivialBlackboxes.filter(n => isScalar(n.name))
 
 describe("diff", function(){
   it("should not add void templates", function(){
     const voids = [null, true, undefined, false];
     voids.forEach(val => {
-      const tracker = new Tracker();
-      const result = diff(val, null, tracker);
+      const renderer = new Renderer();
+      const result = diff(val, null, renderer);
       expect(result).to.be.false;
-      expect(tracker.events).to.be.empty;
+      expect(renderer.tree).to.be.null;
+      const { a, r, u } = renderer.counts;
+      expect(a).to.equal(r).to.equal(u).to.equal(0)
     })
   })
   it("should not add multiple templates", function(){
-    const templates = [{name:"div"},{name:"p"}];
-    const tracker = new Tracker();
-    const result = diff(templates, null, tracker);
+    const renderer = new Renderer();
+    const result = diff([{name:"div"},{name:"p"}], null, renderer);
     expect(result).to.be.false;
-    expect(tracker.events).to.be.empty;
+    expect(renderer.tree).to.be.null;
+    const { a, r, u } = renderer.counts;
+    expect(a).to.equal(r).to.equal(u).to.equal(0)
   })
   it("should not replace a frame with multiple templates", function(){
-    const tracker = new Tracker();
-    const result = diff([{name:"div"}, {name: "p"}], new Frame({}), tracker);
+    const renderer = new Renderer();
+    const result = diff([{name:"div"}, {name: "p"}], new Frame({}), renderer);
     expect(result).to.be.false;
-    expect(tracker.events).to.be.empty;
+    expect(renderer.tree).to.be.null;
+    const { a, r, u } = renderer.counts;
+    expect(a).to.equal(r).to.equal(u).to.equal(0)
   })
   it("should not remove non-frames", function(){
-    const tracker = new Tracker();
-    const result = diff(null, "not a frame", tracker);
+    const renderer = new Renderer();
+    const result = diff(null, "not a frame", renderer);
     expect(result).to.be.false;
-    expect(tracker.events).to.be.empty;
+    expect(renderer.tree).to.be.null;
+    const { a, r, u } = renderer.counts;
+    expect(a).to.equal(r).to.equal(u).to.equal(0)
   })
   it("should not remove non-root frames", function(){
-    const tracker = new Tracker();
-    const child = new Frame({});
+    const renderer = new Renderer(), child = new Frame({});
     (child.parent = new Frame({})).children = [child]
-    const result = diff(null, child, tracker);
+    const result = diff(null, child, renderer);
     expect(result).to.be.false;
-    expect(tracker.events).to.be.empty;
+    expect(renderer.tree).to.be.null;
+    const { a, r, u } = renderer.counts;
+    expect(a).to.equal(r).to.equal(u).to.equal(0)
   })
   describe("blackboxes", function(){
-    blackboxRoots.forEach(({ name: id, get, added, changed, removed }) => {
+    blackboxRoots.forEach(({ name: id, get }) => {
       describe(`${id} frames`, function(){
         it("should be added", function(){
-          const tracker = new Tracker(), data = {v: 0, id};
-          const template = get(data)
-          const result = diff(template, null, tracker);
+          const renderer = new Renderer(), data = {v: 0, id};
+          const result = diff(get(data), null, renderer);
           expect(result).to.be.an.instanceOf(Frame);
-          expect(tracker.events).to.deep.equal(added(data))
+          expect(renderer.tree).to.deep.equal(renderer.render(get(data)))
+          const { a, r, u, n } = renderer.counts;
+          expect(n).to.equal(a)
+          expect(u).to.equal(r).to.equal(0)
         })
         it("should be removed", function(){
-          const tracker = new Tracker(), data = {v: 0, id};
-          const template = get(data)
-          const frame = diff(template, null, tracker);
-          tracker.reset();
-          const result = diff(null, frame, tracker);
+          const renderer = new Renderer(), data = {v: 0, id};
+          const frame = diff(get(data), null, renderer);
+          const result = diff(null, frame, renderer);
           expect(result).to.be.true;
-          expect(tracker.events).to.deep.equal(removed(data))
+          expect(renderer.tree).to.be.null
+          const { a, r, u } = renderer.counts;
+          expect(a).to.equal(r)
+          expect(u).to.equal(0)
         })
-        // XXX find a way to specify multiple types of updates for a given case
-        //   every case should have default change (same template, new "v" prop)
-        //   certain irreducibleBlackboxes will implement various kinds of updates
-        //     * keys, memoization, replacements, props resetting, re-ordering, etc. 
         it("should be updated without getting replaced", function(){
-          const tracker = new Tracker(), data = {v: 0, id}, newData = {v: 1, id}
+          const renderer = new Renderer(), data = {v: 0, id}, newData = {v: 1, id}
           const template = get(data), newTemplate = get(newData)
-          const frame = diff(template, null, tracker);
-          tracker.reset();
-          const result = diff(newTemplate, frame, tracker);
+          const frame = diff(get(data), null, renderer);
+          const result = diff(get(newData), frame, renderer);
           expect(result).to.be.an.instanceOf(Frame).to.equal(frame)
-          expect(tracker.events).to.deep.equal(changed(newData))
+          expect(renderer.tree).to.deep.equal(renderer.render(get(newData)));
+          const { a, r, u, n } = renderer.counts;
+          expect(n).to.equal(a).to.equal(u)
+          expect(r).to.equal(0)
+
         })
-        blackboxRoots.forEach(({ name: newId, get: newGet, added: newAdded }) => {
+        blackboxRoots.forEach(({ name: newId, get: newGet }) => {
           const data = {id, v: 0}, template = get(data), newTemplate = newGet(data);
           if (newTemplate.name === template.name) return;
           it(`should be replaced by ${newId} frames`, function(){
-            const tracker = new Tracker();
-            const frame = diff(template, null, tracker);
+            const renderer = new Renderer();
+            const frame = diff(template, null, renderer);
             expect(frame).to.be.an.instanceOf(Frame);
-            tracker.reset();
-            const newFrame = diff(newTemplate, frame, tracker);
+            const newFrame = diff(newTemplate, frame, renderer);
             expect(newFrame).to.be.an.instanceOf(Frame).to.not.equal(frame);
-            expect(tracker.events).to.deep.equal([...removed(data), ...newAdded(data)])
+            expect(renderer.tree).to.deep.equal(renderer.render(newGet(data)));
+            const { a, r, u, n } = renderer.counts;
+            expect(a).to.equal(n + r)
+            expect(u).to.equal(0)
           })
         })
         it("should satisfy the identity diff(t) = diff(t, diff(t))", function(){
           const t1 = get({v: 0, id}), t2 = get({v: 0, id}), t3 = get({v: 0, id})
           expect(t1).to.deep.equal(t2).to.deep.equal(t3)
-          expect(diff(t1))
-            .to.be.an.instanceOf(Frame)
-            .to.deep.equal(diff(t2, diff(t3)))
+          expect(diff(t1)).to.be.an.instanceOf(Frame).to.deep.equal(diff(t2, diff(t3)))
         })
       })
     })
   })
-
   describe("functionals", function(){
-    functionalRoots.forEach(({ name: id, get, added, changed, removed, defaultNextCount }) => {
+    functionalRoots.forEach(({ name: id, get }) => {
       describe(id, function(){
-        allBlackboxes.forEach(({ 
-          name: nextId, 
-          get: nextGet, 
-          added: nextAdded, 
-          removed: nextRemoved, 
-          changed: nextChanged,
-        }) => {
+        allBlackboxes.forEach(({ name: nextId, get: nextGet }) => {
           describe(`with ${nextId} child`, function(){
             it("should be added", function(){
-              const tracker = new Tracker()
-              const data = {v: 0, id}, template = get(data);
-              template.next = nextGet(data);
-              const result = diff(template, null, tracker);
+              const renderer = new Renderer(), data = {v: 0, id}
+              const result = diff(inject(get(data), nextGet(data)), null, renderer);
               expect(result).to.be.an.instanceOf(Frame);
-              expect(tracker.events).to.deep.equal(fill(nextAdded(data), added(data)))
+              const rendered = renderer.render(inject(get(data), nextGet(data)))
+              expect(renderer.tree).to.deep.equal(rendered)
+              const { a, r, u, n } = renderer.counts;
+              expect(a).to.equal(n)
+              expect(r).to.equal(u).to.equal(0)
             })
             it("should remove the root", function(){
-              const tracker = new Tracker();
-              const data = {v: 0, id}, template = get(data)
-              template.next = nextGet(data);
-              const frame = diff(template, null, tracker);
-              tracker.reset();
-              const result = diff(null, frame, tracker);
+              const renderer = new Renderer(), data = {v: 0, id}
+              const frame = diff(inject(get(data), nextGet(data)), null, renderer);
+              const result = diff(null, frame, renderer);
               expect(result).to.be.true;
-              const childEvents = nextRemoved(data).filter(e => !("dR" in e))
-              expect(tracker.events).to.deep.equal(fill(childEvents, removed(data)))
+              expect(renderer.tree).to.be.null;
+              const { a, r, u } = renderer.counts;
+              expect(a).to.equal(r)
+              expect(u).to.equal(0)
             })
             it("should remove just the child", function(){
-              const tracker = new Tracker();
-              const data = {v: 0, id}, template = get(data)
-              template.next = nextGet(data);
-              const frame = diff(template, null, tracker);
-              tracker.reset();
-              const result = diff(get(data), frame, tracker);
-              expect(result).to.be.an.instanceOf(Frame);
-              if (!defaultNextCount) expect(result.children).to.be.null;
-              else expect(result.children.length).to.equal(defaultNextCount)
-              expect(tracker.events).to.deep.equal(fill(nextRemoved(data), changed(data)))
+              const renderer = new Renderer(), data = {v: 0, id}
+              const frame = diff(inject(get(data), nextGet(data)), null, renderer);
+              const result = diff(get(data), frame, renderer)
+              const rendered = renderer.render(get(data));
+              expect(result).to.be.an.instanceOf(Frame).to.equal(frame);
+              expect(renderer.tree).to.deep.equal(rendered);
+              const { a, r, u, n } = renderer.counts;
+              expect(n).to.equal(u).to.equal(a - r)
             })
             it("should update just the root without getting replaced", function(){
-              const tracker = new Tracker(), data = {v: 0, id}, newData = {v: 1, id}
-              const template = get(data), newTemplate = get(newData)
-              template.next = nextGet(data);
-              newTemplate.next = nextGet(data);
-              const frame = diff(template, null, tracker);
-              tracker.reset();
-              const result = diff(newTemplate, frame, tracker);
+              const renderer = new Renderer(), data = {v: 0, id}, newData = {v: 1, id}
+              const frame = diff(inject(get(data), nextGet(data)), null, renderer);
+              const result = diff(inject(get(newData), nextGet(data)), frame, renderer);
               expect(result).to.be.an.instanceOf(Frame).to.equal(frame)
-              expect(tracker.events).to.deep.equal(fill(nextChanged(data), changed(newData)))
+              const rendered = renderer.render(inject(get(newData), nextGet(data)));
+              expect(renderer.tree).to.deep.equal(rendered);
+              const { a, r, u, n } = renderer.counts;
+              expect(n).to.equal(a).to.equal(u)
+              expect(r).to.equal(0)
             })
             it("should update just the child without getting replaced", function(){
-              const tracker = new Tracker(), data = {v: 0, id}, newData = {v: 1, id}
-              const template = get(data), newTemplate = get(data);
-              template.next = nextGet(data);
-              newTemplate.next = nextGet(newData);
-              const frame = diff(template, null, tracker);
-              tracker.reset();
-              const result = diff(newTemplate, frame, tracker);
+              const renderer = new Renderer(), data = {v: 0, id}, newData = {v: 1, id}
+              const frame = diff(inject(get(data), nextGet(data)), null, renderer);
+              const result = diff(inject(get(data), nextGet(newData)), frame, renderer);
               expect(result).to.be.an.instanceOf(Frame).to.equal(frame)
-              expect(tracker.events).to.deep.equal(fill(nextChanged(newData), changed(data)))
+              const rendered = renderer.render(inject(get(data), nextGet(newData)));
+              expect(renderer.tree).to.deep.equal(rendered);
+              const { a, r, u, n } = renderer.counts;
+              expect(n).to.equal(a).to.equal(u)
+              expect(r).to.equal(0)
             })
             it("should update both parent and child without getting replaced", function(){
-              const tracker = new Tracker(), data = {v: 0, id}, newData = {v: 1, id}
-              const template = get(data), newTemplate = get(newData);
-              template.next = nextGet(data);
-              newTemplate.next = nextGet(newData);
-              const frame = diff(template, null, tracker);
-              tracker.reset();
-              const result = diff(newTemplate, frame, tracker);
+              const renderer = new Renderer(), data = {v: 0, id}, newData = {v: 1, id}
+              const frame = diff(inject(get(data), nextGet(data)), null, renderer);
+              const result = diff(inject(get(newData), nextGet(newData)), frame, renderer);
               expect(result).to.be.an.instanceOf(Frame).to.equal(frame)
-              expect(tracker.events).to.deep.equal(fill(nextChanged(newData), changed(newData)))
+              const rendered = renderer.render(inject(get(newData), nextGet(newData)));
+              expect(renderer.tree).to.deep.equal(rendered);
+              const { a, r, u, n } = renderer.counts;
+              expect(n).to.equal(a).to.equal(u)
+              expect(r).to.equal(0)
             })
-            blackboxRoots.forEach(({ name: replaceId, get: replaceGet, added: replaceAdded }) => {
+            blackboxRoots.forEach(({ name: replaceId, get: replaceGet }) => {
               const data = {id, v: 0}, template = get(data), newTemplate = replaceGet(data);
               if (newTemplate.name === template.name) return;
               it(`should replace the root with ${replaceId} frames`, function(){
                 template.next = nextGet(data)
-                const tracker = new Tracker();
-                const frame = diff(template, null, tracker);
+                const renderer = new Renderer();
+                const frame = diff(template, null, renderer);
                 expect(frame).to.be.an.instanceOf(Frame);
-                tracker.reset();
-                const newFrame = diff(newTemplate, frame, tracker);
+                const newFrame = diff(newTemplate, frame, renderer);
                 expect(newFrame).to.be.an.instanceOf(Frame).to.not.equal(frame);
-                const childEvents = nextRemoved(data).filter(e => !("dR" in e));
-                const events = [...fill(childEvents, removed(data)), ...replaceAdded(data)]
-                expect(tracker.events).to.deep.equal(events)
+                expect(renderer.tree).to.deep.equal(renderer.render(replaceGet(data)))
+                const { a, r, u, n } = renderer.counts;
+                expect(n).to.equal(a - r);
+                expect(u).to.equal(0)
               })
             })
-            allNontrivialBlackboxes.forEach(({
-              name: replaceId, 
-              get: replaceGet, 
-              added: replaceAdded
-            }) => {
+            allNontrivialBlackboxes.forEach(({ name: replaceId, get: replaceGet }) => {
               if (!nextId.startsWith("reducible") && type(nextId) === type(replaceId)) return;
-              const data = {id, v: 0}, template = get(data), newTemplate = get(data);
-              template.next = nextGet(data), newTemplate.next = replaceGet(data);
+              const data = {id, v: 0}, 
+                template = inject(get(data), nextGet(data)), 
+                newTemplate = inject(get(data), replaceGet(data));
               if (!nextId.startsWith("void") && template.next.name === newTemplate.next.name) return;
               it(`should replace the child with ${replaceId} frames`, function(){
-                const tracker = new Tracker();
-                const frame = diff(template, null, tracker);
-                expect(frame).to.be.an.instanceOf(Frame);
-                tracker.reset();
-                const newFrame = diff(newTemplate, frame, tracker);
+                const renderer = new Renderer();
+                const frame = diff(template, null, renderer);
+                const oldAddedCount = renderer.counts.a;            
+                const newFrame = diff(newTemplate, frame, renderer);
                 expect(newFrame).to.be.an.instanceOf(Frame).to.equal(frame);
-                let events;
-                if (isScalar(nextId) || nextId.startsWith("void")){
-                  events = [...nextRemoved(data), ...replaceAdded(data)]
-                } else {
-                  events = fill(replaceAdded(data), nextRemoved(data), "dR", true)
-                }
-                expect(tracker.events).to.deep.equal(fill(events, changed(data)))
+                const rendered = renderer.render(inject(get(data), replaceGet(data)));
+                expect(renderer.tree).to.deep.equal(rendered)
+                const { a, r, u, n } = renderer.counts;
+                expect(a - r).to.equal(n);
+                expect(u).to.equal(oldAddedCount - r)
               })
             })
             it("should satisfy the identity diff(t) = diff(t, diff(t))", function(){
-              const t1 = get({v: 0, id}), t2 = get({v: 0, id}), t3 = get({v: 0, id})
-              const c1 = nextGet({v: 0, id}), c2 = nextGet({v: 0, id}), c3 = nextGet({v: 0, id})
-              t1.next = c1, t2.next = c2, t3.next = c3;
+              const t1 = inject(get({v:0, id}), nextGet({v: 0, id})),
+                t2 = inject(get({v:0, id}), nextGet({v: 0, id})),
+                t3 = inject(get({v:0, id}), nextGet({v: 0, id}))
               expect(t1).to.deep.equal(t2).to.deep.equal(t3)
-              expect(diff(t1))
-                .to.be.an.instanceOf(Frame)
-                .to.deep.equal(diff(t2, diff(t3)))
+              expect(diff(t1)).to.be.an.instanceOf(Frame).to.deep.equal(diff(t2, diff(t3)))
             })
           })
         })
         describe("subdiffs mixed children", function(){
-          updatingBlackboxes.forEach(({desc, get: nextGet, changed: nextChanged}) => {
+          updatingBlackboxes.forEach(({desc, get: nextGet }) => {
             it(`should ${desc}`, function(){
-              const tracker = new Tracker(), data = {id: desc, v: 0}, newData = {id: desc, v: 1}
-              const template = get(data), newTemplate = get(data);
-              template.next = nextGet(data), newTemplate.next = nextGet(newData)
-              const frame = diff(template, null, tracker)
-              tracker.reset();
-              const newFrame = diff(newTemplate, frame, tracker);
+              const renderer = new Renderer(), data = {id: desc, v: 0}, newData = {id: desc, v: 1};
+              const template = inject(get(data), nextGet(data));
+              const newTemplate = inject(get(data), nextGet(newData));
+              const frame = diff(template, null, renderer)
+              const newFrame = diff(newTemplate, frame, renderer);
               expect(newFrame).to.be.an.instanceOf(Frame).to.equal(frame);
-              expect(tracker.events).to.deep.equal(fill(nextChanged(newData), changed(data)))
+              const rendered = renderer.render(inject(get(data), nextGet(newData)))
+              expect(renderer.tree).to.deep.equal(rendered)
             })
           })
         })

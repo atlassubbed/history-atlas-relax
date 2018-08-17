@@ -4,35 +4,29 @@ const { Frame } = require("../src/index");
 
 describe("Frame", function(){
   describe("constructor", function(){
-    it("should throw error if no template provided", function(){
-      expect(() => new Frame()).to.throw;
+    it("should not set instance fields if instantiated with no template", function(){
+      expect(Object.keys(new Frame)).to.be.empty;
     })
     it("should set cache-related properties to null", function(){
       const f = new Frame({})
       expect(f.parent).to.be.null;
       expect(f.children).to.be.null;
-      expect(f.pos).to.be.null;
       expect(f.keys).to.be.null;
       expect(f.state).to.be.null;
     })
-    it("should set non-existent template properties and effects to null", function(){
-      const f = new Frame({});
-      expect(f.data).to.be.null;
-      expect(f.next).to.be.null;
-      expect(f.key).to.be.null;
-      expect(f.name).to.be.null;
-      expect(f.effects).to.be.null;
-    })
-    it("should set existing template properties and effects onto the instance", function(){
+    it("should set template properties and effects onto the instance", function(){
       const name = 1, data = 2, next = 3, key = 4, effects = [5];
-      const f = new Frame({name, data, next, key}, effects);
-      const f2 = new Frame({}, effects[0])
-      expect(f.data).to.equal(data);
-      expect(f.next).to.equal(next);
+      const temp = {name, data, next, key}, temp2 = {};
+      const f = new Frame(temp, effects);
+      const f2 = new Frame(temp2, effects[0])
+      expect(f.temp).to.equal(temp)
       expect(f.key).to.equal(key);
       expect(f.name).to.equal(name);
       expect(f.effects).to.equal(effects);
-      expect(f2.effects).to.deep.equal(effects)
+      expect(f2.effects).to.equal(5)
+      expect(f2.hasOwnProperty("key")).to.be.true;
+      expect(f2.hasOwnProperty("name")).to.be.true;
+      expect(f2.temp).to.equal(temp2)
     })
   })
   describe("static isFrame", function(){
@@ -45,6 +39,20 @@ describe("Frame", function(){
     })
     it("should return false otherwise", function(){
       expect(Frame.isFrame(() => {})).to.be.false
+    })
+  })
+  describe("static define", function(){
+    it("should throw an error if provided base frame class", function(){
+      expect(() => Frame.define(Frame, {evaluate(){return null}}))
+        .to.throw("cannot re-define base")
+    })
+    it("should turn the provided class into a subclass of frame", function(){
+      const Subframe = function(temp, effs){Frame.call(this, temp, effs)}
+      const methods = {evaluate(){return null}};
+      Frame.define(Subframe, methods);
+      expect(Subframe.prototype.constructor).to.equal(Subframe)
+      expect(Subframe.prototype.evaluate).to.equal(methods.evaluate)
+      expect(new Subframe({})).to.be.an.instanceOf(Frame)
     })
   })
 })
