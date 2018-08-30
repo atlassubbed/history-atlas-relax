@@ -7,12 +7,18 @@ describe("Frame", function(){
     it("should not set instance fields if instantiated with no template", function(){
       expect(Object.keys(new Frame)).to.be.empty;
     })
-    it("should set cache-related properties to null", function(){
+    it("should set cache-related properties to their initial value", function(){
       const f = new Frame({})
-      expect(f.parent).to.be.null;
-      expect(f.children).to.be.null;
-      expect(f.keys).to.be.null;
-      expect(f.state).to.be.null;
+      expect(f.id).to.equal
+        (f.affectors).to.equal
+        (f.affects).to.equal
+        (f.parent).to.equal
+        (f.children).to.equal
+        (f.epoch).to.equal
+        (f.state).to.equal
+        (f.keys).to.be.null;
+      expect(f.affCount).to.equal(0)
+      expect(f.inStep).to.be.false;
     })
     it("should set template properties and effects onto the instance", function(){
       const name = 1, data = 2, next = 3, key = 4, effects = [5];

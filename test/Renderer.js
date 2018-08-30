@@ -11,6 +11,7 @@ const { isArr, getNext, toArr, isObj, isVoid } = require("./util")
 //   * Each method should be O(1) and self-explanatory
 //   * swaps should be optional
 //   * provides a manual render function to construct the expected render
+
 module.exports = class Renderer {
   constructor(){
     this.tree = null;
@@ -39,36 +40,18 @@ module.exports = class Renderer {
       rendered.next = nextRendered;
     return rendered;
   }
-  willUpdate(frame, nextData, nextTemp){
-    frame._node.data = nextData;
-  }
-  didUpdate(frame, prevData, prevTemp){
-    this.counts.u++;
-  }
   willPush(frame, parent){
+    // will be pushing frame onto parent's children
     const { name, temp: {data}, key } = frame;
     const node = { name, data };
     frame._node = node
     if (key) node.key = key;
-  }
-  didPush(frame, parent){
-    this.counts.a++;
-    const node = frame._node
     if (!parent) return (this.tree = node);
     const parentNode = parent._node;
     (parentNode.next = parentNode.next || []).push(node);
   }
-  willPop(frame, parent){
-  }
-  didPop(frame, parent){
-    this.counts.r++;
-    if (!parent) return (this.tree = null);
-    const node = parent._node, next = node.next;
-    void next.pop();
-    if (!next.length)
-      delete node.next;
-  }
   willSub(nextFrame, parent, i){
+    // will substitute the i-th child of parent for nextFrame
     const { name, temp: { data }, key } = nextFrame;
     const node = { name, data };
     nextFrame._node = node
@@ -76,10 +59,37 @@ module.exports = class Renderer {
     if (!parent) return this.nextRoot = node;
   }
   didSub(prevFrame, parent, i){
-    this.counts.r++, this.counts.a++;
-    if (!parent) 
+    // did substitute prevFrame for the current i-th child of parent
+    this.counts.r++
+    if (!parent)
       return this.tree = this.nextRoot, this.nextRoot = null;
     const parentNode = parent._node;
     parentNode.next[i] = parent.children[i]._node;
+  }
+  willPop(frame, parent){
+    // about to remove frame from parent
+    // can be used to trigger a hook
+  }
+  didPop(frame, parent){
+    // just removed frame from parent
+    this.counts.r++;
+    if (!parent) return (this.tree = null);
+    const node = parent._node, next = node.next;
+    void next.pop();
+    if (!next.length)
+      delete node.next;
+  }
+  willUpdate(frame, temp){
+    // will be setting new temp onto frame
+    frame._node.data = temp.data;
+  }
+  willDiff(frame){
+    // about to add or update frame
+    // can be used to trigger a hook
+  }
+  didDiff(frame){
+    // just finished adding or updating frame
+    if (frame.epoch) return this.counts.u++;
+    this.counts.a++;
   }
 }

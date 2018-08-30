@@ -33,4 +33,9 @@ Upcoming Features:
     Because the concept of a relaxation time has been introduced, we have to ask when a frame gets subdiffed. If a frame's tau is 5, that means the frame will only subdiff 5ms after a change has been triggered, merging any subsequent changes before the time is up. What if the frame's parent has a tau of 1? What if the frame's parent is synchronous? Entanglement allows a frame with a given tau to be subdiffed before the frame's scheduled subdiff. Intuitively, if a parent updates, it should automatically recurse and subdiff the children, regardless of their tau's. In this sense, the children are "strongly entangled" to the parent, since the parent is a first-class subdiff trigger for the child. Conversely, the parent is NOT entangled to a child because of asymmetric top-down data flow. To eliminate "context" and "portals", we introduce entanglement between orthogonal root frames, which allows the caller to imperatively "glue" together different trees, reactively. As we've seen in certain view libraries, declarative trees sometimes need to be backdoored -- entanglement is an imperative construct to glue nodes together which may reside in different trees.
   5. Weak Entanglement:
     We talked about strong entanglement, but what about weak entanglement? More on that later. Hopefully, the entanglement metaphor proves to be a useful framework for thinking about frames.
+  6. Stable Subdiffs:
+    Subdiffing should fallback to matching nodes based on their names in the order they appear, so-called "implicit keys". Index matching should be a last resort.
+
+
+Entanglement should allow the developer to "backdoor" the forest-of-rooted-trees architecture by letting them draw their own edges between rooted trees.
 

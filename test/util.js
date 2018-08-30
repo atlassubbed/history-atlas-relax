@@ -41,7 +41,14 @@ const buildReducibles = Comps => Comps.map(Comp => {
   return {name, get: data => ({name: Comp, data})}
 })
 
+const nullifyEpoch = tree => {
+  tree.epoch = null;
+  if (tree.children) tree.children.forEach(c => nullifyEpoch(c));
+  return tree;
+}
+
 module.exports = { 
   isArr, isObj, isFn, isVoid, isScalar,
-  toArr, has, inject, type, getNext, buildReducibles
+  toArr, has, inject, type, getNext, buildReducibles,
+  nullifyEpoch
 }
