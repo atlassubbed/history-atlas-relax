@@ -1,6 +1,6 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
-const { Frame } = require("../src/index");
+const { Frame, diff } = require("../src/index");
 
 describe("Frame", function(){
   describe("constructor", function(){
@@ -59,6 +59,53 @@ describe("Frame", function(){
       expect(Subframe.prototype.constructor).to.equal(Subframe)
       expect(Subframe.prototype.evaluate).to.equal(methods.evaluate)
       expect(new Subframe({})).to.be.an.instanceOf(Frame)
+    })
+  })
+  describe("entangle", function(){
+    it("should be idempotent", function(){
+      const nodes = ["p","p","p"].map(name => diff({name}));
+      expect(nodes[0]).to.deep.equal(nodes[1]).to.deep.equal(nodes[2])
+      nodes[0].entangle(nodes[1])
+      nodes[2].entangle(nodes[1]);
+      expect(nodes[0]).to.deep.equal(nodes[2]).to.not.deep.equal(nodes[1]);
+      nodes[0].entangle(nodes[1]);
+      expect(nodes[0]).to.deep.equal(nodes[2]).not.deep.equal(nodes[1])
+    })
+    it("should do nothing if entangling with direct parent", function(){
+      const f1 = diff({name:"p", next: {name: "div"}});
+      const f2 = diff({name:"p", next: {name: "div"}});
+      expect(f1).to.deep.equal(f2);
+      f1.children[0].entangle(f1)
+      expect(f1).to.deep.equal(f2);
+    })
+    it("should do nothing if entangling with self", function(){
+      const f1 = diff({name:"p", next: {name: "div"}});
+      const f2 = diff({name:"p", next: {name: "div"}});
+      expect(f1).to.deep.equal(f2);
+      f1.entangle(f1)
+      expect(f1).to.deep.equal(f2);
+    })
+  })
+  describe("detangle", function(){
+    it("should be idempotent", function(){
+      const nodes = ["p","p","p"].map(name => diff({name}));
+      expect(nodes[0]).to.deep.equal(nodes[1]).to.deep.equal(nodes[2])
+      nodes[0].entangle(nodes[1])
+      nodes[2].entangle(nodes[1]);
+      nodes[0].detangle(nodes[1]);
+      expect(nodes[0]).to.not.deep.equal(nodes[2]);
+      nodes[2].detangle(nodes[1]);
+      expect(nodes[0]).to.deep.equal(nodes[2]);
+      nodes[0].detangle(nodes[1]);
+      expect(nodes[0]).to.deep.equal(nodes[2])
+    })
+    it("should be the inverse of entangle if removing last edge", function(){
+      const nodes = ["p","p","p"].map(name => diff({name}));
+      expect(nodes[0]).to.deep.equal(nodes[1]).to.deep.equal(nodes[2])
+      nodes[0].entangle(nodes[1])
+      expect(nodes[0]).to.not.deep.equal(nodes[2]);
+      nodes[0].detangle(nodes[1]);
+      expect(nodes[0]).to.deep.equal(nodes[2])
     })
   })
 })

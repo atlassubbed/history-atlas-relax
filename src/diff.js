@@ -1,154 +1,147 @@
-const { isVoid, isArr, toArr, isFn, isComp, norm } = require("./util")
+const { isVoid, isArr, isFn, isComp, norm } = require("./util")
 const { Frame: { isFrame }, toFrame } = require("./Frame");
-const { fillPath, leaders } = require("./step-leader");
+const { fillPath, path } = require("./step-leader");
 let laggards = [];
 
+// without loss of readability:
+//   * t === template literal
+//   * f === frame instance
+
 // emit lifecycle event to relevant effects
-const emit = (type, frame, data, temp) => {
-  const effs = frame.effects;
+const emit = (type, f, a1, a2) => {
+  const effs = f.effects;
   if (!effs) return;
   if (!isArr(effs))
-    return effs[type] && void effs[type](frame, data, temp);
+    return effs[type] && void effs[type](f, a1, a2);
   for (let e of effs)
-    if (e[type]) void e[type](frame, data, temp);
+    if (e[type]) void e[type](f, a1, a2);
 }
-const clear = frame => {
-  frame.state = frame.temp = frame.effects = this.affects =
-  frame.isComputing = frame.computed =
-  frame.keys = frame.affectors = frame.name = frame.key = null;
+// TODO remove any existing entanglement
+//   XXX is setting affectors/affects to null sufficient?
+//     it shouldn't be since we'll have a memory leak;
+//     should clean it manually on all affected frames
+const clear = f => {
+  f.state = f.temp = f.effects = f.affects =
+  f.keys = f.affectors = f.name = f.key = null;
 }
 // remove existing (sub)frame
-const pop = (frame) => {
-  const { parent, children } = frame;
-  emit("willPop", frame, parent)
-  frame.parent = frame.children = null;
-  if (children)
-    while(children.length) pop(children.pop());
-  emit("didPop", frame, parent)
-  clear(frame);
+const pop = (f, c) => {
+  const { parent, children } = f;
+  emit("willPop", f, parent)
+  f.parent = f.children = null;
+  if (children) while(c = children.pop()) pop(c);
+  emit("didPop", f, parent), clear(f);
 }
 // push (sub)frame onto frame
-const push = (subframe, frame) => {
-  emit("willPush", subframe, frame);
-  if (frame){
-    let i = frame.children.push(subframe), key;
-    if (key = subframe.key)
-      (frame.keys = frame.keys || {})[key] = i - 1;
-    subframe.parent = frame;
+const push = (t, effs, f) => {
+  t = toFrame(t, effs);
+  emit("willPush", t, f);
+  if (f){
+    let i = f.children.push(t), key;
+    if (key = t.key)
+      (f.keys = f.keys || {})[key] = i - 1;
+    t.parent = f;
   }
-  return subframe;
+  t.affectors && path.length ? laggards.push(t) : diff(t);
+  return t;
 }
-// sub prevFrame with nextFrame at index i
-const sub = (nextFrame, prevFrame, i) => {
-  const { parent, children } = prevFrame;
-  emit("willSub", nextFrame, parent, i);
-  prevFrame.parent = prevFrame.children = null;
-  if (children)
-    while(children.length) pop(children.pop());
-  if (nextFrame.parent = parent) 
-    parent.children[i] = nextFrame;
-  emit("didSub", prevFrame, parent, i)
-  clear(prevFrame);
-  return nextFrame;
+// sub prev frame with next frame at index i
+const sub = (t, effs, f, i, c) => {
+  t = toFrame(t, effs);
+  const { parent, children } = f;
+  emit("willSub", t, parent, i);
+  f.parent = f.children = null;
+  if (children) while(c = children.pop()) pop(c);
+  if (t.parent = parent) parent.children[i] = t;
+  emit("didSub", f, parent, i), clear(f);
+  t.affectors && path.length ? laggards.push(t) : diff(t);
+  return t;
 }
-// * don't check/patch for shallow/deep equality on irreducibles
-//     as we cannot infer what constitutes a change for an effect
-// * memoizing templates precludes the need for shouldUpdate
-//   * this is only useful if subdiff is stable and implements keys
-const update = (temp, frame) => {
-  emit("willUpdate", frame, temp);
-  frame.key = temp.key, frame.temp = temp;
-  return frame;
+// * we cannot infer what constitutes a change for an effect
+// * memoizing templates should preclude shouldUpdate
+//   but requires stable, keyed subdiffing
+const update = (t, f) => {
+  emit("willUpdate", f, t);
+  f.key = t.key, f.temp = t;
+  return f;
 }
-const end = frame => {
-  emit("willDiff", frame);
-  subdiff(frame);
-  emit("didDiff", frame);
-  return frame;
+const diff = (f, recur) => {
+  emit("willDiff", f);
+  subdiff(f);
+  recur && sidediff();
+  emit("didDiff", f);
 }
-const defer = frame => {
-  if (frame.affectors || leaders.length) 
-    laggards.push(frame);
-  else void end(frame);
-}
+
 // sanitize dirty templates returned from evaluate:
 //   * short circuit if no prev keys
 //   * gather key translations in index
-const sanitize = (dirtyNext, next, index, keys) => {
-  let temp
+const clean = (dirty, next, index, keys) => {
+  let t;
   if (!keys){
-    while(dirtyNext.length){
-      temp = dirtyNext.pop();
-      if (isArr(temp)) dirtyNext.push(...temp);
-      else if (!isVoid(temp)) next.push(norm(temp));
+    while(dirty.length){
+      t = dirty.pop();
+      if (isArr(t)) dirty.push(...t);
+      else if (!isVoid(t)) next.push(norm(t));
     }
     return next.length;
   }
   let k, N;
-  while(dirtyNext.length){
-    temp = dirtyNext.pop();
-    if (isArr(temp)) dirtyNext.push(...temp);
-    else if (!isVoid(temp)) {
-      N = next.push(temp = norm(temp));
-      if ((k = temp.key) && keys[k]){
+  while(dirty.length){
+    t = dirty.pop();
+    if (isArr(t)) dirty.push(...t);
+    else if (!isVoid(t)) {
+      N = next.push(t = norm(t));
+      if ((k = t.key) && keys[k]){
         index[k] = N - 1;
       }
     }
   }
   return N;
 }
-// subdiff a frame
+// diff "downwards" from a frame
 //   * short circuit > switch under one loop
-const subdiff = frame => {
-  let { temp: { data, next }, children: prev } = frame;
-  const { effects: effs, keys } = frame, index = {};
-  next = toArr(frame.evaluate(data, next))
-  frame.keys = null
-  const N = sanitize(next, next = [], index, keys), 
+const subdiff = f => {
+  let { temp: { data, next }, children: prev } = f;
+  const { effects: effs, keys } = f, index = {};
+  next = [f.evaluate(data, next)], f.keys = null
+  const N = clean(next, next = [], index, keys), 
     P = prev ? prev.length : 0;
   if (!(N || P)) return;
+  let n, p;
   if (!N){
-    frame.children = null;
-    while (prev.length) pop(prev.pop());
-    return;
-  } else if (!P){
-    frame.children = [];
-    while(next.length)
-      defer(push(toFrame(next.pop(), effs), frame));
+    f.children = null;
+    while (p = prev.pop()) pop(p);
     return;
   }
-  let i = 0, M = Math.min(N, P), n, p;
-  while (i < M){
+  if (!P){
+    f.children = [];
+    while(n = next.pop()) push(n, effs, f);
+    return;
+  }
+  let i = -1, M = Math.min(N, P);
+  while (++i < M){
     n = next.pop(), p = prev[i];
-    if (n.name === p.name)
-      update(n, p) && p.inPath || void end(p)
-    else defer(sub(toFrame(n, effs), p, i));
-    i++;
+    if (n.name === p.name) update(n, p)
+    else sub(n, effs, p, i);
   }
-  if (N > P){
-    while(next.length)
-      defer(push(toFrame(next.pop(), effs), frame));
-  } else while(prev.length > N) pop(prev.pop());
+  if (N > P) while(n = next.pop()) push(n, effs, f);
+  else while(prev.length > N) pop(prev.pop());
 }
-// build step leader, diff along the path
-const diff = (temp, frame) => {
-  fillPath(frame), end(update(temp, frame));
-  while(leaders.length)
-    if ((temp = leaders.pop()).temp)
-      end(temp), temp.inPath = false;
-  if (laggards.length) {
-    for (let f of laggards) end(f);
-    laggards = [];
-  }
-  return frame;
+
+// diff "sideways" along the calculated path
+const sidediff = f => {
+  while(f = path.pop())
+    if (f.temp) return diff(f, true);
+  while(f = laggards.pop()) diff(f);
 }
 // public diff (mount, unmount and update frames)
-module.exports = (temp, frame, effs) => {
-  if (isArr(temp = norm(temp))) return false;
-  if (!isFrame(frame)) 
-    return !!temp && end(push(toFrame(temp, effs)));
-  if (frame.parent) return false;
-  if (!temp) return !pop(frame);
-  if (temp.name === frame.name) return diff(temp, frame);
-  return end(sub(toFrame(temp, effs), frame));
+module.exports = (t, f, effs) => {
+  if (isArr(t = norm(t))) return false;
+  if (!isFrame(f)) return !!t && push(t, effs);
+  if (f.parent) return false;
+  fillPath(f);
+  if (!t) return !sidediff(pop(f));
+  if (t.name === f.name) update(t, f);
+  else f = sub(t, effs || f.effects, f);
+  return sidediff(), f;
 }

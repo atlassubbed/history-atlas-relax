@@ -1,8 +1,8 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
-const Renderer = require("./Renderer");
+const { Renderer } = require("./Effects");
 const { Frame, diff } = require("../src/index");
-const { isScalar, type, inject, nullifyEpoch } = require("./util")
+const { isScalar, type, inject, deepNull } = require("./util")
 const { 
   irreducibleBlackboxes: primes, 
   reducibleBlackboxes: comps,
@@ -113,7 +113,7 @@ describe("diff", function(){
           const t1 = get({v: 0, id}), t2 = get({v: 0, id}), t3 = get({v: 0, id})
           expect(t1).to.deep.equal(t2).to.deep.equal(t3)
           expect(diff(t1)).to.be.an.instanceOf(Frame)
-            .to.deep.equal(nullifyEpoch(diff(t2, diff(t3))))
+            .to.deep.equal(deepNull(diff(t2, diff(t3)), ["epoch"]))
         })
       })
     })
@@ -227,7 +227,7 @@ describe("diff", function(){
                 t3 = inject(get({v:0, id}), nextGet({v: 0, id}))
               expect(t1).to.deep.equal(t2).to.deep.equal(t3)
               expect(diff(t1)).to.be.an.instanceOf(Frame)
-                .to.deep.equal(nullifyEpoch(diff(t2, diff(t3))))
+                .to.deep.equal(deepNull(diff(t2, diff(t3)), ["epoch"]))
             })
           })
         })

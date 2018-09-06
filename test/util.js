@@ -22,33 +22,13 @@ const type = str => {
   return str.slice(0, i).trim();
 }
 
-const getNext = temp => {
-  const { name, data, next } = temp;
-  if (!isFn(name)) return next;
-  const p = name.prototype;
-  if (p && isFn(p.evaluate))
-    return (new name(temp)).evaluate(data, next);
-  return name(data, next);
-}
-
-const buildReducibles = Comps => Comps.map(Comp => {
-  let { name } = Comp;
-  const type = has(name, "Stateful") ? 
-    "stateful" : has(name, "Legacy") ? 
-    "legacy" : "stateless";
-  const rank = has(name, "Scalar") ? "one" : "many";
-  name = `reducible (${type}, returns ${rank})`
-  return {name, get: data => ({name: Comp, data})}
-})
-
-const nullifyEpoch = tree => {
-  tree.epoch = null;
-  if (tree.children) tree.children.forEach(c => nullifyEpoch(c));
+const deepNull = (tree, fields) => {
+  for (let f of fields) tree[f] = null;
+  if (tree.children) tree.children.forEach(c => void deepNull(c, fields));
   return tree;
 }
 
 module.exports = { 
   isArr, isObj, isFn, isVoid, isScalar,
-  toArr, has, inject, type, getNext, buildReducibles,
-  nullifyEpoch
+  toArr, has, inject, type, deepNull
 }

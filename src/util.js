@@ -2,8 +2,6 @@ const isFn = f => !!f && typeof f === "function";
 
 const isArr = Array.isArray;
 
-const toArr = x => isArr(x) ? x : [x];
-
 const isVoid = t => t == null || typeof t === "boolean"
 
 const isComp = t => !!t && isFn(t.name); 
@@ -12,4 +10,4 @@ const isComp = t => !!t && isFn(t.name);
 // XXX should nameless nodes be sterile? i.e. t.next -> null
 const norm = t => isVoid(t) ? false : typeof t === "object" ? t : {name: null, data: String(t)};
 
-module.exports = { isFn, isArr, toArr, isVoid, isComp, norm }
+module.exports = { isFn, isArr, isVoid, isComp, norm }

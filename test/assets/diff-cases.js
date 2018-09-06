@@ -3,7 +3,7 @@ const {
   Functionals, 
   IrreducibleFunctional
 } = require("./Frames");
-const { buildReducibles } = require("../util")
+const { has } = require("../util");
 
 const voidBlackboxes = [
   {name: "void (true)", get: ({v}) => v ? false : true},
@@ -49,6 +49,16 @@ const irreducibleBlackboxes = [
     ]]
   })}
 ]
+
+const buildReducibles = Comps => Comps.map(Comp => {
+  let { name } = Comp;
+  const type = has(name, "Stateful") ? 
+    "stateful" : has(name, "Legacy") ? 
+    "legacy" : "stateless";
+  const rank = has(name, "Scalar") ? "one" : "many";
+  name = `reducible (${type}, returns ${rank})`
+  return {name, get: data => ({name: Comp, data})}
+})
 
 const functionals = [
   {name: "irreducible (returns zero to many)", get: data => ({name: IrreducibleFunctional, data})},

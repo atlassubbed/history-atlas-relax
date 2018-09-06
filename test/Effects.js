@@ -1,18 +1,65 @@
 const { expect } = require("chai")
 const { Frame } = require("../src/index");
-const { isArr, getNext, toArr, isObj, isVoid } = require("./util")
+const { isArr, toArr, isObj, isVoid, isFn } = require("./util")
 
-// Before, we were using a Tracker effect to log lifecycle events.
-// Since many edit permutations may lead to a correct outcome,
-// we instead implement a simple renderer to verify the outcome.
-// This way, the underlying edit path can change freely.
+// PassThrough is used to attach lifecycle methods onto frames.
+class PassThrough {
+  willUpdate(f){f.willReceive && f.willReceive(f)}
+  willPush(f){f.willPush && f.willPush(f)}
+  willDiff(f){
+    if (f.epoch) f.willUpdate && f.willUpdate(f);
+    else f.willAdd && f.willAdd(f);
+  }
+  didDiff(f){
+    if (f.epoch) f.didUpdate && f.didUpdate(f);
+    else f.didAdd && f.didAdd(f);
+  }
+}
 
-// Renderers (effects) should be as dumb as possible.
-//   * Each method should be O(1) and self-explanatory
+// Tracker is used to log lifecycle events.
+//   * many edit permuations may lead to a correct outcome
+//     use this effect when the order matters
+//   * when testing final trees, use Renderer instead
+class Tracker {
+  constructor(events, nodes){
+    this.events = events; 
+    this.root = null;
+    this.nodes = nodes;
+  }
+  log(type, f){
+    this.events.push({[type]: f.temp.data.id});
+  }
+  willPush(f, parent){
+    this.log("wPu", f)
+    if (this.nodes) this.nodes[f.temp.data.id] = f;
+    if (!parent) this.root = f
+  }
+  willSub(nextF, parent, i) {
+    const prev = parent ? parent.children[i] : this.root;
+    this.log("wP", prev);
+    if (!parent) this.root = nextF;
+  }
+  didSub(prevF){this.log("dP", prevF)}
+  willPop(f){this.log("wP", f)}
+  didPop(f){this.log("dP", f)}
+  willUpdate(f){this.log("wR", f)}
+  willDiff(f){this.log(f.epoch ? "wU" : "wA", f)}
+  didDiff(f){this.log(f.epoch ? "dU" : "dA", f)}
+}
+
+// Renderer should be as dumb as possible.
+//   * each method should be O(1) and self-explanatory
 //   * swaps should be optional
 //   * provides a manual render function to construct the expected render
-
-module.exports = class Renderer {
+const getNext = temp => {
+  const { name, data, next } = temp;
+  if (!isFn(name)) return next;
+  const p = name.prototype;
+  if (p && isFn(p.evaluate))
+    return (new name(temp)).evaluate(data, next);
+  return name(data, next);
+}
+class Renderer {
   constructor(){
     this.tree = null;
     this.counts = {a: 0, r: 0, u: 0, n: 0}
@@ -93,3 +140,6 @@ module.exports = class Renderer {
     this.counts.a++;
   }
 }
+
+module.exports = { Renderer, Tracker, PassThrough }
+

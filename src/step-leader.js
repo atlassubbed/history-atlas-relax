@@ -1,30 +1,29 @@
 let epoch = 0
-const leaders = [];
+const path = [];
 
-const step = frame => {
-  if (frame.inStep) 
-    throw new Error("cylic entanglement");
-  frame.inStep = true;
-  const { children, affects, id } = frame;
-  if (children) for (let f of children) 
-    f.epoch < epoch && step(f);
-  if (affects) {
-    let refs;
-    frame.affects = null;
-    for (let f of affects){
-      if ((refs = f.affectors) && refs[id]){
-        (frame.affects = frame.affects || []).push(f)
-        f.epoch < epoch && step(f);
+const step = f => {
+  if (f.inStep) 
+    throw new Error("cyclic entanglement");
+  f.inStep = true;
+  const { children, affects, id } = f;
+  if (children){
+    let cN = children.length, c;
+    while(cN--) (c = children[cN]).epoch < epoch && step(c);
+  }
+  if (affects){
+    let aN = affects.length, refs, c;
+    f.affects = null;
+    while(aN--){
+      if ((refs = (c = affects[aN]).affectors) && refs[id]){
+        (f.affects = f.affects || []).push(c)
+        c.epoch < epoch && step(c);
       }
     }
   }
-  frame.inStep = false, frame.epoch = epoch;
-  if (frame.affects || frame.affectors)
-    leaders.push(frame), frame.inPath = true;
+  f.inStep = false, f.epoch = epoch;
+  path.push(f)
 }
 
-const fillPath = frame => {
-  epoch++, step(frame);
-}
+const fillPath = f => {epoch++, step(f)}
 
-module.exports = { fillPath, leaders }
+module.exports = { fillPath, path }
