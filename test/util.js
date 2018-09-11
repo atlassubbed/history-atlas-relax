@@ -28,7 +28,9 @@ const deepNull = (tree, fields) => {
   return tree;
 }
 
+const pretty = tree => JSON.stringify(tree, null, 2)
+
 module.exports = { 
   isArr, isObj, isFn, isVoid, isScalar,
-  toArr, has, inject, type, deepNull
+  toArr, has, inject, type, deepNull, pretty
 }

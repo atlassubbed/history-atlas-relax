@@ -1,4 +1,4 @@
-const { toArr } = require("../util");
+const { toArr, isFn } = require("../util");
 const { Frame } = require("../../src/index");
 
 // Frame classification:
@@ -90,8 +90,60 @@ Frame.define(LegacyFunctionalVector, {
   }
 })
 
+// StemCell frames are useful for testing
+//   * they take lifecycle methods as template props
+//   * thus they become "differentiated" upon addition
+class StemCell extends Frame {
+  constructor(temp, effs){
+    super(temp, effs);
+    const { data: { hooks } } = temp;
+    if (hooks){
+      if (hooks.ctor) hooks.ctor.bind(this)(this);
+      for (let h in hooks)
+        this[h] = hooks[h].bind(this)
+    }
+  }
+  static h(id, hooks, next){
+    return {name: StemCell, data: {id, hooks}, next};
+  }
+}
+
+class StemCell2 extends StemCell {
+  static h(id, hooks, next){
+    return {name: StemCell2, data: {id, hooks}, next};
+  }
+}
+
+// Oscillator frames implement getTau and "relax" into new state
+//   * extends StemCell for future testing purposes
+//   * behaves as an oscillator when update frequency >> 1/tau
+class Oscillator extends StemCell {
+  // constructor(temp, effs){
+  //   super(temp, effs);
+  //   if (effs) for (let e of toArr(effs)){
+  //     if (e.log) {
+  //       this.log = e.log.bind(e)
+  //       break;
+  //     }
+  //   }
+  // }
+  getTau(tau){
+    return this.temp.data.tau || tau;
+  }
+  static h(id, tau, next){
+    return {name: Oscillator, data: {id, tau}, next};
+  }
+  // evaluate(data, next){
+  //   this.log && this.log("e", this);
+  //   return next;
+  // }
+}
+
 module.exports = {
   IrreducibleFunctional,
+  StemCell,
+  StemCell2,
+  Oscillator,
   Blackboxes: [
     StatelessBlackboxScalar, StatefulBlackboxScalar, LegacyBlackboxScalar,
     StatelessBlackboxVector, StatefulBlackboxVector, LegacyBlackboxVector

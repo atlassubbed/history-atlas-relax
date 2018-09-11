@@ -2,7 +2,7 @@ const { describe, it } = require("mocha")
 const { expect } = require("chai")
 const { Tracker, PassThrough } = require("./Effects");
 const { diff: rawDiff } = require("../src/index");
-const { rootCase, treeCase, p, a } = require("./assets/entanglement-cases");
+const { rootCase, treeCase, p, a } = require("./cases/entangle");
 const { has } = require("./util");
 
 // PassThrough lets frames capture lifecycle events
@@ -13,6 +13,7 @@ const updateHooks = ["willReceive", "willUpdate", "didUpdate"];
 const addHooks = ["willPush", "willAdd", "didAdd"];
 const allHooks = [...addHooks, ...updateHooks];
 
+// TODO: refactor this, but maybe not too much
 describe("entanglement", function(){
   describe("amongst root frames", function(){
     it("should throw before the next diff runs if there are cycles", function(){

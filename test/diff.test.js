@@ -8,8 +8,8 @@ const {
   reducibleBlackboxes: comps,
   functionals: functionalRoots,
   voidBlackboxes: voids 
-} = require("./assets/diff-cases");
-const { updatingBlackboxes } = require("./assets/subdiff-cases")
+} = require("./cases/diff");
+const { updatingBlackboxes } = require("./cases/subdiff")
 
 const allBlackboxes = [...voids, ...primes, ...comps]
 const allNontrivialBlackboxes = allBlackboxes.filter(n => type(n.name) !== "void")

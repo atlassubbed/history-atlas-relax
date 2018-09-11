@@ -1,6 +1,9 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
 const { Frame, diff } = require("../src/index");
+const { Oscillator } = require("./cases/Frames");
+
+const h = Oscillator.h;
 
 describe("Frame", function(){
   describe("constructor", function(){
@@ -10,7 +13,7 @@ describe("Frame", function(){
     it("should set cache-related properties to their initial value", function(){
       const f = new Frame({})
       expect(f.id).to.equal
-        (f.affectors).to.equal
+        (f.affs).to.equal
         (f.affects).to.equal
         (f.parent).to.equal
         (f.children).to.equal
@@ -106,6 +109,37 @@ describe("Frame", function(){
       expect(nodes[0]).to.not.deep.equal(nodes[2]);
       nodes[0].detangle(nodes[1]);
       expect(nodes[0]).to.deep.equal(nodes[2])
+    })
+  })
+  describe("setTau", function(){
+    it("should propagate tau changes if new tau is set", function(){
+      const f = diff(h(0, 100, h(1, 40)));
+      let propagated = false
+      f.children[0].getTau = function(){ propagated = true }
+      f.setTau(1000);
+      expect(propagated).to.be.true;
+    })
+    it("should not propagate tau changes if current tau is re-set", function(){
+      const f = diff(h(0, 100, h(1, 40)));
+      let propagated = false
+      f.children[0].getTau = function(){ propagated = true }
+      f.setTau(100);
+      expect(propagated).to.be.false;
+    })
+    it("should not propagate tau changes if tau < 0 and next tau < 0", function(){
+      const f = diff(h(0, -1, h(1, 40)));
+      let propagated = false
+      f.children[0].getTau = function(){ propagated = true }
+      f.setTau(-200);
+      expect(propagated).to.be.false;
+    })
+    it("should not propagate tau changes to entangled frames", function(){
+      const f1 = diff(h(0, 100)), f2 = diff(h(0, 40));
+      f2.entangle(f1);
+      let propagated = false
+      f2.getTau = function(){ propagated = true }
+      f1.setTau(1000);
+      expect(propagated).to.be.false;
     })
   })
 })

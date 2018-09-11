@@ -2,7 +2,7 @@ const { expect } = require("chai")
 const { Frame } = require("../src/index");
 const { isArr, toArr, isObj, isVoid, isFn } = require("./util")
 
-// PassThrough is used to attach lifecycle methods onto frames.
+// PassThrough is used to attach useful lifecycle methods onto frames.
 class PassThrough {
   willUpdate(f){f.willReceive && f.willReceive(f)}
   willPush(f){f.willPush && f.willPush(f)}
@@ -16,22 +16,31 @@ class PassThrough {
   }
 }
 
-// Tracker is used to log lifecycle events.
+// Cache is used to cache all frames in the constructed tree.
+class Cache {
+  constructor(nodes){
+    this.nodes = nodes
+  }
+  willPush(f, parent){
+    this.nodes[f.temp.data.id] = f;
+  }
+}
+
+// Tracker is used to log lifecycle events in order.
 //   * many edit permuations may lead to a correct outcome
 //     use this effect when the order matters
 //   * when testing final trees, use Renderer instead
 class Tracker {
-  constructor(events, nodes){
+  constructor(events){
     this.events = events; 
     this.root = null;
-    this.nodes = nodes;
   }
   log(type, f){
-    this.events.push({[type]: f.temp.data.id});
+    const e = {[type]: f.temp.data.id};
+    this.events.push(e);
   }
   willPush(f, parent){
     this.log("wPu", f)
-    if (this.nodes) this.nodes[f.temp.data.id] = f;
     if (!parent) this.root = f
   }
   willSub(nextF, parent, i) {
@@ -45,6 +54,24 @@ class Tracker {
   willUpdate(f){this.log("wR", f)}
   willDiff(f){this.log(f.epoch ? "wU" : "wA", f)}
   didDiff(f){this.log(f.epoch ? "dU" : "dA", f)}
+}
+
+// Timer is used to record update times.
+class Timer {
+  constructor(events){
+    this.events = events;
+    this.start = Date.now()
+  }
+  log(type, f){
+    const e = {[type]: f.temp.data.id};
+    e.dt = Date.now() - this.start;
+    e.tau = f.tau;
+    e.state = f.state && Object.assign({}, f.state);
+    this.events.push(e);
+  }
+  willUpdate(f){this.log("wR", f)}
+  willDiff(f){f.epoch && this.log("wU", f)}
+  didDiff(f){f.epoch && this.log("dU", f)}
 }
 
 // Renderer should be as dumb as possible.
@@ -141,5 +168,4 @@ class Renderer {
   }
 }
 
-module.exports = { Renderer, Tracker, PassThrough }
-
+module.exports = { Renderer, Tracker, PassThrough, Timer, Cache }

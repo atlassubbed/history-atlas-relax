@@ -1,33 +1,13 @@
 const { Frame, diff } = require("../../src/index");
-const { Tracker, PassThrough } = require("../Effects");
+const { Tracker, Cache, PassThrough } = require("../Effects");
 const { toArr } = require("../util");
+const { StemCell, StemCell2 } = require("./Frames");
 
-const pass = new PassThrough;
+const p = StemCell.h, a = StemCell2.h;
 
-// StemCell frames are useful for testing
-//   * they take lifecycle methods as props
-class StemCell extends Frame {
-  constructor(temp, effs){
-    super(temp, effs);
-    const { data: { hooks } } = temp;
-    if (hooks){
-      if (hooks.ctor) hooks.ctor.bind(this)(this);
-      for (let h in hooks)
-        this[h] = hooks[h].bind(this)
-    }
-  }
-}
-
-class StemCell2 extends StemCell {}
-
-// shorthand for creating templates
-// "hooks" is a persistent, default prop
-const p = (id, hooks, next) => ({
-  name: StemCell, data: {id, hooks}, next
-})
-const a = (id, hooks, next) => ({
-  name: StemCell2, data: {id, hooks}, next
-});
+const getEffs = (events, nodes) => [
+  new Tracker(events), new Cache(nodes), new PassThrough
+]
 
 // curry is useful
 const P = (id, allHooks={}) => (...next) => {
@@ -53,7 +33,7 @@ const rootCase = {
   get(hooks){
     const events = [], nodes = {};
     for (let id = 0; id < 4; id++)
-      diff(P(id, hooks)(), null, [new Tracker(events, nodes), pass]);
+      diff(P(id, hooks)(), null, getEffs(events, nodes))
     events.length = 0;
     for (let i in this.adj)
       for (let j of this.adj[i])
@@ -101,8 +81,8 @@ const treeCase = {
   },
   get(hooks){
     const events = [], nodes = {};
-    diff(this.tag0(hooks), null, [new Tracker(events, nodes), pass]);
-    diff(this.tag4(hooks), null, [new Tracker(events, nodes), pass])
+    diff(this.tag0(hooks), null, getEffs(events, nodes))
+    diff(this.tag4(hooks), null, getEffs(events, nodes))
     events.length = 0;
     for (let i in this.adj)
       for (let j of this.adj[i])
