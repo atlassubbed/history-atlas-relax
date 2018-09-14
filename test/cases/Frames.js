@@ -128,7 +128,8 @@ class Oscillator extends StemCell {
   //   }
   // }
   getTau(tau){
-    return this.temp.data.tau || tau;
+    const myTau = this.temp.data.tau;
+    return myTau != null ? myTau : tau;
   }
   static h(id, tau, next){
     return {name: Oscillator, data: {id, tau}, next};

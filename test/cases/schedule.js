@@ -7,11 +7,11 @@ phase space for p and c
         c (time)
         ^        (dotted line: p = c)
         | B   ,'
-    E   |   A
+    E   J   A
         |,'   C
---------|--------> p (time)
+----H---G---K----> p (time)
         |
-    D   |   F
+    D   I   F
         |
 
 A: line of coherent relaxation
@@ -19,31 +19,46 @@ B: parent relaxes faster than child
 C: parent relaxes slower than child
 D: region of no relaxation
 E: only child relaxes
-F: only parent relaxes */
+F: only parent relaxes 
+G: parent and child async immediate
+H: parent sync, child async immediate
+I: parent async immediate, child sync
+J: parent async immediate, child async
+K: parent async, child async immediate */
 
 // timescale modifiers
 const id = t => t;
 const half = t => t/2;
 const twice = t => 2*t;
 const neg = () => -1;
-// if p !== c, then test "wiggling" the target of setTau within its own phase to ensure tau is updated
-//   in addition to testing that setTau(curTau) has no effect.
+const nil = () => 0;
+
 const states = [
   {phase: "p = c > 0", p: id, c: id},
   {phase: "p < c", p: half, c: twice},
   {phase: "p > c", p: twice, c: half},
-  {phase: "p < 0, c >= 0", p: neg, c: id},
-  {phase: "c < 0, p >= 0", p: id, c: neg},
+  {phase: "p < 0, c > 0", p: neg, c: id},
+  {phase: "c < 0, p > 0", p: id, c: neg},
   {phase: "p = c < 0", p: neg, c: neg},
+  {phase: "p = c = 0", p: nil, c: nil},
+  {phase: "p < 0, c = 0", p: neg, c: nil},
+  {phase: "c < 0, p = 0", p: nil, c: neg},
+  {phase: "p > 0, c = 0", p: id, c: nil},
+  {phase: "c > 0, p = 0", p: nil, c: id}
 ]
 // transition matrix factory
 const trans = (p, c) => [
-  [0, 1, 1, p, c, 0],
-  [1, 0, 1, p, c, 0],
-  [1, 1, 0, p, c, 0],
-  [p, p, p, 0, 0, c],
-  [c, c, c, 0, 0, p],
-  [0, 0, 0, c, p, 0]
+  [0, 1, 1, p, c, 0, 0, 0, 0, 0, 0],
+  [1, 0, 1, p, c, 0, 0, 0, 0, 0, 0],
+  [1, 1, 0, p, c, 0, 0, 0, 0, 0, 0],
+  [p, p, p, 0, 0, c, 0, 0, 0, 0, 0],
+  [c, c, c, 0, 0, p, 0, 0, 0, 0, 0],
+  [0, 0, 0, c, p, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ]
 // event and action factory
 const wU = (id, dt, tau, state=null) => ({wU: id, dt, tau, state})
@@ -223,7 +238,7 @@ const dynamicTauCases = [
     result: resultParentSlower
   },
   {
-    name: "wait new tau_c and update c, then wait new tau_p- new tau_c and update p -> c when p sets tau",
+    name: "wait new tau_c and update c, then wait new tau_p-new tau_c and update p -> c when p sets tau",
     filter: (p, c) => p >= 0 && c >= 0 && c < p,
     action: update({p:0}, {c:1}),
     result: resultParentSlower

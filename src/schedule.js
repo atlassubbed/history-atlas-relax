@@ -16,6 +16,7 @@ const schedule = {}, sync = []
 
 // XXX rAF, rIC, microtask, batching for even more repsonsiveness on interfaces?
 //   e.g. for the tau = 0 case, use something other than setTimeout(0)
+//   if so, we'd need to add (0,0), (0, -1), and (-1, 0) as important points in the tests
 const queue = tau => void setTimeout(() => rediff(schedule[tau], tau), tau)
 
 const add = (f, tau) => {

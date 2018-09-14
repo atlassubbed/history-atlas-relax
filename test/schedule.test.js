@@ -21,7 +21,8 @@ const h = Oscillator.h;
 const T = 500
 const CHECK = T*5; // at least 4T
 const ALLOW = T*6; // at least CHECK
-const ACCEPTABLE_ERROR = t => t ? t*.1 : 4
+const ASYNC_ERROR = t => t ? t*.1 : 15 // setTimeout(0) given leeway
+const SYNC_ERROR = 4
 
 const mount = (pTau, cTau, events) => {
   const t = h(0, pTau, h(1, cTau));
@@ -35,6 +36,8 @@ const entangle = (pTau, cTau, events) => {
   return { p: f1, c: f2 }
 }
 
+const hypot = (a, b) => Math.sqrt(a*a + b*b);
+
 // XXX this warrants its own test, so it needs to be rewritten.
 const verify = (events, expected) => {
   expect(events.length).to.be.at.least(expected.length, pretty(events));
@@ -45,15 +48,15 @@ const verify = (events, expected) => {
     expect(e.state).to.deep.equal(a.state);
     if (e.wU != null){
       expect(e.tau).to.equal(a.tau);
-      const adt = Math.max(0, a.dt);
-      expect(e.dt).to.be.closeTo(adt, ACCEPTABLE_ERROR(adt))
+      if (a.dt < 0) expect(e.dt).to.be.closeTo(0, SYNC_ERROR);
+      else expect(e.dt).to.be.closeTo(a.dt, ASYNC_ERROR(a.dt))
     }
     m++;
   }
   expect(m).to.equal(expected.length, pretty(events));
 }
 
-describe("scheduling", function(){
+describe.only("scheduling", function(){
   this.timeout(ALLOW);
   // first, we create a "describe-block skeleton" of the tests we want to run
   //   * building the tree directly allows us to avoid group/sort later
@@ -88,6 +91,7 @@ describe("scheduling", function(){
 //     * with the DeferredTests skeleton, we run every simulation simulataneously (concurrently)
 //     * total time taken becomes ~ 5*T
 //     * this allows us to increase T to .5s and enjoy lower variance (higher confidence)
+
 function buildMochaScaffold(){
   const scaffold = new DeferredTests;
   // state upsert functions
@@ -96,7 +100,7 @@ function buildMochaScaffold(){
   const incr1 = incr(1);
   states.forEach(({phase, p, c}, i) => {
     phase = phase.replace("p", "tau_p").replace("c", "tau_c");
-    const pTau = p(T), cTau = c(T) < 0 ? c(T) : T
+    const pTau = p(T), cTau = c(T) <= 0 ? c(T) : T
     scaffold.describe(`phase ${phase}`, () => {
       [false, true].forEach(isEntangled => {
         const makeCase = testCase => Object.assign({isEntangled, pTau, cTau}, testCase);
@@ -119,7 +123,7 @@ function buildMochaScaffold(){
             if (!isAdj) return;
             let {phase: nextPhase, p: nextP, c: nextC} = states[j]
             nextPhase = nextPhase.replace("p", "tau_p").replace("c", "tau_c");
-            const pTauNext = nextC(T) < 0 && nextP(T) > 0 ? nextP(T) : nextP(cTau)
+            const pTauNext = nextC(T) <= 0 && nextP(T) > 0 ? nextP(T) : nextP(cTau)
             const state = () => [{n: 0}]
             parentCases.forEach(({name, action, result, filter}) => {
               if (!filter(pTauNext, cTau)) return;
@@ -141,7 +145,7 @@ function buildMochaScaffold(){
             if (!isAdj) return;
             let {phase: nextPhase, p: nextP, c: nextC} = states[j];
             nextPhase = nextPhase.replace("p", "tau_p").replace("c", "tau_c");
-            const cTauNext = nextP(T) < 0 && nextC(T) > 0 ? nextC(T) : nextC(pTau)
+            const cTauNext = nextP(T) <= 0 && nextC(T) > 0 ? nextC(T) : nextC(pTau)
             const state = () => [{n: 0}]
             childCases.forEach(({name, action, result, filter}) => {
               if (!filter(pTau, cTauNext)) return;
@@ -164,11 +168,16 @@ function buildMochaScaffold(){
             pTrans[i].forEach((isAdj, j) => {
               if (pTau < 0 || cTau < 0) return;
               let {phase: nextPhase, p: nextP, c: nextC} = states[j];
+              if ((!pTau && !nextP(T)) || (!cTau && !nextC(T))) return;
               nextPhase = nextPhase.replace("p", "tau_p").replace("c", "tau_c");
-              const NT = pTau === cTau ? Math.sqrt(pTau*pTau + cTau*cTau) : (pTau + cTau)/2
+              let NT;
+              if (!pTau && !cTau) NT = T;
+              else if (!pTau || !cTau) NT = hypot(pTau || cTau, pTau || cTau)
+              else if (pTau === cTau) NT = hypot(pTau, cTau);
+              else NT = (pTau + cTau)/2
               const pTauNext = nextP(NT)
               const getCTau = function(next){
-                return next < 0 && nextC(NT) > 0 ? nextC(NT) : nextC(next)
+                return next <= 0 && nextC(NT) > 0 ? nextC(NT) : nextC(next)
               }
               const cTauNext = getCTau(pTauNext);
               const state = () => [{n: 0}, {n: 1}]
