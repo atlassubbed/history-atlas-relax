@@ -34,17 +34,17 @@ const neg = () => -1;
 const nil = () => 0;
 
 const states = [
-  {phase: "p = c > 0", p: id, c: id}, // 0
-  {phase: "p < c", p: half, c: twice}, // 1
-  {phase: "p > c", p: twice, c: half}, // 2
-  {phase: "p < 0, c > 0", p: neg, c: id}, // 3
-  {phase: "p > 0, c < 0", p: id, c: neg}, // 4
-  {phase: "p = c < 0", p: neg, c: neg}, // 5
-  {phase: "p = c = 0", p: nil, c: nil}, // 6
+  {phase: "p = c > 0", p: id, c: id},      // 0
+  {phase: "p < c", p: half, c: twice},     // 1
+  {phase: "p > c", p: twice, c: half},     // 2
+  {phase: "p < 0, c > 0", p: neg, c: id},  // 3
+  {phase: "p > 0, c < 0", p: id, c: neg},  // 4
+  {phase: "p = c < 0", p: neg, c: neg},    // 5
+  {phase: "p = c = 0", p: nil, c: nil},    // 6
   {phase: "p < 0, c = 0", p: neg, c: nil}, // 7
   {phase: "p = 0, c < 0", p: nil, c: neg}, // 8
-  {phase: "p > 0, c = 0", p: id, c: nil}, // 9
-  {phase: "p = 0, c > 0", p: nil, c: id} // 10
+  {phase: "p > 0, c = 0", p: id, c: nil},  // 9
+  {phase: "p = 0, c > 0", p: nil, c: id}   // 10
 ]
 // transition matrix factory
 const trans = (p, c) => [
