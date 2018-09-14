@@ -22,7 +22,7 @@ const T = 500
 const CHECK = T*5; // at least 4T
 const ALLOW = T*6; // at least CHECK
 const ASYNC_ERROR = t => t ? t*.1 : 15 // setTimeout(0) given leeway
-const SYNC_ERROR = 4
+const SYNC_ERROR = 10
 
 const mount = (pTau, cTau, events) => {
   const t = h(0, pTau, h(1, cTau));
