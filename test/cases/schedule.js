@@ -34,31 +34,33 @@ const neg = () => -1;
 const nil = () => 0;
 
 const states = [
-  {phase: "p = c > 0", p: id, c: id},
-  {phase: "p < c", p: half, c: twice},
-  {phase: "p > c", p: twice, c: half},
-  {phase: "p < 0, c > 0", p: neg, c: id},
-  {phase: "c < 0, p > 0", p: id, c: neg},
-  {phase: "p = c < 0", p: neg, c: neg},
-  {phase: "p = c = 0", p: nil, c: nil},
-  {phase: "p < 0, c = 0", p: neg, c: nil},
-  {phase: "c < 0, p = 0", p: nil, c: neg},
-  {phase: "p > 0, c = 0", p: id, c: nil},
-  {phase: "c > 0, p = 0", p: nil, c: id}
+  {phase: "p = c > 0", p: id, c: id}, // 0
+  {phase: "p < c", p: half, c: twice}, // 1
+  {phase: "p > c", p: twice, c: half}, // 2
+  {phase: "p < 0, c > 0", p: neg, c: id}, // 3
+  {phase: "p > 0, c < 0", p: id, c: neg}, // 4
+  {phase: "p = c < 0", p: neg, c: neg}, // 5
+  {phase: "p = c = 0", p: nil, c: nil}, // 6
+  {phase: "p < 0, c = 0", p: neg, c: nil}, // 7
+  {phase: "p = 0, c < 0", p: nil, c: neg}, // 8
+  {phase: "p > 0, c = 0", p: id, c: nil}, // 9
+  {phase: "p = 0, c > 0", p: nil, c: id} // 10
 ]
 // transition matrix factory
 const trans = (p, c) => [
-  [0, 1, 1, p, c, 0, 0, 0, 0, 0, 0],
-  [1, 0, 1, p, c, 0, 0, 0, 0, 0, 0],
-  [1, 1, 0, p, c, 0, 0, 0, 0, 0, 0],
-  [p, p, p, 0, 0, c, 0, 0, 0, 0, 0],
-  [c, c, c, 0, 0, p, 0, 0, 0, 0, 0],
-  [0, 0, 0, c, p, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+//       <-- final state -->
+// 0  1  2  3  4  5  6  7  8  9  10
+  [0, 1, 1, p, c, 0, 0, 0, 0, c, p], // 0
+  [1, 0, 1, p, c, 0, 0, 0, 0, c, p], // 1
+  [1, 1, 0, p, c, 0, 0, 0, 0, c, p], // 2        ^
+  [p, p, p, 0, 0, c, 0, 0, 0, c, p], // 3        |
+  [c, c, c, 0, 0, p, 0, 0, p, c, 0], // 4        .
+  [0, 0, 0, c, p, 0, 0, 0, p, c, 0], // 5 initial state
+  [0, 0, 0, 0, 0, 0, 0, p, c, p, c], // 6        '
+  [0, 0, 0, c, 0, c, p, 0, 0, p, 0], // 7        |
+  [0, 0, 0, 0, p, p, c, 0, 0, 0, c], // 8        v
+  [c, c, c, 0, c, 0, p, p, 0, 0, 0], // 9
+  [p, p, p, p, 0, 0, c, 0, c, 0, 0] // 10
 ]
 // event and action factory
 const wU = (id, dt, tau, state=null) => ({wU: id, dt, tau, state})

@@ -56,7 +56,7 @@ const verify = (events, expected) => {
   expect(m).to.equal(expected.length, pretty(events));
 }
 
-describe.only("scheduling", function(){
+describe("scheduling", function(){
   this.timeout(ALLOW);
   // first, we create a "describe-block skeleton" of the tests we want to run
   //   * building the tree directly allows us to avoid group/sort later
