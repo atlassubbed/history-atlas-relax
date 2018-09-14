@@ -89,8 +89,8 @@ describe("scheduling", function(){
 //     * decreasing T is not an option because variance(time) ~ 1/T
 //   * mocha does not make it easy to write concurrent async tests
 //     * with the DeferredTests skeleton, we run every simulation simulataneously (concurrently)
-//     * total time taken becomes ~ 5*T
-//     * this allows us to increase T to .5s and enjoy lower variance (higher confidence)
+//       * total time taken becomes ~ 5*T
+//       * this allows us to increase T to .5s and enjoy lower variance (higher confidence)
 
 function buildMochaScaffold(){
   const scaffold = new DeferredTests;
