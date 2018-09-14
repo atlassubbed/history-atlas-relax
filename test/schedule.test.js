@@ -77,15 +77,15 @@ describe("scheduling", function(){
     it(testCase.desc, function(){
       verify(testCase.events, testCase.result())
     })
-  }, (desc, next) => describe(desc, next))
+  }, describe)
 })
 
-// XXX without the hideous parallel setup code below, these tests take 100 times longer to execute
+// XXX without the hideous setup code below, these tests take 100 times longer to execute
 //   * all of these tests are time consuming and independent of each other
 //     * total time taken ~ 5N*T = 5*250*.05 seconds ~ 1 minute
 //     * decreasing T is not an option because variance(time) ~ 1/T
-//   * mocha does not make it easy to write fast async tests
-//     * with the DeferredTests skeleton, we run every simulation simulataneously
+//   * mocha does not make it easy to write concurrent async tests
+//     * with the DeferredTests skeleton, we run every simulation simulataneously (concurrently)
 //     * total time taken becomes ~ 5*T
 //     * this allows us to increase T to .5s and enjoy lower variance (higher confidence)
 function buildMochaScaffold(){

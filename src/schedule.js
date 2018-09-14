@@ -14,6 +14,8 @@ const { isFn } = require("./util");
 //     * tests should be agnostic of the scheduling implementation
 const schedule = {}, sync = []
 
+// XXX rAF, rIC, microtask, batching for even more repsonsiveness on interfaces?
+//   e.g. for the tau = 0 case, use something other than setTimeout(0)
 const queue = tau => void setTimeout(() => rediff(schedule[tau], tau), tau)
 
 const add = (f, tau) => {

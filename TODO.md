@@ -38,3 +38,8 @@ These considerations matter if tau and entangled edges are changed many times wi
   * investigate using ES6 Set and/or linked-lists+hash for scheduling and entanglement (for O(1) inserts and dels)
   * The linked-list+hash option will require loads more memory, since we'll need it to be doubly-linked and reference all of the nodes and affectors for quick removals
   * Could actually avoid double-linked by tagging the nodes for removal and then removing the next time we iterate (keeping prev node reference), similar to what we do now, then we'll avoid recreating the list (like we do now)
+
+
+TODO:
+  1. Refactor entangle tests by simply asserting that the methods are called in topo-order
+  2. degenerate tau value for simulating batches at app-level? think degeneracy levels

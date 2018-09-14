@@ -22,9 +22,9 @@ const type = str => {
   return str.slice(0, i).trim();
 }
 
-const deepNull = (tree, fields) => {
-  for (let f of fields) tree[f] = null;
-  if (tree.children) tree.children.forEach(c => void deepNull(c, fields));
+const deepSet = (tree, fields) => {
+  for (let f in fields) tree[f] = fields[f];
+  if (tree.children) tree.children.forEach(c => void deepSet(c, fields));
   return tree;
 }
 
@@ -32,5 +32,5 @@ const pretty = tree => JSON.stringify(tree, null, 2)
 
 module.exports = { 
   isArr, isObj, isFn, isVoid, isScalar,
-  toArr, has, inject, type, deepNull, pretty
+  toArr, has, inject, type, deepSet, pretty
 }

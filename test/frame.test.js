@@ -17,10 +17,9 @@ describe("Frame", function(){
         (f.affects).to.equal
         (f.parent).to.equal
         (f.children).to.equal
-        (f.epoch).to.equal
         (f.state).to.equal
         (f.keys).to.be.null;
-      expect(f.affCount).to.equal(0)
+      expect(f.affCount).to.equal(f.epoch).to.equal(0)
       expect(f.inStep).to.be.false;
     })
     it("should set template properties and effects onto the instance", function(){

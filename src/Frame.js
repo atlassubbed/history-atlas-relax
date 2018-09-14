@@ -7,8 +7,8 @@ const Frame = function(t, effs){
   if (!t) return;
   this.id = this.affs = this.affects =
   this.parent = this.children = this.nextState =
-  this.epoch = this.state = this.keys = this.tau = null;
-  this.affCount = 0, this.inStep = false;
+  this.state = this.keys = this.tau = null;
+  this.affCount = this.epoch = 0, this.inStep = false;
   this.effects = effs, this.temp = t;
   this.name = t.name, this.key = t.key;
 }
@@ -23,10 +23,9 @@ Frame.define = (Subframe, proto) => {
   Subframe.prototype.constructor = Subframe
 }
 
-// XXX destroy affs/affects manually before set to null?
 const clearFrame = f => {
   f.state = f.nextState = f.temp = f.effects = f.affects =
-  f.keys = f.affs = f.name = f.key = f.tau = null;
+  f.keys = f.affs = f.name = f.key = null;
 }
 // temp is already normalized
 const toFrame = (t, effs, tau) => {

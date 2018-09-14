@@ -2,7 +2,7 @@ const { describe, it } = require("mocha")
 const { expect } = require("chai")
 const { Renderer } = require("./Effects");
 const { Frame, diff } = require("../src/index");
-const { isScalar, type, inject, deepNull } = require("./util")
+const { isScalar, type, inject, deepSet } = require("./util")
 const { 
   irreducibleBlackboxes: primes, 
   reducibleBlackboxes: comps,
@@ -14,6 +14,7 @@ const { updatingBlackboxes } = require("./cases/subdiff")
 const allBlackboxes = [...voids, ...primes, ...comps]
 const allNontrivialBlackboxes = allBlackboxes.filter(n => type(n.name) !== "void")
 const blackboxRoots = allNontrivialBlackboxes.filter(n => isScalar(n.name))
+const defaultEpoch = {epoch: 0}
 
 describe("diff", function(){
   it("should not add void templates", function(){
@@ -113,7 +114,7 @@ describe("diff", function(){
           const t1 = get({v: 0, id}), t2 = get({v: 0, id}), t3 = get({v: 0, id})
           expect(t1).to.deep.equal(t2).to.deep.equal(t3)
           expect(diff(t1)).to.be.an.instanceOf(Frame)
-            .to.deep.equal(deepNull(diff(t2, diff(t3)), ["epoch"]))
+            .to.deep.equal(deepSet(diff(t2, diff(t3)), defaultEpoch))
         })
       })
     })
@@ -227,7 +228,7 @@ describe("diff", function(){
                 t3 = inject(get({v:0, id}), nextGet({v: 0, id}))
               expect(t1).to.deep.equal(t2).to.deep.equal(t3)
               expect(diff(t1)).to.be.an.instanceOf(Frame)
-                .to.deep.equal(deepNull(diff(t2, diff(t3)), ["epoch"]))
+                .to.deep.equal(deepSet(diff(t2, diff(t3)), defaultEpoch))
             })
           })
         })
