@@ -12,12 +12,15 @@ const { isFn } = require("./util");
 //       this is an implementation detail, the tests don't (and shouldn't) care about this
 //   there might be a clever way to queue updates at times with less timing gymnastics
 //     * tests should be agnostic of the scheduling implementation
-const schedule = {}, sync = []
+let asap = typeof Promise === "function" ? Promise.resolve() : false;
+asap = asap ? asap.then.bind(asap) : setTimeout;
+const schedule = {}, sync = [];
 
-// XXX rAF, rIC, microtask, batching for even more repsonsiveness on interfaces?
-//   e.g. for the tau = 0 case, use something other than setTimeout(0)
-//   if so, we'd need to add (0,0), (0, -1), and (-1, 0) as important points in the tests
-const queue = tau => void setTimeout(() => rediff(schedule[tau], tau), tau)
+// XXX rIC/rAF should be implemented at the effect level
+const queue = tau => {
+  if (!tau) return asap(() => rediff(schedule[tau], tau));
+  setTimeout(() => rediff(schedule[tau], tau), tau)
+}
 
 const add = (f, tau) => {
   const s = schedule[tau];
@@ -48,7 +51,7 @@ Frame.prototype.setTau = function(next){
 //   * creating and merging partial state objects is expensive
 //   * supporting (cached) update fn will vastly improve perf
 //     note that recreating the update fn per call will hurt perf
-Frame.prototype.setState = function(partial){
+Frame.prototype.setState = function(partial={}){
   let next = this.nextState;
   if (next) {
     if (isFn(partial)) partial(next);

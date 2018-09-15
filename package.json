@@ -20,7 +20,8 @@
   ],
   "author": "atlassubbed <atlassubbed@gmail.com>",
   "devDependencies": {
-    "atlas-basic-timer": "^2.0.0",
+    "atlas-basic-timer": "^4.0.1",
+    "atlas-serial": "^1.0.1",
     "chai": "^4.1.2",
     "mocha": "^5.2.0"
   },

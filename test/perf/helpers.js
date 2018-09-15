@@ -51,4 +51,9 @@ const count = (tree, childField) => {
   return n;
 }
 
-module.exports = { TemplateFactory, count }
+const printHeap = () => {
+  const mb = process.memoryUsage().heapUsed/1e6;
+  console.log(`\n${Math.floor(mb)} MB being used`)
+}
+
+module.exports = { TemplateFactory, count, printHeap }
