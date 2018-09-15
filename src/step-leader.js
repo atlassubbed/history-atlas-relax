@@ -2,18 +2,14 @@ const { isArr } = require("./util");
 
 let epoch = 0, path = [];
 
-// XXX if removing a root then we know it at fillPath-time
-//   and we can avoid adding it and its children to the path, while
-//   while still accounting for all of its potential entanglements
-//   e.g. step(f, isRemoval):
-//     for each child: ... step(f, isRemoval) 
-//     for each affects: ... step(f, false)
-//     ... if (!isRemoval) path.push(f);
-//   thus we avoid iterating over nodes which guarantee f.temp == null in sidediff
-//   i.e. we ensure a minimal path size for removal cases.
-//   if adding a root, we don't fill the path anyway, so we avoid the traversals
+// XXX if removing a root, we can make a microoptimization:
+//   * for all step(c) called on the subtree of the root:
+//     * don't add c to the path
+//     * since c.temp == null guaranteed at sidediff time
+//   * the extra fn calls and/or booleans will counteract any perf gains
+//     * it also increases file size and complexity; not worth it
 const step = f => {
-  if (f.inStep) 
+  if (f.inStep)
     throw new Error("cyclic entanglement");
   f.inStep = true;
   const ch = f.children, af = f.affects, id = f.id;
