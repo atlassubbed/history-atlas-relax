@@ -1,4 +1,4 @@
-const { isVoid, isArr, norm } = require("./util")
+const { isVoid, isArr, norm, applyState } = require("./util")
 const { Frame: { isFrame } } = require("./Frame");
 const { fillPath, path } = require("./step-leader");
 const { emit, push, sub, pop, update } = require("./lifecycle");
@@ -31,16 +31,14 @@ const clean = (dirty, next, index, keys) => {
 }
 // diff "downwards" from a frame
 //   * short circuit > switch under one loop
+//   * refactoring initdiff out of subdiff is not worth the increased complexity
+//     * it doesn't remove any responsibility from subdiff
+//     * the performance gain is negligble, as we short circuit fast anyway
 const subdiff = f => {
-  let { temp: { data, next }, children: prev, tau } = f;
-  const { effects: effs, keys, state, nextState } = f, index = {};
-  if (nextState){
-    if (!state) f.state = nextState;
-    else for (let k in nextState) state[k] = nextState[k];
-    f.nextState = null;
-  }
-  next = [f.evaluate(data, next)], f.keys = null
-  const N = clean(next, next = [], index, keys), 
+  let temp = f.temp, prev = f.children, tau = f.tau;
+  const effs = f.effects, keys = f.keys, index = keys && {};
+  applyState(f), f.keys = null;
+  const N = clean([f.evaluate(temp.data, temp.next)], temp = [], index, keys),
     P = prev ? prev.length : 0;
   if (!(N || P)) return;
   let n, p;
@@ -51,17 +49,17 @@ const subdiff = f => {
   }
   if (!P){
     f.children = [];
-    while(n = next.pop()) 
+    while(n = temp.pop())
       void defer(push(n, effs, tau, f));
     return;
   }
   let i = -1, M = Math.min(N, P);
   while (++i < M){
-    n = next.pop(), p = prev[i];
+    n = temp.pop(), p = prev[i];
     if (n.name === p.name) update(n, p)
     else void defer(sub(n, effs, tau, p, i))
   }
-  if (N > P) while(n = next.pop()) 
+  if (N > P) while(n = temp.pop())
     void defer(push(n, effs, tau, f));
   else while(prev.length > N) pop(prev.pop());
 }

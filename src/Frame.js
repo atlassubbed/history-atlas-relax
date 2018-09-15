@@ -22,7 +22,7 @@ Frame.define = (Subframe, proto) => {
   Subframe.prototype = p
   Subframe.prototype.constructor = Subframe
 }
-
+// XXX this is expensive, consider using sets/maps to reduce the internal api
 const clearFrame = f => {
   f.state = f.nextState = f.temp = f.effects = f.affects =
   f.keys = f.affs = f.name = f.key = null;

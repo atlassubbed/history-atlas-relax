@@ -12,11 +12,12 @@ const step = f => {
   if (f.inStep)
     throw new Error("cyclic entanglement");
   f.inStep = true;
-  const ch = f.children, af = f.affects, id = f.id;
+  const ch = f.children
   if (ch){
     let cN = ch.length, c;
     while(cN--) (c = ch[cN]).epoch < epoch && step(c);
   }
+  const af = f.affects, id = f.id;
   if (af){
     let aN = af.length, refs, c;
     f.affects = null;

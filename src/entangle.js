@@ -2,7 +2,7 @@ const { Frame } = require("./Frame");
 
 let curId = 0;
 
-// XXX these aren't called a lot; prefer indexOf/splice? (O(|affects|))
+// XXX these aren't called a lot; prefer indexOf/splice? (O(|affects|)) or sets
 Frame.prototype.entangle = function(f){
   if (f === this.parent || f === this) return;
   const affs = this.affs = this.affs || {};
