@@ -24,7 +24,7 @@ const type = str => {
 
 const deepSet = (tree, fields) => {
   for (let f in fields) tree[f] = fields[f];
-  if (tree.children) tree.children.forEach(c => void deepSet(c, fields));
+  if (tree.next) for (let c of tree.next) deepSet(c, fields);
   return tree;
 }
 

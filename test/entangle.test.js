@@ -167,7 +167,7 @@ describe("entanglement", function(){
   describe("amongst subframes", function(){
     it("should throw before the next diff runs if there are cycles", function(){
       const events = [], t = new Tracker(events);
-      const r = diff(p(0, null, [p(1), p(2)]), null, t), c = r.children;
+      const r = diff(p(0, null, [p(1), p(2)]), null, t), c = r.next;
       c[0].entangle(c[1]), c[1].entangle(c[0]), events.length = 0;
       expect(() => diff(p(0, null, [p(1), p(2)]), r)).to.throw("cyclic entanglement")
       expect(events).to.be.empty;
@@ -176,9 +176,9 @@ describe("entanglement", function(){
       if (hook === "willPush") return;
       it(`should throw before the next diff runs if cycles are introduced in ${hook}`, function(){
         const events = [], t = new Tracker(events);
-        const hooks = {[hook]: f => f.entangle(f.parent.children[0])}
+        const hooks = {[hook]: f => f.entangle(f.parent.next[0])}
         const r = diff(p(0, null, [p(1), p(2, hooks)]), null, t);
-        r.children[0].entangle(r.children[1]), events.length = 0;
+        r.next[0].entangle(r.next[1]), events.length = 0;
         const update = () => diff(p(0, null, [p(1), p(2)]), r)
         if (has(addHooks, hook)){
           expect(update).to.throw("cyclic entanglement")
@@ -293,9 +293,9 @@ describe("entanglement", function(){
       it("should add new unentangled children after the affected region is updated", function(){
         const { nodes, events } = treeCase.get({
           2: {
-            willUpdate: f => {f.next = [p(9, null, p(10)), p(11)]},
+            willUpdate: f => {f.nextChildren = [p(9, null, p(10)), p(11)]},
             evaluate(data, next){
-              return this.next
+              return this.nextChildren
             }
           }
         })
@@ -312,9 +312,9 @@ describe("entanglement", function(){
       it("should properly update new unentangled children during the next diff", function(){
         const { nodes, events } = treeCase.get({
           2: {
-            willUpdate: f => {f.next = [p(9, null, p(10)), p(11)]},
+            willUpdate: f => {f.nextChildren = [p(9, null, p(10)), p(11)]},
             evaluate(data, next){
-              return this.next
+              return this.nextChildren
             }
           }
         })
@@ -334,10 +334,10 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           2: {
             willUpdate: f => {
-              f.next = [p(9, {ctor: f => f.entangle(nodes[7])}, p(10)), p(11)]
+              f.nextChildren = [p(9, {ctor: f => f.entangle(nodes[7])}, p(10)), p(11)]
             },
             evaluate(data, next){
-              return this.next
+              return this.nextChildren
             }
           }
         })
@@ -355,10 +355,10 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           2: {
             willUpdate: f => {
-              f.next = [p(9, {ctor: f => f.entangle(nodes[7])}, p(10)), p(11)]
+              f.nextChildren = [p(9, {ctor: f => f.entangle(nodes[7])}, p(10)), p(11)]
             },
             evaluate(data, next){
-              return this.next
+              return this.nextChildren
             }
           }
         })
@@ -379,10 +379,10 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           2: {
             willUpdate: f => {
-              f.next = [p(9, {ctor: f => nodes[4].entangle(f)}, p(10)), p(11)]
+              f.nextChildren = [p(9, {ctor: f => nodes[4].entangle(f)}, p(10)), p(11)]
             },
             evaluate(data, next){
-              return this.next
+              return this.nextChildren
             }
           }
         })
@@ -400,10 +400,10 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           2: {
             willUpdate: f => {
-              f.next = [p(9, {ctor: f => nodes[4].entangle(f)}, p(10)), p(11)]
+              f.nextChildren = [p(9, {ctor: f => nodes[4].entangle(f)}, p(10)), p(11)]
             },
             evaluate(data, next){
-              return this.next
+              return this.nextChildren
             }
           }
         })
@@ -444,10 +444,10 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           0: {
             willUpdate: f => {
-              f.next = a(9);
+              f.nextChildren = a(9);
             },
             evaluate(data, next){
-              return this.next || next;
+              return this.nextChildren || next;
             }
           }
         })
@@ -464,10 +464,10 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           0: {
             willUpdate: f => {
-              f.next = a(9, {ctor: f => f.entangle(nodes[4])});
+              f.nextChildren = a(9, {ctor: f => f.entangle(nodes[4])});
             },
             evaluate(data, next){
-              return this.next || next;
+              return this.nextChildren || next;
             }
           }
         })
@@ -484,10 +484,10 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           0: {
             willUpdate: f => {
-              f.next = a(9, {ctor: f => f.entangle(nodes[4])});
+              f.nextChildren = a(9, {ctor: f => f.entangle(nodes[4])});
             },
             evaluate(data, next){
-              return this.next || next;
+              return this.nextChildren || next;
             }
           }
         })

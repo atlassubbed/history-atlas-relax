@@ -44,10 +44,10 @@ class TemplateFactory {
   }
 }
 
-const count = (tree, childField) => {
-  let n = 1, next = tree[childField];
+const count = tree => {
+  let n = 1, next = tree.next;
   if (next) for (let c of toArr(next))
-    n += count(c, childField);
+    n += count(c);
   return n;
 }
 

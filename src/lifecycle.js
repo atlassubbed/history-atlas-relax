@@ -13,9 +13,9 @@ const emit = (type, f, a1, a2) => {
 
 // remove existing (sub)frame
 const pop = (f, c) => {
-  const p = f.parent, ch = f.children;
+  const p = f.parent, ch = f.next;
   emit("willPop", f, p)
-  f.parent = f.children = null;
+  f.parent = f.next = null;
   if (ch) while(c = ch.pop()) pop(c);
   emit("didPop", f, p), clearFrame(f);
 }
@@ -24,7 +24,7 @@ const push = (t, effs, tau, f) => {
   t = toFrame(t, effs, tau)
   emit("willPush", t, f);
   if (f){
-    let i = f.children.push(t), key;
+    let i = f.next.push(t), key;
     if (key = t.key)
       (f.keys = f.keys || {})[key] = i - 1;
     t.parent = f;
@@ -34,11 +34,11 @@ const push = (t, effs, tau, f) => {
 // sub prev frame with next frame at index i
 const sub = (t, effs, tau, f, i, c) => {
   t = toFrame(t, effs, tau)
-  const p = f.parent, ch = f.children;
+  const p = f.parent, ch = f.next;
   emit("willSub", t, p, i);
-  f.parent = f.children = null;
+  f.parent = f.next = null;
   if (ch) while(c = ch.pop()) pop(c);
-  if (t.parent = p) p.children[i] = t;
+  if (t.parent = p) p.next[i] = t;
   emit("didSub", f, p, i), clearFrame(f);
   return t;
 }

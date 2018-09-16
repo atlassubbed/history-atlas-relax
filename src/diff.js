@@ -35,7 +35,7 @@ const clean = (dirty, next, index, keys) => {
 //     * it doesn't remove any responsibility from subdiff
 //     * the performance gain is negligble, as we short circuit fast anyway
 const subdiff = f => {
-  let temp = f.temp, prev = f.children, tau = f.tau;
+  let temp = f.temp, prev = f.next, tau = f.tau;
   const effs = f.effs, keys = f.keys, index = keys && {};
   applyState(f), f.keys = null;
   const N = clean([f.evaluate(temp.data, temp.next)], temp = [], index, keys),
@@ -43,12 +43,12 @@ const subdiff = f => {
   if (!(N || P)) return;
   let n, p;
   if (!N){
-    f.children = null;
+    f.next = null;
     while (p = prev.pop()) pop(p);
     return;
   }
   if (!P){
-    f.children = [];
+    f.next = [];
     while(n = temp.pop())
       void defer(push(n, effs, tau, f));
     return;

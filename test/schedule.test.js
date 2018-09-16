@@ -27,7 +27,7 @@ const SYNC_ERROR = 10
 const mount = (pTau, cTau, events) => {
   const t = h(0, pTau, h(1, cTau));
   const f = diff(t, null, events && new Timer(events))
-  return { p: f, c: f.children[0]}
+  return { p: f, c: f.next[0]}
 }
 const entangle = (pTau, cTau, events) => {
   const t1 = h(0, pTau), f1 = diff(t1, null, events && new Timer(events));

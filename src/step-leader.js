@@ -11,7 +11,7 @@ const step = f => {
   if (f.inStep)
     throw new Error("cyclic entanglement");
   f.inStep = true;
-  let ch = f.children
+  let ch = f.next
   if (ch){
     let cN = ch.length, c;
     while(cN--) (c = ch[cN]).epoch < epoch && step(c);

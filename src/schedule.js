@@ -29,21 +29,20 @@ const add = (f, tau) => {
   queue(tau);
 }
 
-const setTau = (f, next) => {
-  const { nextState, children, tau } = f;
-  if ((f.tau = next) === tau || next < 0 && tau < 0) return;
-  if (children){
-    let cN = children.length, c;
-    while(cN--) setTau(c = children[cN], c.getTau(next));
+const setTau = (f, nTau) => {
+  const { nextState, next, tau } = f;
+  if ((f.tau = nTau) === tau || nTau < 0 && tau < 0) return;
+  if (next){
+    let cN = next.length, c;
+    while(cN--) setTau(c = next[cN], c.getTau(nTau));
   }
-  if (nextState) next < 0 ? sync.push(f) : add(f, next);
+  if (nextState) nTau < 0 ? sync.push(f) : add(f, nTau);
 }
 
 // getTau can return an unchanging value to short-circuit cascading
 Frame.prototype.getTau = function(next){ return next }
 // setTau cascades down the subtree and reschedules diffs
 Frame.prototype.setTau = function(next){
-  const { nextState, tau } = this;
   setTau(this, next);
   if (sync.length) rediff(sync);
 }

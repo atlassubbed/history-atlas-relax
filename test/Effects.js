@@ -44,7 +44,7 @@ class Tracker {
     if (!parent) this.root = f
   }
   willSub(nextF, parent, i) {
-    const prev = parent ? parent.children[i] : this.root;
+    const prev = parent ? parent.next[i] : this.root;
     this.log("wS", prev);
     if (!parent) this.root = nextF;
   }
@@ -138,7 +138,7 @@ class Renderer {
     if (!parent)
       return this.tree = this.nextRoot, this.nextRoot = null;
     const parentNode = parent._node;
-    parentNode.next[i] = parent.children[i]._node;
+    parentNode.next[i] = parent.next[i]._node;
   }
   willPop(frame, parent){
     // about to remove frame from parent

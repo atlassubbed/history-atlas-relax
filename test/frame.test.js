@@ -14,7 +14,7 @@ describe("Frame", function(){
       const f = new Frame({})
       expect(f.affs).to.equal
         (f.parent).to.equal
-        (f.children).to.equal
+        (f.next).to.equal
         (f.state).to.equal
         (f.nextState).to.equal
         (f.keys).to.be.null;
@@ -78,7 +78,7 @@ describe("Frame", function(){
       const f1 = diff({name:"p", next: {name: "div"}});
       const f2 = diff({name:"p", next: {name: "div"}});
       expect(f1).to.deep.equal(f2);
-      f1.children[0].entangle(f1)
+      f1.next[0].entangle(f1)
       expect(f1).to.deep.equal(f2);
     })
     it("should do nothing if entangling with self", function(){
@@ -114,21 +114,21 @@ describe("Frame", function(){
     it("should propagate tau changes if new tau is set", function(){
       const f = diff(h(0, 100, h(1, 40)));
       let propagated = false
-      f.children[0].getTau = function(){ propagated = true }
+      f.next[0].getTau = function(){ propagated = true }
       f.setTau(1000);
       expect(propagated).to.be.true;
     })
     it("should not propagate tau changes if current tau is re-set", function(){
       const f = diff(h(0, 100, h(1, 40)));
       let propagated = false
-      f.children[0].getTau = function(){ propagated = true }
+      f.next[0].getTau = function(){ propagated = true }
       f.setTau(100);
       expect(propagated).to.be.false;
     })
     it("should not propagate tau changes if tau < 0 and next tau < 0", function(){
       const f = diff(h(0, -1, h(1, 40)));
       let propagated = false
-      f.children[0].getTau = function(){ propagated = true }
+      f.next[0].getTau = function(){ propagated = true }
       f.setTau(-200);
       expect(propagated).to.be.false;
     })

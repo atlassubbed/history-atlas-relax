@@ -126,12 +126,12 @@ serial(tasks, () => {
       const { t1, t2, f1, f2, f3, f4 } = cases[c][s];
       for (let i = SAMPLES; i--;) {
         expect(f2[i].temp).to.be.null
-        expect(count(f2[i], "children")).to.equal(1);
-        expect(count(f1[i], "children")).to.equal(s);
-        expect(count(f3[i], "children")).to.equal(s);
-        expect(count(f4[i], "children")).to.equal(s);
-        expect(count(t1[i], "next")).to.equal(s);
-        expect(count(t2[i], "next")).to.equal(s);
+        expect(count(f2[i])).to.equal(1);
+        expect(count(f1[i])).to.equal(s);
+        expect(count(f3[i])).to.equal(s);
+        expect(count(f4[i])).to.equal(s);
+        expect(count(t1[i])).to.equal(s);
+        expect(count(t2[i])).to.equal(s);
         expect(f3[i].affs).to.equal(null)
         t1[i] = t2[i] = f1[i] = f2[i] = f3[i] = f4[i] = null
       }
