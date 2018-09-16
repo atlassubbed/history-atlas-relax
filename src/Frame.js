@@ -9,7 +9,6 @@ const Frame = function(t, effs){
   this.nextState = this.state = this.keys = null;
   this.epoch = 0, this.inStep = false;
   this.effs = effs, this.temp = t;
-  this.name = t.name, this.key = t.key;
 }
 Frame.prototype.evaluate = function(data, next){ return next }
 Frame.isFrame = isFrame
@@ -23,8 +22,7 @@ Frame.define = (Subframe, proto) => {
 }
 // XXX this is expensive, consider using sets/maps to reduce the internal api
 const clearFrame = f => {
-  f.state = f.nextState = f.temp = f.effs = f.affs =
-  f.keys = f.name = f.key = null;
+  f.state = f.nextState = f.temp = f.effs = f.affs = f.keys = null;
 }
 // temp is already normalized
 const toFrame = (t, effs, tau) => {

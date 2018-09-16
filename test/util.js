@@ -14,7 +14,7 @@ const isScalar = str => {
   return !(has(str, "(array)") || has(str, "(tensor)"))
 }
 
-const inject = (parent, next) => Object.assign(parent, {next})
+const inject = (parent, next) => (parent.next = next, parent);
 
 const type = str => {
   const i = str.indexOf("(");

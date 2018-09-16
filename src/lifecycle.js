@@ -47,8 +47,7 @@ const sub = (t, effs, tau, f, i, c) => {
 //   but requires stable, keyed subdiffing
 const update = (t, f) => {
   emit("willUpdate", f, t);
-  f.key = t.key, f.temp = t;
-  return f;
+  return f.temp = t, f;
 }
 
 module.exports = { emit, push, sub, pop, update }

@@ -23,18 +23,14 @@ describe("Frame", function(){
       expect(f.effs).to.be.undefined;
       expect(f.inStep).to.be.false;
     })
-    it("should set template properties and effects onto the instance", function(){
+    it("should set template and effects onto the instance", function(){
       const name = 1, data = 2, next = 3, key = 4, effs = [5];
       const temp = {name, data, next, key}, temp2 = {};
       const f = new Frame(temp, effs);
       const f2 = new Frame(temp2, effs[0])
       expect(f.temp).to.equal(temp)
-      expect(f.key).to.equal(key);
-      expect(f.name).to.equal(name);
       expect(f.effs).to.equal(effs);
       expect(f2.effs).to.equal(5)
-      expect(f2.hasOwnProperty("key")).to.be.true;
-      expect(f2.hasOwnProperty("name")).to.be.true;
       expect(f2.temp).to.equal(temp2)
     })
   })

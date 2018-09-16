@@ -116,7 +116,7 @@ class Renderer {
   }
   willPush(frame, parent){
     // will be pushing frame onto parent's children
-    const { name, temp: {data}, key } = frame;
+    const { name, data, key } = frame.temp;
     const node = { name, data };
     frame._node = node
     if (key) node.key = key;
@@ -126,7 +126,7 @@ class Renderer {
   }
   willSub(nextFrame, parent, i){
     // will substitute the i-th child of parent for nextFrame
-    const { name, temp: { data }, key } = nextFrame;
+    const { name, data, key } = nextFrame.temp;
     const node = { name, data };
     nextFrame._node = node
     if (key) nextFrame._node.key = key;

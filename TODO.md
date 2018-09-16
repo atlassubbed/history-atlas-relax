@@ -25,13 +25,8 @@ Micro-performance considerations after everything else is already done:
 
 These considerations matter if tau and entangled edges are changed many times with respect to the number of diffs
 
-5. Linear entanglement
-  * Should we not cache a bunch of info for entanglement and just use indexOf?
-  * This would be fine if number of entanglements is very small compared to total DAG size
-  * This will use less memory
-
 6. Constant entanglement and scheduling
-  * investigate using ES6 Set and/or linked-lists+hash for scheduling and entanglement (for O(1) inserts and dels)
+  * investigate using ES6 Set and/or linked-lists+hash for scheduling (for O(1) inserts and dels)
   * The linked-list+hash option will require loads more memory, since we'll need it to be doubly-linked and reference all of the nodes and affectors for quick removals
   * Could actually avoid double-linked by tagging the nodes for removal and then removing the next time we iterate (keeping prev node reference), similar to what we do now, then we'll avoid recreating the list (like we do now)
 
@@ -43,3 +38,5 @@ These considerations matter if tau and entangled edges are changed many times wi
 TODO:
   1. Refactor entangle tests by simply asserting that the methods are called in topo-order
   2. degenerate tau value for simulating batches at app-level? think degeneracy levels
+  3. Don't cache f.key and f.name onto the top level, simply lookup f.temp.key/name. How will this affect perf?
+  4. Don't cache parent on nodes, instead use a stack during subdiff? How will this affect perf?

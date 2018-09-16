@@ -56,7 +56,7 @@ const subdiff = f => {
   let i = -1, M = Math.min(N, P);
   while (++i < M){
     n = temp.pop(), p = prev[i];
-    if (n.name === p.name) update(n, p)
+    if (n.name === p.temp.name) update(n, p)
     else void defer(sub(n, effs, tau, p, i))
   }
   if (N > P) while(n = temp.pop())
@@ -91,7 +91,7 @@ const rootdiff = (t, f, effs, tau=-1) => {
   if (f.parent) return false;
   fillPath(f);
   if (!t) return !sidediff(pop(f));
-  if (t.name === f.name) update(t, f);
+  if (t.name === f.temp.name) update(t, f);
   else f = defer(sub(t, effs || f.effs, tau, f));
   return sidediff(), f;
 }
