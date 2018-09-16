@@ -10,7 +10,6 @@ const emit = (type, f, a1, a2) => {
   for (let e of effs)
     if (e[type]) void e[type](f, a1, a2);
 }
-
 // remove existing (sub)frame
 const pop = (f, p) => {
   let ch = f.next, c;

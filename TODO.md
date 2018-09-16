@@ -38,5 +38,3 @@ These considerations matter if tau and entangled edges are changed many times wi
 TODO:
   1. Refactor entangle tests by simply asserting that the methods are called in topo-order
   2. degenerate tau value for simulating batches at app-level? think degeneracy levels
-  3. Don't cache f.key and f.name onto the top level, simply lookup f.temp.key/name. How will this affect perf?
-  4. Don't cache parent on nodes, instead use a stack during subdiff? How will this affect perf?

@@ -11,7 +11,7 @@ const clean = (dirty, next, index, keys) => {
   if (!keys){
     while(dirty.length){
       t = dirty.pop();
-      if (isArr(t)) dirty.push(...t);
+      if (isArr(t)) for (let i of t) dirty.push(i);
       else if (!isVoid(t)) next.push(norm(t));
     }
     return next.length;
@@ -19,7 +19,7 @@ const clean = (dirty, next, index, keys) => {
   let k, N;
   while(dirty.length){
     t = dirty.pop();
-    if (isArr(t)) dirty.push(...t);
+    if (isArr(t)) for (let i of t) dirty.push(i);
     else if (!isVoid(t)) {
       N = next.push(t = norm(t));
       if ((k = t.key) && keys[k]){
@@ -35,6 +35,7 @@ const clean = (dirty, next, index, keys) => {
 //     * it doesn't remove any responsibility from subdiff
 //     * the performance gain is negligble, as we short circuit fast anyway
 const subdiff = f => {
+  emit("willDiff", f)
   let temp = f.temp, prev = f.next, tau = f.tau;
   const effs = f.effs, keys = f.keys, index = keys && {};
   applyState(f), f.keys = null;
@@ -64,26 +65,20 @@ const subdiff = f => {
   else while(prev.length > N) pop(prev.pop(), f);
 }
 
-let laggards = [];
-
 // diff "sideways" along the calculated path
+//   * initially used call stack; led to overflows for lateral updates
+//   * htap is "path" in reverse, we don't need it to avoid .reverse(), but we avoid .length = 0
+const laggards = [], htap = [];
 const sidediff = f => {
-  while(f = path.pop())
-    if (f.temp) return diff(f, true);
+  while(f = path.pop()) if (f.temp)
+    subdiff(f), htap.push(f);
   while(f = laggards.pop()) diff(f);
+  while(f = htap.pop()) emit("didDiff", f)
 }
 
-const diff = (f, recur) => {
-  emit("willDiff", f);
-  subdiff(f);
-  recur && sidediff();
-  emit("didDiff", f);
-}
-
+const diff = f => (subdiff(f), emit("didDiff", f))
 const defer = f => (path.length ? laggards.push(f) : diff(f), f);
-
 const rediff = (f, tau=-1) => (fillPath(f, tau), sidediff());
-
 // public diff (mount, unmount and update frames)
 const rootdiff = (t, f, effs, tau=-1) => {
   if (isArr(t = norm(t))) return false;
