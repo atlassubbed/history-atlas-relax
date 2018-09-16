@@ -44,7 +44,7 @@ const subdiff = f => {
   let n, p;
   if (!N){
     f.next = null;
-    while (p = prev.pop()) pop(p);
+    while (p = prev.pop()) pop(p, f);
     return;
   }
   if (!P){
@@ -57,11 +57,11 @@ const subdiff = f => {
   while (++i < M){
     n = temp.pop(), p = prev[i];
     if (n.name === p.temp.name) update(n, p)
-    else void defer(sub(n, effs, tau, p, i))
+    else void defer(sub(n, effs, tau, p, f, i))
   }
   if (N > P) while(n = temp.pop())
     void defer(push(n, effs, tau, f));
-  else while(prev.length > N) pop(prev.pop());
+  else while(prev.length > N) pop(prev.pop(), f);
 }
 
 let laggards = [];
@@ -88,7 +88,7 @@ const rediff = (f, tau=-1) => (fillPath(f, tau), sidediff());
 const rootdiff = (t, f, effs, tau=-1) => {
   if (isArr(t = norm(t))) return false;
   if (!isFrame(f)) return !!t && defer(push(t, effs, tau));
-  if (f.parent) return false;
+  if (!f.isRoot) return false;
   fillPath(f);
   if (!t) return !sidediff(pop(f));
   if (t.name === f.temp.name) update(t, f);

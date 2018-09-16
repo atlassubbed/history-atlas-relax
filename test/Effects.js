@@ -5,7 +5,7 @@ const { isArr, toArr, isObj, isVoid, isFn } = require("./util")
 // PassThrough is used to attach useful lifecycle methods onto frames.
 class PassThrough {
   willUpdate(f){f.willReceive && f.willReceive(f)}
-  willPush(f){f.willPush && f.willPush(f)}
+  willPush(f, p){f.willPush && f.willPush(f, p)}
   willDiff(f){
     if (f.epoch) f.willUpdate && f.willUpdate(f);
     else f.willAdd && f.willAdd(f);

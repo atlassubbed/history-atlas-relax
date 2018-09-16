@@ -12,33 +12,32 @@ const emit = (type, f, a1, a2) => {
 }
 
 // remove existing (sub)frame
-const pop = (f, c) => {
-  const p = f.parent, ch = f.next;
+const pop = (f, p) => {
+  let ch = f.next, c;
   emit("willPop", f, p)
-  f.parent = f.next = null;
-  if (ch) while(c = ch.pop()) pop(c);
+  f.next = null;
+  if (ch) while(c = ch.pop()) pop(c, f);
   emit("didPop", f, p), clearFrame(f);
 }
 // push (sub)frame onto frame
-const push = (t, effs, tau, f) => {
+const push = (t, effs, tau, p) => {
   t = toFrame(t, effs, tau)
-  emit("willPush", t, f);
-  if (f){
-    let i = f.next.push(t), key;
+  emit("willPush", t, p);
+  if (p){
+    let i = p.next.push(t), key;
     if (key = t.key)
-      (f.keys = f.keys || {})[key] = i - 1;
-    t.parent = f;
-  }
+      (p.keys = p.keys || {})[key] = i - 1;
+  } else t.isRoot = true;
   return t;
 }
 // sub prev frame with next frame at index i
-const sub = (t, effs, tau, f, i, c) => {
+const sub = (t, effs, tau, f, p, i) => {
   t = toFrame(t, effs, tau)
-  const p = f.parent, ch = f.next;
+  let ch = f.next, c;
   emit("willSub", t, p, i);
-  f.parent = f.next = null;
-  if (ch) while(c = ch.pop()) pop(c);
-  if (t.parent = p) p.next[i] = t;
+  f.next = null;
+  if (ch) while(c = ch.pop()) pop(c, f);
+  p ? (p.next[i] = t) : (t.isRoot = true)
   emit("didSub", f, p, i), clearFrame(f);
   return t;
 }

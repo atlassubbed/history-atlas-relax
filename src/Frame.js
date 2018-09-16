@@ -5,7 +5,7 @@ const isFrame = f => !!f && isFn(f.evaluate);
 // not to be instantiated by caller
 const Frame = function(t, effs){
   if (!t) return;
-  this.affs = this.parent = this.next =
+  this.affs = this.next =
   this.nextState = this.state = this.keys = null;
   this.epoch = 0, this.inStep = false;
   this.effs = effs, this.temp = t;

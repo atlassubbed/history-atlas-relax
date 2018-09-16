@@ -13,7 +13,6 @@ describe("Frame", function(){
     it("should set cache-related properties to their initial value", function(){
       const f = new Frame({})
       expect(f.affs).to.equal
-        (f.parent).to.equal
         (f.next).to.equal
         (f.state).to.equal
         (f.nextState).to.equal
@@ -69,13 +68,6 @@ describe("Frame", function(){
       expect(nodes[0]).to.deep.equal(nodes[2]);
       nodes[1].entangle(nodes[0])
       expect(nodes[0]).to.deep.equal(nodes[2]);
-    })
-    it("should do nothing if entangling with direct parent", function(){
-      const f1 = diff({name:"p", next: {name: "div"}});
-      const f2 = diff({name:"p", next: {name: "div"}});
-      expect(f1).to.deep.equal(f2);
-      f1.next[0].entangle(f1)
-      expect(f1).to.deep.equal(f2);
     })
     it("should do nothing if entangling with self", function(){
       const f1 = diff({name:"p", next: {name: "div"}});

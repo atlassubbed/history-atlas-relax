@@ -54,7 +54,6 @@ describe("diff", function(){
   })
   it("should not remove non-root frames", function(){
     const renderer = new Renderer(), child = new Frame({});
-    (child.parent = new Frame({})).next = [child]
     const result = diff(null, child, renderer);
     expect(result).to.be.false;
     expect(renderer.tree).to.be.null;

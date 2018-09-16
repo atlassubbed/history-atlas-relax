@@ -176,7 +176,10 @@ describe("entanglement", function(){
       if (hook === "willPush") return;
       it(`should throw before the next diff runs if cycles are introduced in ${hook}`, function(){
         const events = [], t = new Tracker(events);
-        const hooks = {[hook]: f => f.entangle(f.parent.next[0])}
+        const hooks = {
+          willPush: (f, p) => {f.parent = p},
+          [hook]: f => f.entangle(f.parent.next[0])
+        }
         const r = diff(p(0, null, [p(1), p(2, hooks)]), null, t);
         r.next[0].entangle(r.next[1]), events.length = 0;
         const update = () => diff(p(0, null, [p(1), p(2)]), r)
