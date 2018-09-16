@@ -28,6 +28,12 @@ describe("diff", function(){
       expect(a).to.equal(r).to.equal(u).to.equal(0)
     })
   })
+  it("should add a new frame if diffing on top of a null frame", function(){
+    let nullFrame = new Frame();
+    const result = diff({name: "div"}, nullFrame);
+    expect(result).to.not.be.false;
+    expect(result).to.not.equal(nullFrame);
+  })
   it("should not add multiple templates", function(){
     const renderer = new Renderer();
     const result = diff([{name:"div"},{name:"p"}], null, renderer);

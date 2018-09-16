@@ -3,11 +3,7 @@
   * if it's not in the path, throw "unexpected entanglement" error
   * otherwise, remove it, sub it, or update it normally, but without sidediffing afterwards
   * a frame can be added to the path by entangling it in the constructor of the affector
-
-2. Diffing on an already removed frame.
-  * If you diff on top of a frame that is removed, it will be treated as a diff on the null frame
-  * this results in cleaner app-level code
-
+  
 3. Added/changed/remove API
   * shouldn't prevent normal top-down diffs.
   * for example if the parent gets updated, the frame using added/changed/remove will also get diffed
@@ -38,3 +34,4 @@ These considerations matter if tau and entangled edges are changed many times wi
 TODO:
   1. Refactor entangle tests by simply asserting that the methods are called in topo-order
   2. degenerate tau value for simulating batches at app-level? think degeneracy levels
+  3. Updates and mounts are pretty slow -- currently, they're mashed together, might want to refactor

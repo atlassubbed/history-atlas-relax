@@ -75,14 +75,14 @@ const sidediff = f => {
   while(f = laggards.pop()) diff(f);
   while(f = htap.pop()) emit("didDiff", f)
 }
-
 const diff = f => (subdiff(f), emit("didDiff", f))
 const defer = f => (path.length ? laggards.push(f) : diff(f), f);
 const rediff = (f, tau=-1) => (fillPath(f, tau), sidediff());
 // public diff (mount, unmount and update frames)
 const rootdiff = (t, f, effs, tau=-1) => {
   if (isArr(t = norm(t))) return false;
-  if (!isFrame(f)) return !!t && defer(push(t, effs, tau));
+  if (!isFrame(f) || !f.temp) 
+    return !!t && defer(push(t, effs, tau));
   if (!f.isRoot) return false;
   fillPath(f);
   if (!t) return !sidediff(pop(f));
