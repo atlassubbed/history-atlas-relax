@@ -26,7 +26,7 @@ const push = (t, effs, tau, p) => {
     let i = p.next.push(t), key;
     if (key = t.key)
       (p.keys = p.keys || {})[key] = i - 1;
-  } else t.isRoot = true;
+  }
   return t;
 }
 // sub prev frame with next frame at index i
@@ -36,7 +36,7 @@ const sub = (t, effs, tau, f, p, i) => {
   emit("willSub", t, p, i);
   f.next = null;
   if (ch) while(c = ch.pop()) pop(c, f);
-  p ? (p.next[i] = t) : (t.isRoot = true)
+  p && (p.next[i] = t)
   emit("didSub", f, p, i), clearFrame(f);
   return t;
 }

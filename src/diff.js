@@ -79,15 +79,17 @@ const diff = f => (subdiff(f), emit("didDiff", f))
 const defer = f => (path.length ? laggards.push(f) : diff(f), f);
 const rediff = (f, tau=-1) => (fillPath(f, tau), sidediff());
 // public diff (mount, unmount and update frames)
+const roots = new WeakSet();
+const add = f => (roots.add(f), f)
 const rootdiff = (t, f, effs, tau=-1) => {
   if (isArr(t = norm(t))) return false;
-  if (!isFrame(f) || !f.temp) 
-    return !!t && defer(push(t, effs, tau));
-  if (!f.isRoot) return false;
+  if (!isFrame(f) || !f.temp)
+    return !!t && defer(add(push(t, effs, tau)));
+  if (!roots.has(f)) return false;
   fillPath(f);
   if (!t) return !sidediff(pop(f));
   if (t.name === f.temp.name) update(t, f);
-  else f = defer(sub(t, effs || f.effs, tau, f));
+  else f = defer(add(sub(t, effs || f.effs, tau, f)))
   return sidediff(), f;
 }
 
