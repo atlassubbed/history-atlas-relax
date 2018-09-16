@@ -12,26 +12,27 @@ describe("Frame", function(){
     })
     it("should set cache-related properties to their initial value", function(){
       const f = new Frame({})
-      expect(f.id).to.equal
-        (f.affs).to.equal
-        (f.affects).to.equal
+      expect(f.affs).to.equal
         (f.parent).to.equal
         (f.children).to.equal
         (f.state).to.equal
+        (f.nextState).to.equal
         (f.keys).to.be.null;
-      expect(f.affCount).to.equal(f.epoch).to.equal(0)
+      expect(f.epoch).to.equal(0)
+      expect(f.hasOwnProperty("effs")).to.be.true;
+      expect(f.effs).to.be.undefined;
       expect(f.inStep).to.be.false;
     })
     it("should set template properties and effects onto the instance", function(){
-      const name = 1, data = 2, next = 3, key = 4, effects = [5];
+      const name = 1, data = 2, next = 3, key = 4, effs = [5];
       const temp = {name, data, next, key}, temp2 = {};
-      const f = new Frame(temp, effects);
-      const f2 = new Frame(temp2, effects[0])
+      const f = new Frame(temp, effs);
+      const f2 = new Frame(temp2, effs[0])
       expect(f.temp).to.equal(temp)
       expect(f.key).to.equal(key);
       expect(f.name).to.equal(name);
-      expect(f.effects).to.equal(effects);
-      expect(f2.effects).to.equal(5)
+      expect(f.effs).to.equal(effs);
+      expect(f2.effs).to.equal(5)
       expect(f2.hasOwnProperty("key")).to.be.true;
       expect(f2.hasOwnProperty("name")).to.be.true;
       expect(f2.temp).to.equal(temp2)
@@ -67,11 +68,11 @@ describe("Frame", function(){
     it("should be idempotent", function(){
       const nodes = ["p","p","p"].map(name => diff({name}));
       expect(nodes[0]).to.deep.equal(nodes[1]).to.deep.equal(nodes[2])
-      nodes[0].entangle(nodes[1])
-      nodes[2].entangle(nodes[1]);
-      expect(nodes[0]).to.deep.equal(nodes[2]).to.not.deep.equal(nodes[1]);
-      nodes[0].entangle(nodes[1]);
-      expect(nodes[0]).to.deep.equal(nodes[2]).not.deep.equal(nodes[1])
+      nodes[1].entangle(nodes[0])
+      nodes[1].entangle(nodes[2])
+      expect(nodes[0]).to.deep.equal(nodes[2]);
+      nodes[1].entangle(nodes[0])
+      expect(nodes[0]).to.deep.equal(nodes[2]);
     })
     it("should do nothing if entangling with direct parent", function(){
       const f1 = diff({name:"p", next: {name: "div"}});
@@ -92,22 +93,21 @@ describe("Frame", function(){
     it("should be idempotent", function(){
       const nodes = ["p","p","p"].map(name => diff({name}));
       expect(nodes[0]).to.deep.equal(nodes[1]).to.deep.equal(nodes[2])
-      nodes[0].entangle(nodes[1])
-      nodes[2].entangle(nodes[1]);
-      nodes[0].detangle(nodes[1]);
-      expect(nodes[0]).to.not.deep.equal(nodes[2]);
-      nodes[2].detangle(nodes[1]);
+      nodes[1].entangle(nodes[0])
+      nodes[1].entangle(nodes[2])
       expect(nodes[0]).to.deep.equal(nodes[2]);
-      nodes[0].detangle(nodes[1]);
-      expect(nodes[0]).to.deep.equal(nodes[2])
+      nodes[1].detangle(nodes[2])
+      nodes[1].detangle(nodes[0])
+      nodes[1].detangle(nodes[0])
+      expect(nodes[0]).to.deep.equal(nodes[2]);
     })
     it("should be the inverse of entangle if removing last edge", function(){
       const nodes = ["p","p","p"].map(name => diff({name}));
       expect(nodes[0]).to.deep.equal(nodes[1]).to.deep.equal(nodes[2])
       nodes[0].entangle(nodes[1])
-      expect(nodes[0]).to.not.deep.equal(nodes[2]);
+      expect(nodes[1]).to.not.deep.equal(nodes[2]);
       nodes[0].detangle(nodes[1]);
-      expect(nodes[0]).to.deep.equal(nodes[2])
+      expect(nodes[1]).to.deep.equal(nodes[2])
     })
   })
   describe("setTau", function(){

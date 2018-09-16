@@ -1,19 +1,12 @@
 const { Frame } = require("./Frame");
 
-let curId = 0;
-
-// XXX these aren't called a lot; prefer indexOf/splice? (O(|affects|)) or sets
+Frame.prototype.isFam = function(f){
+  return f === this || f === this.parent
+};
 Frame.prototype.entangle = function(f){
-  if (f === this.parent || f === this) return;
-  const affs = this.affs = this.affs || {};
-  const id = f.id = f.id || ++curId;
-  if (affs[id]) return;
-  (f.affects = f.affects || []).push(this)
-  this.affCount++, affs[id] = f;
+  if (!this.isFam(f)) (f.affs = f.affs || new Set()).add(this);
 }
 Frame.prototype.detangle = function(f){
-  const affs = this.affs, id = f.id;
-  if (!affs || !affs[id]) return;
-  affs[id] = null
-  if (!--this.affCount) this.affs = null;
+  if (!this.isFam(f) && f.affs && f.affs.delete(this))
+    f.affs.size || (f.affs = null)
 }

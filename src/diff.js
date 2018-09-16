@@ -36,7 +36,7 @@ const clean = (dirty, next, index, keys) => {
 //     * the performance gain is negligble, as we short circuit fast anyway
 const subdiff = f => {
   let temp = f.temp, prev = f.children, tau = f.tau;
-  const effs = f.effects, keys = f.keys, index = keys && {};
+  const effs = f.effs, keys = f.keys, index = keys && {};
   applyState(f), f.keys = null;
   const N = clean([f.evaluate(temp.data, temp.next)], temp = [], index, keys),
     P = prev ? prev.length : 0;
@@ -80,7 +80,7 @@ const diff = (f, recur) => {
   emit("didDiff", f);
 }
 
-const defer = f => (f.affs && path.length ? laggards.push(f) : diff(f), f);
+const defer = f => (path.length ? laggards.push(f) : diff(f), f);
 
 const rediff = (f, tau=-1) => (fillPath(f, tau), sidediff());
 
@@ -92,7 +92,7 @@ const rootdiff = (t, f, effs, tau=-1) => {
   fillPath(f);
   if (!t) return !sidediff(pop(f));
   if (t.name === f.name) update(t, f);
-  else f = defer(sub(t, effs || f.effects, tau, f));
+  else f = defer(sub(t, effs || f.effs, tau, f));
   return sidediff(), f;
 }
 

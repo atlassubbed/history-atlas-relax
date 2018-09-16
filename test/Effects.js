@@ -45,10 +45,10 @@ class Tracker {
   }
   willSub(nextF, parent, i) {
     const prev = parent ? parent.children[i] : this.root;
-    this.log("wP", prev);
+    this.log("wS", prev);
     if (!parent) this.root = nextF;
   }
-  didSub(prevF){this.log("dP", prevF)}
+  didSub(prevF){this.log("dS", prevF)}
   willPop(f){this.log("wP", f)}
   didPop(f){this.log("dP", f)}
   willUpdate(f){this.log("wR", f)}

@@ -3,7 +3,7 @@ const { toFrame, clearFrame } = require("./Frame");
 
 // emit lifecycle event to effects
 const emit = (type, f, a1, a2) => {
-  const effs = f.effects;
+  const effs = f.effs;
   if (!effs) return;
   if (!isArr(effs))
     return effs[type] && void effs[type](f, a1, a2);
