@@ -1,5 +1,6 @@
 const { isArr } = require("./util")
 const { toFrame, clearFrame } = require("./Frame");
+const { evaluate } = require("./evaluate");
 
 // emit lifecycle event to effects
 const emit = (type, f, a1, a2) => {
@@ -43,9 +44,20 @@ const sub = (t, effs, tau, f, p, i) => {
 // * we cannot infer what constitutes a change for an effect
 // * memoizing templates should preclude shouldUpdate
 //   but requires stable, keyed subdiffing
-const update = (t, f) => {
-  emit("willUpdate", f, t);
+const receive = (t, f) => {
+  emit("willReceive", f, t);
   return f.temp = t, f;
 }
 
-module.exports = { emit, push, sub, pop, update }
+const add = f => {
+  emit("willAdd", f);
+  const next = evaluate(f);
+  if (next.length){
+    f.next = [];
+    let tau = f.tau, effs = f.effs, n;
+    while(n=next.pop()) add(push(n, effs, tau, f))
+  }
+  emit("didAdd", f);
+}
+
+module.exports = { emit, push, sub, pop, receive, add }

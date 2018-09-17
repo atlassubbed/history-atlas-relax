@@ -4,16 +4,12 @@ const { isArr, toArr, isObj, isVoid, isFn } = require("./util")
 
 // PassThrough is used to attach useful lifecycle methods onto frames.
 class PassThrough {
-  willUpdate(f){f.willReceive && f.willReceive(f)}
+  willReceive(f){f.willReceive && f.willReceive(f)}
   willPush(f, p){f.willPush && f.willPush(f, p)}
-  willDiff(f){
-    if (f.epoch) f.willUpdate && f.willUpdate(f);
-    else f.willAdd && f.willAdd(f);
-  }
-  didDiff(f){
-    if (f.epoch) f.didUpdate && f.didUpdate(f);
-    else f.didAdd && f.didAdd(f);
-  }
+  willAdd(f){f.willAdd && f.willAdd(f)}
+  didAdd(f){f.didAdd && f.didAdd(f)}
+  willUpdate(f){f.willUpdate && f.willUpdate(f)}
+  didUpdate(f){f.didUpdate && f.didUpdate(f)}
 }
 
 // Cache is used to cache all frames in the constructed tree.
@@ -51,9 +47,11 @@ class Tracker {
   didSub(prevF){this.log("dS", prevF)}
   willPop(f){this.log("wP", f)}
   didPop(f){this.log("dP", f)}
-  willUpdate(f){this.log("wR", f)}
-  willDiff(f){this.log(f.epoch ? "wU" : "wA", f)}
-  didDiff(f){this.log(f.epoch ? "dU" : "dA", f)}
+  willReceive(f){this.log("wR", f)}
+  willAdd(f){this.log("wA", f)}
+  didAdd(f){this.log("dA", f)}
+  willUpdate(f){this.log("wU", f)}
+  didUpdate(f){this.log("dU", f)}
 }
 
 // Timer is used to record update times.
@@ -69,9 +67,9 @@ class Timer {
     e.state = f.state && Object.assign({}, f.state);
     this.events.push(e);
   }
-  willUpdate(f){this.log("wR", f)}
-  willDiff(f){f.epoch && this.log("wU", f)}
-  didDiff(f){f.epoch && this.log("dU", f)}
+  willReceive(f){this.log("wR", f)}
+  willUpdate(f){this.log("wU", f)}
+  didUpdate(f){this.log("dU", f)}
 }
 
 // Renderer should be as dumb as possible.
@@ -153,19 +151,12 @@ class Renderer {
     if (!next.length)
       delete node.next;
   }
-  willUpdate(frame, temp){
+  willReceive(frame, temp){
     // will be setting new temp onto frame
     frame._node.data = temp.data;
   }
-  willDiff(frame){
-    // about to add or update frame
-    // can be used to trigger a hook
-  }
-  didDiff(frame){
-    // just finished adding or updating frame
-    if (frame.epoch) return this.counts.u++;
-    this.counts.a++;
-  }
+  didAdd(frame){this.counts.a++}
+  didUpdate(frame){this.counts.u++}
 }
 
 module.exports = { Renderer, Tracker, PassThrough, Timer, Cache }
