@@ -22,15 +22,12 @@ const type = str => {
   return str.slice(0, i).trim();
 }
 
-const deepSet = (tree, fields) => {
-  for (let f in fields) tree[f] = fields[f];
-  if (tree.next) for (let c of tree.next) deepSet(c, fields);
-  return tree;
-}
-
 const pretty = tree => JSON.stringify(tree, null, 2)
+
+// pseudo-deep copy a multi-dimensional array
+const copy = t => t && (isArr(t) ? t.map(copy) : Object.assign({}, t));
 
 module.exports = { 
   isArr, isObj, isFn, isVoid, isScalar,
-  toArr, has, inject, type, deepSet, pretty
+  toArr, has, inject, type, pretty, copy
 }

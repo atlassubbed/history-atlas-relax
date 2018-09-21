@@ -178,10 +178,13 @@ describe("entanglement", function(){
         const events = [], t = new Tracker(events);
         const hooks = {
           willPush: (f, p) => {f.parent = p},
-          [hook]: f => f.entangle(f.parent.next[0])
+          [hook]: f => {
+            f.entangle(f.parent.next[0])
+          }
         }
         const r = diff(p(0, null, [p(1), p(2, hooks)]), null, t);
-        r.next[0].entangle(r.next[1]), events.length = 0;
+        r.next[0].entangle(r.next[1])
+        events.length = 0;
         const update = () => diff(p(0, null, [p(1), p(2)]), r)
         if (has(addHooks, hook)){
           expect(update).to.throw("cyclic entanglement")
@@ -324,10 +327,9 @@ describe("entanglement", function(){
         const result = [ 
           {wR: 0}, {wU: 0}, {wR: 1}, {wU: 1}, {wR: 2}, {wR: 3},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
-          {wU: 2}, {wR: 9}, {wR: 11}, {wU: 9}, {wR: 10}, {wU: 10}, {wU: 11},
+          {wU: 2}, {wR: 9}, {wU: 9}, {wR: 10}, {wU: 10}, {dU: 10}, {dU: 9}, {wR: 11}, {wU: 11}, {dU: 11},
           {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},
-          {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3}, {dU: 11}, {dU: 10}, {dU: 9}, 
-          {dU: 2}, {dU: 5}, {dU: 4}, {dU: 1}, {dU: 0} 
+          {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3}, {dU: 2}, {dU: 5}, {dU: 4}, {dU: 1}, {dU: 0} 
         ]
         const update = () => diff(treeCase.tag0(), nodes[0]);
         update(), events.length = 0, update();
@@ -368,9 +370,9 @@ describe("entanglement", function(){
         const result = [ 
           {wR: 0}, {wU: 0}, {wR: 1}, {wU: 1}, {wR: 2}, {wR: 3},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
-          {wU: 2}, {wR: 9}, {wR: 11}, {wU: 11},
+          {wU: 2}, {wR: 9}, {wR: 11}, {wU: 11}, {dU: 11},
           {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7}, {wU: 9}, {wR: 10}, {wU: 10},
-          {dU: 10}, {dU: 9}, {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3}, {dU: 11}, 
+          {dU: 10}, {dU: 9}, {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3},
           {dU: 2}, {dU: 5}, {dU: 4}, {dU: 1}, {dU: 0} 
         ]
         const update = () => diff(treeCase.tag0(), nodes[0]);
@@ -412,10 +414,10 @@ describe("entanglement", function(){
         })
         const result = [ 
           {wR: 0}, {wU: 0}, {wR: 1}, {wU: 1}, {wR: 2}, {wR: 3},
-          {wU: 2}, {wR: 9}, {wR: 11}, {wU: 9}, {wR: 10},
+          {wU: 2}, {wR: 9}, {wR: 11}, {wU: 11}, {dU: 11}, {wU: 9}, {wR: 10}, {wU: 10}, {dU: 10},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
-          {wU: 10}, {wU: 11}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},
-          {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3}, {dU: 11}, {dU: 10}, 
+          {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},
+          {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3}, 
           {dU: 5}, {dU: 4}, {dU: 9}, {dU: 2}, {dU: 1}, {dU: 0} 
         ]
         const update = () => diff(treeCase.tag0(), nodes[0]);

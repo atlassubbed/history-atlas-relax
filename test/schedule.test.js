@@ -18,10 +18,10 @@ const h = Oscillator.h;
 // don't test doing this during diffs yet.
 
 // timescale config
-const T = 500
+const T = 1000
 const CHECK = T*5; // at least 4T
 const ALLOW = T*6; // at least CHECK
-const ASYNC_ERROR = t => t ? t*.1 : 15 // setTimeout(0) given leeway
+const ASYNC_ERROR = t => t ? t*.1 : 25 // setTimeout(0) given leeway
 const SYNC_ERROR = 10
 
 const mount = (pTau, cTau, events) => {

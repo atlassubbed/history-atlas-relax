@@ -5,10 +5,11 @@ const isFrame = f => !!f && isFn(f.evaluate);
 // not to be instantiated by caller
 const Frame = function(t, effs){
   if (!t) return;
-  this.affs = this.next =
-  this.nextState = this.state = this.keys = null;
-  this.epoch = 0, this.inStep = false;
   this.effs = effs, this.temp = t;
+  this.affs = this.next = this._affs =
+  this.nextState = this.state = this.keys = null;
+  this.affCount = this._affCount = 0;
+  this.inStep = this.inPath = this.isOrig = false;
 }
 Frame.prototype.evaluate = function(data, next){ return next }
 Frame.isFrame = isFrame
@@ -22,7 +23,7 @@ Frame.define = (Subframe, proto) => {
 }
 // XXX this is expensive, consider using sets/maps to reduce the internal api
 const clearFrame = f => {
-  f.state = f.nextState = f.temp = f.effs = f.affs = f.keys = null;
+  f.state = f.nextState = f.temp = f.effs = f.affs = f._affs = f.keys = null;
 }
 // temp is already normalized
 const toFrame = (t, effs, tau) => {

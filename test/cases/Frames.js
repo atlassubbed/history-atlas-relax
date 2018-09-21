@@ -1,4 +1,4 @@
-const { toArr, isFn } = require("../util");
+const { toArr, copy, isFn } = require("../util");
 const { Frame } = require("../../src/index");
 
 // Frame classification:
@@ -102,6 +102,9 @@ class StemCell extends Frame {
       for (let h in hooks)
         this[h] = hooks[h].bind(this)
     }
+  }
+  evaluate(data, next){
+    return copy(next);
   }
   static h(id, hooks, next){
     return {name: StemCell, data: {id, hooks}, next};

@@ -30,13 +30,14 @@ const add = (f, tau) => {
 }
 
 const setTau = (f, nTau) => {
-  const { nextState, next, tau } = f;
+  const tau = f.tau;
   if ((f.tau = nTau) === tau || nTau < 0 && tau < 0) return;
+  const next = f.next;
   if (next){
     let cN = next.length, c;
     while(cN--) setTau(c = next[cN], c.getTau(nTau));
   }
-  if (nextState) nTau < 0 ? sync.push(f) : add(f, nTau);
+  if (f.nextState) nTau < 0 ? sync.push(f) : add(f, nTau);
 }
 
 // getTau can return an unchanging value to short-circuit cascading

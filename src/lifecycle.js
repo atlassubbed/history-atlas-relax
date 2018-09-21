@@ -1,6 +1,6 @@
 const { isArr } = require("./util")
 const { toFrame, clearFrame } = require("./Frame");
-const { evaluate } = require("./evaluate");
+const { clean } = require("./evaluate");
 
 // emit lifecycle event to effects
 const emit = (type, f, a1, a2) => {
@@ -8,15 +8,13 @@ const emit = (type, f, a1, a2) => {
   if (!effs) return;
   if (!isArr(effs))
     return effs[type] && void effs[type](f, a1, a2);
-  for (let e of effs)
-    if (e[type]) void e[type](f, a1, a2);
+  for (let e of effs) if (e[type]) e[type](f, a1, a2);
 }
 // remove existing (sub)frame
 const pop = (f, p) => {
   let ch = f.next, c;
   emit("willPop", f, p)
-  f.next = null;
-  if (ch) while(c = ch.pop()) pop(c, f);
+  if (f.next = null, ch) while(c = ch.pop()) pop(c, f);
   emit("didPop", f, p), clearFrame(f);
 }
 // push (sub)frame onto frame
@@ -35,8 +33,7 @@ const sub = (t, effs, tau, f, p, i) => {
   t = toFrame(t, effs, tau)
   let ch = f.next, c;
   emit("willSub", t, p, i);
-  f.next = null;
-  if (ch) while(c = ch.pop()) pop(c, f);
+  if (f.next = null, ch) while(c = ch.pop()) pop(c, f);
   p ? (p.next[i] = t) : (t.isRoot = true)
   emit("didSub", f, p, i), clearFrame(f);
   return t;
@@ -49,10 +46,9 @@ const receive = (t, f) => {
   return f.temp = t, f;
 }
 
-const add = f => {
-  emit("willAdd", f);
-  const next = evaluate(f);
-  if (next.length){
+const add = (f, t, next) => {
+  emit("willAdd", f), t = f.temp;
+  if ((next = clean([f.evaluate(t.data, t.next)])).length){
     f.next = [];
     let tau = f.tau, effs = f.effs, n;
     while(n=next.pop()) add(push(n, effs, tau, f))

@@ -13,14 +13,15 @@ describe("Frame", function(){
     it("should set cache-related properties to their initial value", function(){
       const f = new Frame({})
       expect(f.affs).to.equal
+        (f._affs).to.equal
         (f.next).to.equal
         (f.state).to.equal
         (f.nextState).to.equal
         (f.keys).to.be.null;
-      expect(f.epoch).to.equal(0)
+      expect(f.affCount).to.equal(f._affCount).to.equal(0)
       expect(f.hasOwnProperty("effs")).to.be.true;
       expect(f.effs).to.be.undefined;
-      expect(f.inStep).to.be.false;
+      expect(f.inStep).to.equal(f.inPath).to.equal(f.isOrig).to.be.false;
     })
     it("should set template and effects onto the instance", function(){
       const name = 1, data = 2, next = 3, key = 4, effs = [5];

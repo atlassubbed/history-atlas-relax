@@ -1,10 +1,4 @@
-1. Diffing when you are inside of a diff
-  * if inside a diff, ensure that the frame to be diffed on is inside the path
-  * if it's not in the path, throw "unexpected entanglement" error
-  * otherwise, remove it, sub it, or update it normally, but without sidediffing afterwards
-  * a frame can be added to the path by entangling it in the constructor of the affector
-  
-3. Added/changed/remove API
+ 3. Added/changed/remove API
   * shouldn't prevent normal top-down diffs.
   * for example if the parent gets updated, the frame using added/changed/remove will also get diffed
   * if a change happens that results in an added/changed/remove, this will not trigger a full diff
@@ -19,19 +13,16 @@
 
 Micro-performance considerations after everything else is already done:
 
-These considerations matter if tau and entangled edges are changed many times with respect to the number of diffs
-
-6. Constant entanglement and scheduling
-  * investigate using ES6 Set and/or linked-lists+hash for scheduling (for O(1) inserts and dels)
-  * The linked-list+hash option will require loads more memory, since we'll need it to be doubly-linked and reference all of the nodes and affectors for quick removals
-  * Could actually avoid double-linked by tagging the nodes for removal and then removing the next time we iterate (keeping prev node reference), similar to what we do now, then we'll avoid recreating the list (like we do now)
-
 7. Call stack:
   * Both atlas-frame an preact will throw an error when trying to mount trees that exceed a certain height.
   * React does not throw an error, because it probably uses its own stack to perform subdiffs
   * This is an extreme edge case, and may be considered in the future
 
 TODO:
-  1. Refactor entangle tests by simply asserting that the methods are called in topo-order
   2. degenerate tau value for simulating batches at app-level? think degeneracy levels
-  3. Updates and mounts are pretty slow -- currently, they're mashed together, might want to refactor
+  8. Calling setState and setTau during a diff cycle need to be well-defined.
+  9. Caling diff during a diff cycle needs to be well-defined for removes/updates/subs
+  10. should all entangled willUpdates be called before all evaluates, before all didUpdates?
+    * |-willUpdates-|-evaluates-|-didUpdates-|
+    * to ensure that every frame has access to prev and next data and state during willUpdate
+      * for all affectors and self

@@ -7,8 +7,7 @@ const { toArr } = require("../util");
 //   * typical/log height (binary tree)
 class TemplateFactory {
   constructor(Subframe, chainDepth=0){
-    this.Frame = Subframe || Frame, 
-    this.cache = {a: {}, l: {}, b: {}, s: {}};
+    this.Frame = Subframe || Frame;
     if (!Subframe) while(chainDepth--)
       this.Frame = class extends this.Frame {};
   }
@@ -18,14 +17,12 @@ class TemplateFactory {
     return node;
   }
   linkedList(n){
-    if (this.cache.l[n]) return this.cache.l[n];
     let node;
     while(n--) node = this.h(node);
-    return this.cache.l[n] = node;
+    return node;
   }
   // balanced
   binaryTree(n){
-    if (this.cache.b[n]) return this.cache.b[n];
     let nodes = [], m = n;
     while(m--) nodes.push(this.h());
     let r = nodes[n-1], i = 0, p, c1, c2;
@@ -34,13 +31,12 @@ class TemplateFactory {
       if (c1 = nodes[s]) (p.next = p.next || []).push(c1);
       if (c2 = nodes[s-1]) p.next.push(c2);
     }
-    return this.cache.b[n] = r;
+    return r;
   }
   star(n){
-    if (this.cache.s[n]) return this.cache.s[n];
     const next = [];
     while(n-- > 1) next.push(this.h());
-    return this.cache.s[n] = this.h(next.reverse());
+    return this.h(next.reverse());
   }
 }
 
