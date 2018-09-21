@@ -300,7 +300,7 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           2: {
             willUpdate: f => {f.nextChildren = [p(9, null, p(10)), p(11)]},
-            evaluate(data, next){
+            diff(data, next){
               return this.nextChildren
             }
           }
@@ -319,7 +319,7 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           2: {
             willUpdate: f => {f.nextChildren = [p(9, null, p(10)), p(11)]},
-            evaluate(data, next){
+            diff(data, next){
               return this.nextChildren
             }
           }
@@ -341,7 +341,7 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.nextChildren = [p(9, {ctor: f => f.entangle(nodes[7])}, p(10)), p(11)]
             },
-            evaluate(data, next){
+            diff(data, next){
               return this.nextChildren
             }
           }
@@ -362,7 +362,7 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.nextChildren = [p(9, {ctor: f => f.entangle(nodes[7])}, p(10)), p(11)]
             },
-            evaluate(data, next){
+            diff(data, next){
               return this.nextChildren
             }
           }
@@ -386,7 +386,7 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.nextChildren = [p(9, {ctor: f => nodes[4].entangle(f)}, p(10)), p(11)]
             },
-            evaluate(data, next){
+            diff(data, next){
               return this.nextChildren
             }
           }
@@ -407,7 +407,7 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.nextChildren = [p(9, {ctor: f => nodes[4].entangle(f)}, p(10)), p(11)]
             },
-            evaluate(data, next){
+            diff(data, next){
               return this.nextChildren
             }
           }
@@ -430,7 +430,7 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.kill = true;
             },
-            evaluate(data, next){
+            diff(data, next){
               return this.kill ? null : next;
             }
           }
@@ -451,7 +451,7 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.nextChildren = a(9);
             },
-            evaluate(data, next){
+            diff(data, next){
               return this.nextChildren || next;
             }
           }
@@ -471,7 +471,7 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.nextChildren = a(9, {ctor: f => f.entangle(nodes[4])});
             },
-            evaluate(data, next){
+            diff(data, next){
               return this.nextChildren || next;
             }
           }
@@ -491,7 +491,7 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.nextChildren = a(9, {ctor: f => f.entangle(nodes[4])});
             },
-            evaluate(data, next){
+            diff(data, next){
               return this.nextChildren || next;
             }
           }

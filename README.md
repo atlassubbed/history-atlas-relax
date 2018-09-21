@@ -6,7 +6,7 @@ Rendering-agnostic DAG reconciliation layer which can be extended via lifecycle 
 
 ---
 
-Terminology: A frame is a lightweight DAG of nodes which hold data, the ability to update the data, and lifecycle methods. A template is an object-literal describing a tree of frames. Frames should never be instantiated directly, but with the diff function, which creates, updates and destroys frames. All frames must implement an `evaluate` method which returns templates.
+Terminology: A frame is a lightweight DAG of nodes which hold data, the ability to update the data, and lifecycle methods. A template is an object-literal describing a tree of frames. Frames should never be instantiated directly, but with the diff function, which creates, updates and destroys frames. All frames must implement an `diff` method which returns templates.
 
 NB: This is not a view framework. It is an abstraction for DAG diffing and (a)synchronous reconciliation. This library is solely responsible for managing a living DAG graph, meaning it is rendering-agnostic. 
 
@@ -18,7 +18,7 @@ Usage: The diff function is repsonsible for creating frames. A successful diff t
 
 Potential Features:
   1. shouldUpdate: 
-    Perhaps shouldUpdate should not be implemented, because it provides an opportunity for the caller to return a false negative in the diffing process. Since shouldUpdate returns either true or false for the entire node, it is hard to be 100% confident for complex evaluate functions. 
+    Perhaps shouldUpdate should not be implemented, because it provides an opportunity for the caller to return a false negative in the diffing process. Since shouldUpdate returns either true or false for the entire node, it is hard to be 100% confident for complex diff functions. 
   2. Class extension as opposed to effects:
     Previously, effects were required to be subclasses, however this leads to many problems, like inferring the base type, long prototype chains, and side-effects overriding each other. I'm pretty sure the current plugin model works much better for side-effects on the DAG.
 

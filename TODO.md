@@ -22,7 +22,7 @@ TODO:
   2. degenerate tau value for simulating batches at app-level? think degeneracy levels
   8. Calling setState and setTau during a diff cycle need to be well-defined.
   9. Caling diff during a diff cycle needs to be well-defined for removes/updates/subs
-  10. should all entangled willUpdates be called before all evaluates, before all didUpdates?
-    * |-willUpdates-|-evaluates-|-didUpdates-|
+  10. should all entangled willUpdates be called before all diffs, before all didUpdates?
+    * |-willUpdates-|-diffs-|-didUpdates-|
     * to ensure that every frame has access to prev and next data and state during willUpdate
       * for all affectors and self

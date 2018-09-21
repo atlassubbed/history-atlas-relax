@@ -1,16 +1,17 @@
-const { isVoid, isArr, norm, applyState } = require("./util")
+const { isVoid, isArr, norm, applyState, clean } = require("./util")
 const { Frame: { isFrame } } = require("./Frame");
 const { fill, path, pluck } = require("./step-leader");
 const { emit, push, sub, pop, receive, add } = require("./lifecycle");
-const { evaluate } = require("./evaluate")
 const { jumps } = require("./entangle");
+
+const calc = (f, t) => clean([f.diff((t = f.temp).data, t.next)]);
 
 // diff "downwards" from a frame
 //   * short circuit > switch under one loop
 const subdiff = f => {
   emit("willUpdate", f);
   applyState(f)
-  const prev = f.next, next = evaluate(f),
+  const prev = f.next, next = calc(f),
     P = prev ? prev.length : 0, N = next.length;
   if (!(N || P)) return;
   let n, p;

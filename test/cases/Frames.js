@@ -19,7 +19,7 @@ const StatelessBlackboxScalar = data => ({
   ]
 })
 class StatefulBlackboxScalar extends Frame {
-  evaluate(data){
+  diff(data){
     return StatelessBlackboxScalar(data)
   }
 }
@@ -27,7 +27,7 @@ function LegacyBlackboxScalar(temp, effs){
   Frame.call(this, temp, effs)
 }
 Frame.define(LegacyBlackboxScalar, {
-  evaluate(data){
+  diff(data){
     return StatelessBlackboxScalar(data)
   }
 })
@@ -37,7 +37,7 @@ const StatelessBlackboxVector = data => [
   {name: "p", data}
 ]
 class StatefulBlackboxVector extends Frame {
-  evaluate(data){
+  diff(data){
     return StatelessBlackboxVector(data)
   }
 }
@@ -45,7 +45,7 @@ function LegacyBlackboxVector(temp, effs){
   Frame.call(this, temp, effs)
 }
 Frame.define(LegacyBlackboxVector, {
-  evaluate(data){
+  diff(data){
     return StatelessBlackboxVector(data)
   }
 })
@@ -58,7 +58,7 @@ const StatelessFunctionalScalar = (data, next) => ({
   ]
 })
 class StatefulFunctionalScalar extends Frame {
-  evaluate(data, next){
+  diff(data, next){
     return StatelessFunctionalScalar(data, next);
   }
 }
@@ -66,7 +66,7 @@ function LegacyFunctionalScalar(temp, effs){
   Frame.call(this, temp, effs)
 }
 Frame.define(LegacyFunctionalScalar, {
-  evaluate(data, next){
+  diff(data, next){
     return StatelessFunctionalScalar(data, next);
   }
 })
@@ -77,7 +77,7 @@ const StatelessFunctionalVector = (data, next) => [
   ...toArr(next)
 ]
 class StatefulFunctionalVector extends Frame {
-  evaluate(data, next){
+  diff(data, next){
     return StatelessFunctionalVector(data, next);
   }
 }
@@ -85,7 +85,7 @@ function LegacyFunctionalVector(temp, effs){
   Frame.call(this, temp, effs)
 }
 Frame.define(LegacyFunctionalVector, {
-  evaluate(data, next){
+  diff(data, next){
     return StatelessFunctionalVector(data, next)
   }
 })
@@ -103,7 +103,7 @@ class StemCell extends Frame {
         this[h] = hooks[h].bind(this)
     }
   }
-  evaluate(data, next){
+  diff(data, next){
     return copy(next);
   }
   static h(id, hooks, next){
@@ -137,7 +137,7 @@ class Oscillator extends StemCell {
   static h(id, tau, next){
     return {name: Oscillator, data: {id, tau}, next};
   }
-  // evaluate(data, next){
+  // diff(data, next){
   //   this.log && this.log("e", this);
   //   return next;
   // }

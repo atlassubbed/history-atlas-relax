@@ -1,6 +1,6 @@
 const { isComp, isFn, isArr, merge } = require("./util")
 
-const isFrame = f => !!f && isFn(f.evaluate);
+const isFrame = f => !!f && isFn(f.diff);
 
 // not to be instantiated by caller
 const Frame = function(t, effs){
@@ -11,7 +11,7 @@ const Frame = function(t, effs){
   this.affCount = this._affCount = 0;
   this.inStep = this.inPath = this.isOrig = false;
 }
-Frame.prototype.evaluate = function(data, next){ return next }
+Frame.prototype.diff = function(data, next){ return next }
 Frame.isFrame = isFrame
 Frame.define = (Subframe, proto) => {
   if (Subframe === Frame) 
@@ -31,7 +31,7 @@ const toFrame = (t, effs, tau) => {
   else {
     const Sub = t.name;
     if (isFrame(Sub.prototype)) t = new Sub(t, effs);
-    else t = new Frame(t, effs), t.evaluate = Sub;
+    else t = new Frame(t, effs), t.diff = Sub;
   }
   return t.tau = t.getTau(tau), t;
 }

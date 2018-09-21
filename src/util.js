@@ -9,6 +9,15 @@ const isComp = t => !!t && isFn(t.name);
 // XXX should nameless nodes be sterile? i.e. t.next -> null
 const norm = t => isVoid(t) ? false : typeof t === "object" ? t : {name: null, data: String(t)};
 
+const clean = dirty => {
+  let next = [], t;
+  while(dirty.length){
+    if (isArr(t = dirty.pop())) for (let i of t) dirty.push(i);
+    else if (!isVoid(t)) next.push(norm(t));
+  }
+  return next;
+}
+
 const applyState = (f, ns, s) => {
   if (ns = f.nextState){
     if (!(s = f.state)) f.state = ns;
@@ -17,4 +26,4 @@ const applyState = (f, ns, s) => {
   }
 }
 
-module.exports = { isFn, isArr, isVoid, isComp, norm, applyState }
+module.exports = { isFn, isArr, isVoid, isComp, norm, applyState, clean }

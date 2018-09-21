@@ -35,7 +35,7 @@ describe("Frame", function(){
     })
   })
   describe("static isFrame", function(){
-    it("should return true for objects with an evaluate method", function(){
+    it("should return true for objects with a diff method", function(){
       const f = new Frame({});
       class Subframe extends Frame {};
       const s = new Subframe({});
@@ -48,15 +48,15 @@ describe("Frame", function(){
   })
   describe("static define", function(){
     it("should throw an error if provided base frame class", function(){
-      expect(() => Frame.define(Frame, {evaluate(){return null}}))
+      expect(() => Frame.define(Frame, {diff(){return null}}))
         .to.throw("cannot re-define base")
     })
     it("should turn the provided class into a subclass of frame", function(){
       const Subframe = function(temp, effs){Frame.call(this, temp, effs)}
-      const methods = {evaluate(){return null}};
+      const methods = {diff(){return null}};
       Frame.define(Subframe, methods);
       expect(Subframe.prototype.constructor).to.equal(Subframe)
-      expect(Subframe.prototype.evaluate).to.equal(methods.evaluate)
+      expect(Subframe.prototype.diff).to.equal(methods.diff)
       expect(new Subframe({})).to.be.an.instanceOf(Frame)
     })
   })

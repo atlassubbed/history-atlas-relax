@@ -80,8 +80,8 @@ const getNext = temp => {
   const { name, data, next } = temp;
   if (!isFn(name)) return next;
   const p = name.prototype;
-  if (p && isFn(p.evaluate))
-    return (new name(temp)).evaluate(data, next);
+  if (p && isFn(p.diff))
+    return (new name(temp)).diff(data, next);
   return name(data, next);
 }
 class Renderer {

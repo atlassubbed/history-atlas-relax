@@ -1,6 +1,5 @@
-const { isArr } = require("./util")
+const { isArr, clean } = require("./util")
 const { toFrame, clearFrame } = require("./Frame");
-const { clean } = require("./evaluate");
 
 // emit lifecycle event to effects
 const emit = (type, f, a1, a2) => {
@@ -48,7 +47,7 @@ const receive = (t, f) => {
 
 const add = (f, t, next) => {
   emit("willAdd", f), t = f.temp;
-  if ((next = clean([f.evaluate(t.data, t.next)])).length){
+  if ((next = clean([f.diff(t.data, t.next)])).length){
     f.next = [];
     let tau = f.tau, effs = f.effs, n;
     while(n=next.pop()) add(push(n, effs, tau, f))
