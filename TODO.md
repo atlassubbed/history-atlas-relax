@@ -26,3 +26,12 @@ TODO:
     * |-willUpdates-|-diffs-|-didUpdates-|
     * to ensure that every frame has access to prev and next data and state during willUpdate
       * for all affectors and self
+  11. Once keys are implemented, the subdiff algorithm will be complete, we can consider:
+    * an alternative to popping the path -- Kahn's algorithm after DFS marks the nodes with their in-degree.
+      * might allow us to avoid unmarking subpaths that decided not to update
+      * will, however, incur decrement costs on all nodes (not just ones that were unmarked)
+    * recalculating paths IFF an entanglement change occured since the last time the path was calculated
+      * i suspect this will not make a huge difference and will incur more memory cost than we want
+    * is normalzing to an array more expensive than allowing a field to be an array or non-array and performing checks everywhere?
+      * isArray checks would increase computation and file size
+      * normalizing to an array involves wrapping scalars in an unnecessary array.

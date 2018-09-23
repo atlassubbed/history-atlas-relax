@@ -104,9 +104,12 @@ class StemCell extends Frame {
     }
   }
   diff(data, next){
-    return copy(next);
+    return data.copy ? copy(next) : next;
   }
   static h(id, hooks, next){
+    return {name: StemCell, data: {id, hooks, copy: true}, next};
+  }
+  static m(id, hooks, next){
     return {name: StemCell, data: {id, hooks}, next};
   }
 }
@@ -135,7 +138,7 @@ class Oscillator extends StemCell {
     return myTau != null ? myTau : tau;
   }
   static h(id, tau, next){
-    return {name: Oscillator, data: {id, tau}, next};
+    return {name: Oscillator, data: {id, tau, copy: true}, next};
   }
   // diff(data, next){
   //   this.log && this.log("e", this);

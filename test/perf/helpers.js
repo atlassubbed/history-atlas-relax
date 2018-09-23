@@ -1,6 +1,7 @@
 const { Frame } = require("../../src/index");
 const { toArr } = require("../util");
 
+let id = 0;
 // edge cases:
 //   * max height (linked list)
 //   * max width (star)
@@ -12,7 +13,7 @@ class TemplateFactory {
       this.Frame = class extends this.Frame {};
   }
   h(next){
-    const node = {name: this.Frame};
+    const node = {name: this.Frame, data: {id: ++id}};
     if (next) node.next = next;
     return node;
   }
@@ -52,4 +53,16 @@ const printHeap = () => {
   console.log(`\n${Math.floor(mb)} MB being used`)
 }
 
-module.exports = { TemplateFactory, count, printHeap }
+const rightPad = str => {
+  const numPad = Math.max(0, 25-str.length)
+  return str + Array(numPad+1).fill().join(" ");
+}
+
+const doWork = n => {
+  if (n){
+    const result = [];
+    while(n--) result.push({name: "div"});
+  }
+}
+
+module.exports = { TemplateFactory, count, printHeap, rightPad, doWork }

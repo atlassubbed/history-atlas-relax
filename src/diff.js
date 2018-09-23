@@ -1,17 +1,15 @@
 const { isVoid, isArr, norm, applyState, clean } = require("./util")
 const { Frame: { isFrame } } = require("./Frame");
-const { fill, path, pluck } = require("./step-leader");
+const { path, fill, unfill } = require("./step-leader");
 const { emit, push, sub, pop, receive, add } = require("./lifecycle");
-const { jumps } = require("./entangle");
-
-const calc = (f, t) => clean([f.diff((t = f.temp).data, t.next)]);
+const { hops } = require("./entangle");
 
 // diff "downwards" from a frame
 //   * short circuit > switch under one loop
-const subdiff = f => {
-  emit("willUpdate", f);
+const subdiff = (f, t) => {
+  emit("willUpdate", f), t = f.temp;
   applyState(f)
-  const prev = f.next, next = calc(f),
+  const prev = f.next, next = clean([f.diff(t.data, t.next)]),
     P = prev ? prev.length : 0, N = next.length;
   if (!(N || P)) return;
   let n, p;
@@ -29,7 +27,7 @@ const subdiff = f => {
   let i = -1, M = Math.min(N, P);
   while (++i < M){
     n = next.pop(), p = prev[i];
-    if (n === p.temp) pluck(p);
+    if (n === p.temp) unfill(p);
     else if (n.name !== p.temp.name) defer(sub(n, effs, tau, p, f, i));
     else if (receive(n,p) && !(p.affCount||p.affs)) subdiff(p), end(p);
   }
@@ -40,19 +38,20 @@ const subdiff = f => {
 // diff "sideways" along the calculated path
 //   * initially used call stack; led to overflows for lateral updates
 //   * htap is "path" in reverse, we don't need it to avoid .reverse(), but we avoid .length = 0
-const laggards = [], htap = [];
+const lags = [], htap = [];
 const sidediff = f => {
   while(f = path.pop()) if (f.temp && f.inPath) htap.push(f), subdiff(f);
-  while(f = laggards.pop()) add(f);
+  while(f = lags.pop()) add(f);
   while(f = htap.pop()) end(f);
-  while(f = jumps.pop()) {
-    for (let [c, t] of f._affs) c[t](f);
+  while(f = hops.pop()) {
+    for (let [c, t] of f._affs)
+      t ? c.entangle(f) : c.detangle(f);
     f._affs = null;
   }
 }
 const end = f => emit("didUpdate", f, f._affCount =+ (f.isOrig = f.inPath = false))
-const defer = f => (path.length ? laggards.push(f) : add(f), f);
-const rediff = (f, tau=-1) => (fill(f, tau), sidediff());
+const defer = f => (path.length ? lags.push(f) : add(f), f);
+const rediff = (f, tau=-1) => {fill(f, tau), sidediff()};
 // public diff (mount, unmount and update frames)
 const diff = (t, f, effs, tau=-1) => {
   if (isArr(t = norm(t))) return false;

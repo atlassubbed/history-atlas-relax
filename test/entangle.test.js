@@ -5,9 +5,8 @@ const { diff: rawDiff } = require("../src/index");
 const { rootCase, treeCase, p, a } = require("./cases/entangle");
 const { has } = require("./util");
 
-// PassThrough lets frames capture lifecycle events
-const passEff = new PassThrough;
-const diff = (t, f, eff) => rawDiff(t, f, eff ? [eff, passEff] : null);
+const pass = new PassThrough;
+const diff = (t, f, eff) => rawDiff(t, f, eff ? [eff, pass] : null);
 
 const updateHooks = ["willReceive", "willUpdate", "didUpdate"];
 const addHooks = ["willPush", "willAdd", "didAdd"];

@@ -12,22 +12,17 @@ const { isFn } = require("./util");
 //       this is an implementation detail, the tests don't (and shouldn't) care about this
 //   there might be a clever way to queue updates at times with less timing gymnastics
 //     * tests should be agnostic of the scheduling implementation
+// XXX rIC/rAF should be implemented at the effect level
+
 let asap = typeof Promise === "function" ? Promise.resolve() : false;
 asap = asap ? asap.then.bind(asap) : setTimeout;
 const schedule = {}, sync = [];
-
-// XXX rIC/rAF should be implemented at the effect level
+const reject = e => setTimeout(() => {throw e}); // i don't like this
 const queue = tau => {
-  if (!tau) return asap(() => rediff(schedule[tau], tau));
-  setTimeout(() => rediff(schedule[tau], tau), tau)
+  const j = () => rediff(schedule[tau], tau);
+  tau ? setTimeout(j, tau) : asap(j).catch(reject)
 }
-
-const add = (f, tau) => {
-  const s = schedule[tau];
-  if (!s) schedule[tau] = [f];
-  else if (s.push(f) > 1) return;
-  queue(tau);
-}
+const add = (f, tau) => (schedule[tau] = schedule[tau] || []).push(f) > 1 || queue(tau);
 
 const setTau = (f, nTau) => {
   const tau = f.tau;
@@ -44,8 +39,7 @@ const setTau = (f, nTau) => {
 Frame.prototype.getTau = function(next){ return next }
 // setTau cascades down the subtree and reschedules diffs
 Frame.prototype.setTau = function(next){
-  setTau(this, next);
-  if (sync.length) rediff(sync);
+  setTau(this, next), sync.length && rediff(sync)
 }
 // expect setState to be called a lot (unlike setTau/entangle/detangle)
 //   * creating and merging partial state objects is expensive
