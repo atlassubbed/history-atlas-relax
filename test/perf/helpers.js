@@ -53,8 +53,8 @@ const printHeap = () => {
   console.log(`\n${Math.floor(mb)} MB being used`)
 }
 
-const rightPad = str => {
-  const numPad = Math.max(0, 25-str.length)
+const rightPad = (str, n) => {
+  const numPad = Math.max(0, n-str.length)
   return str + Array(numPad+1).fill().join(" ");
 }
 
