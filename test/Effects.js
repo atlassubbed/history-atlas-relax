@@ -154,6 +154,8 @@ class Renderer {
   willReceive(frame, temp){
     // will be setting new temp onto frame
     frame._node.data = temp.data;
+    if (temp.key) frame._node.key = temp.key
+    else delete frame._node.key
   }
   didAdd(frame){this.counts.a++}
   didUpdate(frame){this.counts.u++}

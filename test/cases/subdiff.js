@@ -100,9 +100,8 @@ const { copy } = require("../util");
    but we won't because perf < readability in test code
    we are not testing this code, so it needs to be clear */
 
-// "generating" set of types of keys
+// "generating" set
 const genSet = [
-  false, // void template
   {name: "a"}, // unkeyed species a
   {name: "b"}, // unkeyed species b
   {name: "a", key: "k1"}, // keyed species a
@@ -119,8 +118,8 @@ const genSet = [
     2 3 1 3 1 2
     | | | | | |
     3 2 3 1 2 1 */
-const genIndexPermutationGraph = S => S.reduce((p, x, i) => {
-  p[i] = genIndexPermutationGraph(S.filter((y, j) => j !== i));
+const genIndexPermutationGraph = indexes => indexes.reduce((p, i) => {
+  p[i] = genIndexPermutationGraph(indexes.filter(j => j !== i));
   return p;
 }, {})
 
@@ -140,13 +139,14 @@ const findAll = (trie, res=[], cur=[]) => {
   return res;
 }
 
-// maps our sequences to our actual test cases
-const mapToBasis = (seqs, S) => seqs.map(seq => seq.map(el => copy(S[el])));
+// maps our sequences to our (transformed) test cases
+const mapToBasis = (seqs, S, transform=e=>e) => seqs.map(seq => seq.map(el => transform(S[el])));
 
 // "prev" and "next" refer to subdiff's prev children and next children
 // subdiff's job is to correctly morph prev into next via an edit sequence
-const seqs = findAll(genIndexPermutationGraph(genSet))
-const prevCases = mapToBasis(seqs, genSet)
-const nextCases = mapToBasis(seqs, genSet)
+const seqs = findAll(genIndexPermutationGraph(genSet.map((e,i) => i)))
+const prevCases = mapToBasis(seqs, genSet, copy)
+const nextCases = mapToBasis(seqs, genSet, copy)
+const memoizedCases = mapToBasis(seqs, genSet)
 
-module.exports = { prevCases, nextCases }
+module.exports = { prevCases, nextCases, memoizedCases }
