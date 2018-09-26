@@ -7,9 +7,9 @@ const {
   irreducibleBlackboxes: primes, 
   reducibleBlackboxes: comps,
   functionals: functionalRoots,
-  voidBlackboxes: voids 
+  voidBlackboxes: voids,
+  updatingBlackboxes
 } = require("./cases/diff");
-const { updatingBlackboxes } = require("./cases/subdiff")
 
 const allBlackboxes = [...voids, ...primes, ...comps]
 const allNontrivialBlackboxes = allBlackboxes.filter(n => type(n.name) !== "void")

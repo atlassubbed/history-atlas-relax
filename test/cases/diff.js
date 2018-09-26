@@ -65,9 +65,50 @@ const functionals = [
   ...buildReducibles(Functionals)
 ]
 
+const updatingBlackboxes = [
+  {
+    desc: "ignore void nodes in sparse vectors",
+    get: data => {
+      return [
+        null, false, 
+        {name: "div", data}, true, undefined,
+        data.v ? null : {name: "p", data}, false,
+        data.v ? {name: "p", data} : true, false,
+        data.v ? "value" : null, false,
+        data.v ? false : 413, null,
+        data.v ? {name: "span", data} : true, null, null,
+        data.v ? false : {name: "span", data}, false
+      ]
+    }
+  },
+  {
+    desc: "remove expired nodes",
+    get: data => {
+      return [
+        {name: "div", data},
+        {name: "p", data},
+        data.v ? null : {name: "span", data},
+        data.v ? false : {name: "a", data}
+      ]
+    }
+  },
+  {
+    desc: "add new nodes",
+    get: data => {
+      return [
+        {name: "div", data},
+        {name: "p", data},
+        data.v ? {name: "span", data} : null,
+        data.v ? {name: "a", data} : true
+      ]
+    }
+  }
+]
+
 module.exports = { 
   voidBlackboxes,
   irreducibleBlackboxes,
   reducibleBlackboxes: buildReducibles(Blackboxes),
   functionals,
+  updatingBlackboxes
 }

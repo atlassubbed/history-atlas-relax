@@ -8,7 +8,7 @@ const { copy } = require("../util")
 
 const SCALES = [100, 10, 1];
 const SAMPLES = 4e3;
-const DIFF_WORK = 1e2; // set to zero to compare just the implementation
+const DIFF_WORK = 0; // set to zero to compare just the implementation
 const DEC = 1;
 const PAD_AMT = 25;
 const timer = Timer({dec: DEC});
