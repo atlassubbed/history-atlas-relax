@@ -4,35 +4,43 @@ const { path, fill, unfill } = require("./step-leader");
 const { emit, push, sub, pop, receive, add } = require("./lifecycle");
 const { hops } = require("./entangle");
 
-// diff "downwards" from a frame
-//   * short circuit > switch under one loop
+/* diff "downwards" from a frame, short circuit the edge cases:
+     1. next === prev === 0   trivial
+     2. next > 0, prev === 0     "
+     3. next === 0, prev > 0     "
+     4. next === prev > 0     nontrivial
+     5. next > prev > 0          "
+     6. next < prev > 0          "        */
 const subdiff = (f, t) => {
-  emit("willUpdate", f), t = f.temp;
-  applyState(f)
-  const prev = f.next, next = clean([f.diff(t.data, t.next)]),
-    P = prev ? prev.length : 0, N = next.length;
-  if (!(N || P)) return;
-  let n, p;
-  if (!N){
-    f.next = null;
-    while (p = prev.pop()) pop(p, f);
-    return;
+  emit("willUpdate", f), t = f.temp, applyState(f);
+  let p, prev, P = (prev = f.next) ? prev.length : 0, 
+      next, N = (next = clean([f.diff(t.data, t.next)])).length;
+  if (P || N) if (!N){ // double if guards entire decision tree against case 1
+    f.next = null
+    while(p = prev.pop()) pop(p, f);
+  } else {
+    let n, effs = f.effs, tau = f.tau;
+    if (!P){
+      f.next = [];
+      while(n = next.pop()) defer(push(n, effs, tau, f));
+    } else {
+      // nontrivial cases 4-6, requires explicit/implicit key and pos tables
+      // this implementation will be simpler if we use an LCRS tree
+      // XXX should we force effects to use LCRS, or make it agnostic?
+      //   what's better? LCRS & insertBefore/after vs. Arrays & swaps
+      //   the former is semantically closer to the DOM target, for example
+      let exp = {}, imp = {}, pos = new WeakMap, i = P, k;
+      while(i--) p = prev[i], t = p.temp, pos.set(p, i),
+        (k=t.key) && !exp[k] ? (exp[k]=p) : (imp[k=t.name]=imp[k]||[]).push(p);
+      while(n = next.pop(++i)){
+        if (!(p = prev[i])) defer(push(n, effs, tau, f));
+        else if (n === p.temp) unfill(p);
+        else if (n.name !== p.temp.name) defer(sub(n, effs, tau, p, f, i));
+        else if (receive(n,p) && !(p.affCount||p.affs)) subdiff(p), end(p)
+      }
+      while(P > N) pop(prev.pop(P--), f);
+    }
   }
-  const effs = f.effs, tau = f.tau;
-  if (!P){
-    f.next = [];
-    while(n = next.pop()) defer(push(n, effs, tau, f));
-    return;
-  }
-  let i = -1, M = Math.min(N, P);
-  while (++i < M){
-    n = next.pop(), p = prev[i];
-    if (n === p.temp) unfill(p);
-    else if (n.name !== p.temp.name) defer(sub(n, effs, tau, p, f, i));
-    else if (receive(n,p) && !(p.affCount||p.affs)) subdiff(p), end(p);
-  }
-  if (N > P) while(n = next.pop()) defer(push(n, effs, tau, f));
-  else while(prev.length > N) pop(prev.pop(), f);
 }
 
 // diff "sideways" along the calculated path

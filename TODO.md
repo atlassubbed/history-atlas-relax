@@ -35,3 +35,10 @@ TODO:
     * is normalzing to an array more expensive than allowing a field to be an array or non-array and performing checks everywhere?
       * isArray checks would increase computation and file size
       * normalizing to an array involves wrapping scalars in an unnecessary array.
+  12. h() before diff()
+    * currently, we flatten the output of diff inside subdiff, 
+    * this means that even memoized return values will be run through the flattening process.
+    * Instead, we can flatten before memoization, inside of h(...).
+    * Counterarguments to this proposal:
+      * If we need to use an ephemeral key table for "next", we might as well flatten inside of diff since we iterate anyway
+      * Most people are not going to be returning crap like [[[[[[{name: "p"}]], {name: "div"}]]]] in their diff functions
