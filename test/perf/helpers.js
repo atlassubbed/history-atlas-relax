@@ -1,5 +1,6 @@
 const { Frame } = require("../../src/index");
 const { toArr } = require("../util");
+const { shuffle } = require("atlas-random");
 
 let id = 0;
 // edge cases:
@@ -38,6 +39,16 @@ class TemplateFactory {
     const next = [];
     while(n-- > 1) next.push(this.h());
     return this.h(next.reverse());
+  }
+  keyedStar(n){
+    let key = 0;
+    const next = [];
+    while(n-- > 1) {
+      const node = this.h();
+      node.key = ++key
+      next.push(node)
+    }
+    return this.h(shuffle(next))
   }
 }
 

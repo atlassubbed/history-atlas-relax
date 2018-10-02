@@ -17,8 +17,7 @@ describe("Frame", function(){
         (f.next).to.equal
         (f.state).to.equal
         (f.nextState).to.equal
-        (f.keys).to.be.null;
-      expect(f.affCount).to.equal(f._affCount).to.equal(0)
+      expect(f.affN).to.equal(f._affN).to.equal(0)
       expect(f.hasOwnProperty("effs")).to.be.true;
       expect(f.effs).to.be.undefined;
       expect(f.inStep).to.equal(f.inPath).to.equal(f.isOrig).to.be.false;

@@ -1,19 +1,18 @@
 const { copy } = require("../util");
+const { B } = require("./Frames");
 
 /* Properties of subdiffs (arrays -> arrays):
-     1. properly maintain a stable diff
-     2. properly track (explicit) keyed and (implicit) unkeyed nodes
-     3. properly handle complex element swaps/moves
+     1. should be stable for implicit keys
+     2. should be stable for explicit keys
+     3. should produce a correct edit path in linear time
    We want set, K, of all permutations of the elements in power set, P, of S
-     1. {n,m} === n choose m = n!/((n-m)!*m!)
+     1. (n m) = n!/((n-m)!*m!)
      2. let P be the power set of S, i.e. the set of all subsets.
-        |P| = 2^|S|
-        each element p in P has |p|! permutations
+        |P| = 2^|S|, each element p in P has |p|! permutations
      3. let K be the set of all permutations for all p in P
-        |K| = SUM({|S|,s}*s!, s = 0 to s = |S|) = SUM(|S|!/s!, s = 0 to s = |S|) 
-   The following steps could easily be done simulataneously (e.g. with Maps, single function)
-   but we won't because perf < readability in test code
-   we are not testing this code, so it needs to be clear */
+        |K| = SUM((|S| s)*s!, s = 0 to s = |S|) = SUM(|S|!/s!, s = 0 to s = |S|) */
+
+// do these steps separately to keep it simple
 
 /* generates a trie which stores all elements in K
    e.g. if S = {1,2,3}
@@ -48,27 +47,64 @@ const findAll = (trie, res=[], cur=[]) => {
 }
 
 // maps our sequences to our (transformed) test cases
-const mapToBasis = (seqs, S, txfm=e=>e) => seqs.map(s => s.map(el => txfm(S[el])));
+const mapToBasis = (seqs, S) => seqs.map(s => s.map(el => copy(S[el])));
 
-// "generating" sets, factorial growth; would be infeasible for N > 5
+// "generating" sets, factorial growth; infeasible for N > 5
 // prev and next refer to subdiff's prev and next children, respectively
-// subdiff's job is to correctly morph prev into next via an edit sequence
-const basis = [
-  {name: "a", data: {id: 1}}, // unkeyed species a
-  {name: "a", data: {id: 2}}, // unkeyed species a
-  {name: "b", data: {id: 3}}, // unkeyed species b
-  {name: "a", key: "k1", data: {id: 4}}, // keyed species a
-  {name: "b", key: "k2", data: {id: 5}}, // keyed species b
-]
-const cases = [
-  basis.filter((e, i) => i < 4), // covers implicit keys
-  basis.filter((e, i) => i > 0)  // covers explicit keys
+const bruteForceCases = [
+  [ // implicit basis
+    {name: "a", data: {id: 1}},
+    {name: "a", data: {id: 2}},
+    {name: B, data: {id: 3}},
+    {name: B, data: {id: 4}}
+  ],
+  [ // explicit basis
+    {name: "a", key: "k1", data: {id: 1}},
+    {name: "a", key: "k1", data: {id: 2}},
+    {name: B, key: "k1", data: {id: 3}},
+    {name: B, key: "k2", data: {id: 4}}
+  ],
+  [ // mixed basis
+    {name: "a", key: "k1", data: {id: 1}},
+    {name: "a", data: {id: 2}},
+    {name: B, key: "k2", data: {id: 3}},
+    {name: B, data: {id: 4}}
+  ]
 ].map(genSet => {
   const seqs = findAll(genIndexPermutationGraph(genSet.map((e, i) => i)));
   return {
     prevCases: mapToBasis(seqs, genSet),
-    nextCases: mapToBasis(seqs, genSet, copy)
+    nextCases: mapToBasis(seqs, genSet)
   }
 })
 
-module.exports = { cases }
+// matching cases, makePrev returns a new prev array
+// makeNext* uses that as a basis for creating the next array
+const makeNextSame = makePrev => {
+  const next = makePrev();
+  // add some holes to lower the density
+  next[0] = false, next[2] = null, next[next.length-1] = true, next[5] = undefined;
+  return next;
+}
+const makeNextLess = makePrev => {
+  const next = makeNextSame(makePrev);
+  let rem = 3;
+  while(rem--)next.pop();
+  return next;
+}
+const makeNextMore = makePrev => {
+  const next = makeNextSame(makePrev);
+  let add = 5;
+  while(add--)next.push({name: "c"});
+  return next;
+}
+
+// for each of these conditions, nodes should get matched properly 
+// to their implicit or explicit keyed nodes in prev
+const matchingCases = [
+  {condition: "|next| === |prev|", makeNext: makeNextSame},
+  {condition: "|next| > |prev|", makeNext: makeNextMore},
+  {condition: "|next| < |prev|", makeNext: makeNextLess}
+]
+
+module.exports = { bruteForceCases, matchingCases }

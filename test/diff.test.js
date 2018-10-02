@@ -236,20 +236,6 @@ describe("diff", function(){
             })
           })
         })
-        describe("subdiffs mixed children", function(){
-          updatingBlackboxes.forEach(({desc, get: nextGet }) => {
-            it(`should ${desc}`, function(){
-              const renderer = new Renderer(), data = {id: desc, v: 0}, newData = {id: desc, v: 1};
-              const template = inject(get(data), nextGet(data));
-              const newTemplate = inject(get(data), nextGet(newData));
-              const frame = diff(template, null, renderer)
-              const newFrame = diff(newTemplate, frame, renderer);
-              expect(newFrame).to.be.an.instanceOf(Frame).to.equal(frame);
-              const rendered = renderer.render(inject(get(data), nextGet(newData)))
-              expect(renderer.tree).to.deep.equal(rendered)
-            })
-          })
-        })
       })
     })
   })

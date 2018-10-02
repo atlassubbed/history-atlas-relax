@@ -8,22 +8,18 @@ const path = [];
 const add = (f, ch) => {
   if (f.inStep) throw new Error("cyclic entanglement");
   f.inStep = true
-  if (ch = f.next) for (let c of ch) 
-    c.inPath || add(c);
-  if (ch = f.affs) for (let c of ch) 
-    c._affCount++, c.inPath || add(c);
+  if (ch = f.next) for (let c of ch) c.inPath || add(c);
+  if (ch = f.affs) for (let c of ch) c._affN++, c.inPath || add(c);
   f.inPath = !(f.inStep = false);
-  if (f.affCount || f.affs || f.isOrig) path.push(f)
+  if (f.affN || f.affs || f.isOrig) path.push(f)
 }
 const rem = (f, ch) => {
   if (f.inPath = f.isOrig) return;
-  if (ch = f.next) for (let c of ch) 
-    c._affCount || c.inPath && rem(c);
-  if (ch = f.affs) for (let c of ch) 
-    --c._affCount || c.inPath && rem(c);
+  if (ch = f.next) for (let c of ch) c._affN || c.inPath && rem(c);
+  if (ch = f.affs) for (let c of ch) --c._affN || c.inPath && rem(c);
 }
 
-const unfill = f => f._affCount || rem(f);
+const unfill = f => f._affN || rem(f);
 // compute a topologically ordered path to diff along
 // don't consider nodes that are in path, removed, or diffed
 const fill = (f, tau, c) => {

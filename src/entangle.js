@@ -10,14 +10,14 @@ Frame.prototype.entangle = function(f){
   if (isOther(f, this)) {
     if (f.inPath || this.inPath) defer(f, this, true);
     else if (!(f.affs = f.affs || new Set).has(this)) 
-      this.affCount += !!f.affs.add(this); 
+      this.affN += !!f.affs.add(this);
   }
 }
 Frame.prototype.detangle = function(f){
   if (isOther(f, this)){
     const a = f.affs;
     if ((f.inPath || this.inPath)) defer(f, this);
-    else if (a && a.delete(this) && this.affCount-- && !a.size)
+    else if (a && a.delete(this) && this.affN-- && !a.size)
       f.affs = null;
   }
 }

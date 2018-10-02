@@ -48,6 +48,7 @@ const factory4 = new TemplateFactory(class AsyncFrame extends Frame {
 });
 const cases = {
   star: {},
+  keyedStar: {},
   binaryTree: {}, 
   linkedList: {}, 
 }

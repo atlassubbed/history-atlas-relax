@@ -96,7 +96,7 @@ Frame.define(LegacyFunctionalVector, {
 class StemCell extends Frame {
   constructor(temp, effs){
     super(temp, effs);
-    const { data: { hooks } } = temp;
+    const hooks = temp.data && temp.data.hooks;
     if (hooks){
       if (hooks.ctor) hooks.ctor.bind(this)(this);
       for (let h in hooks)
@@ -104,7 +104,7 @@ class StemCell extends Frame {
     }
   }
   diff(data, next){
-    return data.copy ? copy(next) : next;
+    return (data && data.copy) ? copy(next) : next;
   }
   static h(id, hooks, next){
     return {name: StemCell, data: {id, hooks, copy: true}, next};
@@ -124,15 +124,6 @@ class StemCell2 extends StemCell {
 //   * extends StemCell for future testing purposes
 //   * behaves as an oscillator when update frequency >> 1/tau
 class Oscillator extends StemCell {
-  // constructor(temp, effs){
-  //   super(temp, effs);
-  //   if (effs) for (let e of toArr(effs)){
-  //     if (e.log) {
-  //       this.log = e.log.bind(e)
-  //       break;
-  //     }
-  //   }
-  // }
   getTau(tau){
     const myTau = this.temp.data.tau;
     return myTau != null ? myTau : tau;
@@ -140,14 +131,13 @@ class Oscillator extends StemCell {
   static h(id, tau, next){
     return {name: Oscillator, data: {id, tau, copy: true}, next};
   }
-  // diff(data, next){
-  //   this.log && this.log("e", this);
-  //   return next;
-  // }
 }
+
+class B extends Frame {}
 
 module.exports = {
   IrreducibleFunctional,
+  B,
   StemCell,
   StemCell2,
   Oscillator,

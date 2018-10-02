@@ -9,50 +9,42 @@ const emit = (type, f, a1, a2) => {
     return effs[type] && void effs[type](f, a1, a2);
   for (let e of effs) if (e[type]) e[type](f, a1, a2);
 }
-// remove existing (sub)frame
+// recursives
 const pop = (f, p) => {
   let ch = f.next, c;
   emit("willPop", f, p)
   if (f.next = null, ch) while(c = ch.pop()) pop(c, f);
   emit("didPop", f, p), clearFrame(f);
 }
-// push (sub)frame onto frame
+const add = (f, t) => {
+  emit("willAdd", f), t = f.temp;
+  if ((t = clean([f.diff(t.data, t.next)])).length){
+    f.next = [];
+    let tau = f.tau, effs = f.effs, n;
+    while(n=t.pop()) add(push(n, effs, tau, f))
+  }
+  emit("didAdd", f);
+}
+// directives
+// XXX swap(i, j) is a sufficient generator for any permutation
+//   any permutation can be written as a product of disjoint cycles
+//   any cycle can be written as a product of k - 1 transpositions
+//   any permutation can be written as a product of N - K transpositions
+const swap = (f, i, j, c) => {
+  emit("willSwap", f, i, j), c = (f = f.next)[i];
+  f[i] = f[j], f[j] = c;
+}
 const push = (t, effs, tau, p) => {
   t = toFrame(t, effs, tau)
   emit("willPush", t, p);
-  if (p){
-    let i = p.next.push(t), key;
-    if (key = t.key)
-      (p.keys = p.keys || {})[key] = i - 1;
-  } else t.isRoot = true;
+  p ? p.next.push(t) : (t.isRoot = true);
   return t;
 }
-// sub prev frame with next frame at index i
-const sub = (t, effs, tau, f, p, i) => {
-  t = toFrame(t, effs, tau)
-  let ch = f.next, c;
-  emit("willSub", t, p, i);
-  if (f.next = null, ch) while(c = ch.pop()) pop(c, f);
-  p ? (p.next[i] = t) : (t.isRoot = true)
-  emit("didSub", f, p, i), clearFrame(f);
-  return t;
-}
-// * we cannot infer what constitutes a change for an effect
-// * memoizing templates should preclude shouldUpdate
-//   but requires stable, keyed subdiffing
+// cannot infer what constitutes change for effect
+// shallow comparisons done at effect level
 const receive = (t, f) => {
   emit("willReceive", f, t);
   return f.temp = t, f;
 }
 
-const add = (f, t, next) => {
-  emit("willAdd", f), t = f.temp;
-  if ((next = clean([f.diff(t.data, t.next)])).length){
-    f.next = [];
-    let tau = f.tau, effs = f.effs, n;
-    while(n=next.pop()) add(push(n, effs, tau, f))
-  }
-  emit("didAdd", f);
-}
-
-module.exports = { emit, push, sub, pop, receive, add }
+module.exports = { emit, push, pop, receive, add, swap }

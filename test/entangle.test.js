@@ -61,9 +61,10 @@ describe("entanglement", function(){
         const {nodes, events} = rootCase.get();
         diff(a(0), nodes[0])
         expect(events).to.deep.equal([ 
-          {wS: 0}, {dS: 0},
-          {wU: 1}, {wU: 2}, {wU: 3}, {wA: 0}, {dA: 0}, 
+          {wP: 0}, {dP: 0},
+          {wU: 1}, {wU: 2}, {wU: 3},
           {dU: 3}, {dU: 2}, {dU: 1},
+          {wPu: 0}, {wA: 0}, {dA: 0}
         ])
       })
       it("should not update all nodes if downstream updated", function(){
@@ -79,7 +80,7 @@ describe("entanglement", function(){
       it("should not update all nodes if downstream replaced", function(){
         const {nodes, events} = rootCase.get();
         diff(a(3), nodes[3])
-        expect(events).to.deep.equal([{wS: 3}, {dS: 3}, {wA: 3}, {dA: 3}])
+        expect(events).to.deep.equal([{wP: 3}, {dP: 3}, {wPu: 3}, {wA: 3}, {dA: 3}])
       })
       it("should reflect post-diff changes in entanglement in the next diff", function(){
         const {nodes, events} = rootCase.get();
@@ -221,10 +222,11 @@ describe("entanglement", function(){
         const {nodes, events} = treeCase.get();
         diff(a(0), nodes[0])
         expect(events).to.deep.equal([ 
-          {wS: 0}, {wP: 1}, {wP: 3}, {dP: 3}, {wP: 2}, {dP: 2}, {dP: 1}, {dS: 0},
+          {wP: 0}, {wP: 1}, {wP: 3}, {dP: 3}, {wP: 2}, {dP: 2}, {dP: 1}, {dP: 0},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
-          {wU: 6}, {wU: 8}, {wU: 7}, {wA: 0}, {dA: 0},
-          {dU: 7}, {dU: 8}, {dU: 6}, {dU: 5}, {dU: 4}
+          {wU: 6}, {wU: 8}, {wU: 7},
+          {dU: 7}, {dU: 8}, {dU: 6}, {dU: 5}, {dU: 4},
+          {wPu: 0}, {wA: 0}, {dA: 0}
         ])
       })
       it("should not update all nodes if downstream updated", function(){
@@ -250,9 +252,10 @@ describe("entanglement", function(){
         const {nodes, events} = treeCase.get();
         diff(a(4), nodes[4])
         expect(events).to.deep.equal([ 
-          {wS: 4}, {wP: 8}, {dP: 8}, {wP: 5},
-          {wP: 7}, {dP: 7}, {wP: 6}, {dP: 6}, {dP: 5}, {dS:4},
-          {wU: 3}, {wA: 4}, {dA: 4}, {dU: 3}
+          {wP: 4}, {wP: 8}, {dP: 8}, {wP: 5},
+          {wP: 7}, {dP: 7}, {wP: 6}, {dP: 6}, {dP: 5}, {dP:4},
+          {wU: 3}, {dU: 3},
+          {wPu: 4}, {wA: 4}, {dA: 4},
         ])
       })
       it("should reflect post-diff changes in entanglement in the next diff", function(){
@@ -444,6 +447,7 @@ describe("entanglement", function(){
         expect(events).to.deep.equal(result);
       })
       // this is a legacy test from back when we used the affCount to decide whether to defer new adds
+      // now we just defer everything until the path has been exhausted; this test should fail if we selectively defer
       it("should immediately remove a replaced child and defer adding the new one if it has no entanglement", function(){
         const { nodes, events } = treeCase.get({
           0: {
@@ -456,7 +460,7 @@ describe("entanglement", function(){
           }
         })
         const result = [
-          {wR: 0}, {wU: 0}, {wS: 1}, {wP: 3}, {dP: 3}, {wP: 2}, {dP: 2}, {dS: 1},
+          {wR: 0}, {wU: 0}, {wPu: 9}, {wS: 0}, {wP: 1}, {wP: 3}, {dP: 3}, {wP: 2}, {dP: 2}, {dP: 1},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
           {wU: 6}, {wU: 8}, {wU: 7}, {wA: 9}, {dA: 9},
           {dU: 7}, {dU: 8}, {dU: 6}, {dU: 5}, {dU: 4}, {dU: 0} 
@@ -476,7 +480,7 @@ describe("entanglement", function(){
           }
         })
         const result = [
-          {wR: 0}, {wU: 0}, {wS: 1}, {wP: 3}, {dP: 3}, {wP: 2}, {dP: 2}, {dS: 1},
+          {wR: 0}, {wU: 0}, {wPu: 9}, {wS: 0}, {wP: 1}, {wP: 3}, {dP: 3}, {wP: 2}, {dP: 2}, {dP: 1},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
           {wU: 6}, {wU: 8}, {wU: 7}, {wA: 9}, {dA: 9},
           {dU: 7}, {dU: 8}, {dU: 6}, {dU: 5}, {dU: 4}, {dU: 0} 

@@ -4,7 +4,7 @@ const { isArr, toArr, isObj, isVoid, isFn } = require("./util")
 
 // PassThrough is used to attach useful lifecycle methods onto frames.
 class PassThrough {
-  willReceive(f){f.willReceive && f.willReceive(f)}
+  willReceive(f, t){f.willReceive && f.willReceive(f, t)}
   willPush(f, p){f.willPush && f.willPush(f, p)}
   willAdd(f){f.willAdd && f.willAdd(f)}
   didAdd(f){f.didAdd && f.didAdd(f)}
@@ -39,12 +39,7 @@ class Tracker {
     this.log("wPu", f)
     if (!parent) this.root = f
   }
-  willSub(nextF, parent, i) {
-    const prev = parent ? parent.next[i] : this.root;
-    this.log("wS", prev);
-    if (!parent) this.root = nextF;
-  }
-  didSub(prevF){this.log("dS", prevF)}
+  willSwap(f, i, j){this.log("wS", f)}
   willPop(f){this.log("wP", f)}
   didPop(f){this.log("dP", f)}
   willReceive(f){this.log("wR", f)}
@@ -86,8 +81,10 @@ const getNext = temp => {
 }
 class Renderer {
   constructor(){
-    this.tree = null;
-    this.counts = {a: 0, r: 0, u: 0, n: 0}
+    this.tree = null, this.resetCounts();
+  }
+  resetCounts(){
+    this.counts = {a: 0, r: 0, u: 0, n: 0, s: 0}
   }
   render(temp){
     if (isVoid(temp)) return;
@@ -113,7 +110,7 @@ class Renderer {
     return rendered;
   }
   willPush(frame, parent){
-    // will be pushing frame onto parent's children
+    // will push frame onto parent's children
     const { name, data, key } = frame.temp;
     const node = { name, data };
     frame._node = node
@@ -122,21 +119,11 @@ class Renderer {
     const parentNode = parent._node;
     (parentNode.next = parentNode.next || []).push(node);
   }
-  willSub(nextFrame, parent, i){
-    // will substitute the i-th child of parent for nextFrame
-    const { name, data, key } = nextFrame.temp;
-    const node = { name, data };
-    nextFrame._node = node
-    if (key) nextFrame._node.key = key;
-    if (!parent) return this.nextRoot = node;
-  }
-  didSub(prevFrame, parent, i){
-    // did substitute prevFrame for the current i-th child of parent
-    this.counts.r++
-    if (!parent)
-      return this.tree = this.nextRoot, this.nextRoot = null;
-    const parentNode = parent._node;
-    parentNode.next[i] = parent.next[i]._node;
+  willSwap(frame, i, j){
+    this.counts.s++
+    // will swap the i-th child with the j-th child
+    const next = frame._node.next, c = next[i];
+    next[i] = next[j], next[j] = c;
   }
   willPop(frame, parent){
     // about to remove frame from parent
