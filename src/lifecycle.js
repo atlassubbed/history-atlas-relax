@@ -1,4 +1,4 @@
-const { toFrame, emit } = require("./Frame");
+const { toFrame, emit, clearFrame } = require("./Frame");
 
 // directives
 // XXX swap(i, j) is a sufficient generator for any permutation

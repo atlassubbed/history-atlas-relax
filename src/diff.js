@@ -1,5 +1,5 @@
 const { isArr, norm, clean } = require("./util")
-const { Frame: { isFrame }, applyState, emit, clearFrame } = require("./Frame");
+const { Frame: { isFrame }, applyState, emit } = require("./Frame");
 const { path, fill, unfill } = require("./step-leader");
 const { push, receive, swap, pop } = require("./lifecycle");
 const { hops } = require("./entangle");
