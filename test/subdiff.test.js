@@ -137,6 +137,7 @@ describe("subdiff", function(){
             const expectedTree = renderer.render(t);
             // add, remove, update, total N, swaps
             const { a, r, u, n, s } = renderer.counts;
+            // TODO: LCRS renderer should also work
             describe(`swap rendered to next [${next.map(tag)}]`, function(){
               it("should not contain superfluous events", function(){
                 // mounting phase should only add nodes

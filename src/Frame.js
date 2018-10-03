@@ -1,4 +1,4 @@
-const { isComp, isFn } = require("./util")
+const { isComp, isFn, isArr } = require("./util")
 
 const isFrame = f => !!f && isFn(f.diff);
 
@@ -43,4 +43,12 @@ const applyState = (f, ns, s) => {
   }
 }
 
-module.exports = { Frame, toFrame, clearFrame, applyState }
+const emit = (type, f, a1, a2) => {
+  const ef = f.effs;
+  if (ef){
+    if (!isArr(ef)) return ef[type] && void ef[type](f, a1, a2);
+    for (let e of ef) e[type] && e[type](f, a1, a2)
+  }
+}
+
+module.exports = { Frame, toFrame, clearFrame, applyState, emit }

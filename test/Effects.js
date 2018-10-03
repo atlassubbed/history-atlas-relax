@@ -6,7 +6,6 @@ const { isArr, toArr, isObj, isVoid, isFn } = require("./util")
 class PassThrough {
   willReceive(f, t){f.willReceive && f.willReceive(f, t)}
   willPush(f, p){f.willPush && f.willPush(f, p)}
-  willAdd(f){f.willAdd && f.willAdd(f)}
   didAdd(f){f.didAdd && f.didAdd(f)}
   willUpdate(f){f.willUpdate && f.willUpdate(f)}
   didUpdate(f){f.didUpdate && f.didUpdate(f)}
@@ -41,9 +40,7 @@ class Tracker {
   }
   willSwap(f, i, j){this.log("wS", f)}
   willPop(f){this.log("wP", f)}
-  didPop(f){this.log("dP", f)}
   willReceive(f){this.log("wR", f)}
-  willAdd(f){this.log("wA", f)}
   didAdd(f){this.log("dA", f)}
   willUpdate(f){this.log("wU", f)}
   didUpdate(f){this.log("dU", f)}
@@ -79,6 +76,11 @@ const getNext = temp => {
     return (new name(temp)).diff(data, next);
   return name(data, next);
 }
+// effects may listen to events and create their own queues
+// e.g. queue all willPush, willSwap, willPop, willReceive
+// when didUpdate is called on the last element in the cycle, flush all events:
+//   e.g. first remove all orphans (perhaps recycle their resources)
+//        then push all
 class Renderer {
   constructor(){
     this.tree = null, this.resetCounts();
@@ -110,6 +112,7 @@ class Renderer {
     return rendered;
   }
   willPush(frame, parent){
+    this.counts.a++;
     // will push frame onto parent's children
     const { name, data, key } = frame.temp;
     const node = { name, data };
@@ -127,10 +130,6 @@ class Renderer {
   }
   willPop(frame, parent){
     // about to remove frame from parent
-    // can be used to trigger a hook
-  }
-  didPop(frame, parent){
-    // just removed frame from parent
     this.counts.r++;
     if (!parent) return (this.tree = null);
     const node = parent._node, next = node.next;
@@ -139,13 +138,15 @@ class Renderer {
       delete node.next;
   }
   willReceive(frame, temp){
+    this.counts.u++
     // will be setting new temp onto frame
     frame._node.data = temp.data;
     if (temp.key) frame._node.key = temp.key
     else delete frame._node.key
   }
-  didAdd(frame){this.counts.a++}
-  didUpdate(frame){this.counts.u++}
+  // willUpdate(frame){}
+  // didAdd(frame){}
+  // didUpdate(frame){}
 }
 
 module.exports = { Renderer, Tracker, PassThrough, Timer, Cache }
