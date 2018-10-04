@@ -1,6 +1,6 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
-const { Renderer, PassThrough } = require("./Effects");
+const { ArrayRenderer, LCRSRenderer, Passthrough } = require("./effects");
 const { StemCell } = require("./cases/Frames");
 const { diff } = require("../src/index");
 const { bruteForceCases, matchingCases } = require("./cases/subdiff");
@@ -72,7 +72,7 @@ describe("subdiff", function(){
           insert(next, n2, t2)
           insert(prev, p1, pt1)
           insert(prev, p2, pt2)
-          diff(h(next), diff(h(prev), null, new PassThrough))
+          diff(h(next), diff(h(prev), null, new Passthrough))
           expect(didR1).to.equal(didR2).to.equal(didU1).to.equal(didU2).to.equal(1);
         })
       })
@@ -117,7 +117,7 @@ describe("subdiff", function(){
           insert(next, n2, t2)
           insert(prev, p1, pt1)
           insert(prev, p2, pt2)
-          diff(h(next), diff(h(prev), null, new PassThrough))
+          diff(h(next), diff(h(prev), null, new Passthrough))
           expect(didR1).to.equal(didR2).to.equal(didU1).to.equal(didU2).to.equal(1);
         })
       })
@@ -129,16 +129,15 @@ describe("subdiff", function(){
       prevCases.forEach((prev, j) => {
         describe(`with prev [${prev.map(tag)}]`, function(){
           nextCases.forEach((next, i) => {
-            const renderer = new Renderer;
-            const t = h(next), f = diff(h(prev), null, renderer);
-            const { a: mA, r: mR, u: mU, s: mS } = renderer.counts;
-            renderer.resetCounts();
-            diff(t, f);
-            const expectedTree = renderer.render(t);
-            // add, remove, update, total N, swaps
-            const { a, r, u, n, s } = renderer.counts;
-            // TODO: LCRS renderer should also work
+            const t2 = h(next), t1 = h(prev);
+            const r1 = new ArrayRenderer, r2 = new LCRSRenderer;
             describe(`swap rendered to next [${next.map(tag)}]`, function(){
+              const f = diff(t1, null, r1);
+              const { a: mA, r: mR, u: mU, s: mS } = r1.counts;
+              r1.resetCounts(), diff(t2, f);
+              const expectedTree = r1.render(t2)
+              // add, remove, update, total N, swaps
+              const { a, r, u, n, s } = r1.counts;
               it("should not contain superfluous events", function(){
                 // mounting phase should only add nodes
                 expect(mA).to.equal(prev.length + 1);
@@ -153,7 +152,14 @@ describe("subdiff", function(){
               })
               it("should edit prev to match next", function(){
                 // the edit path is correct
-                expect(renderer.tree).to.deep.equal(expectedTree);
+                expect(r1.tree).to.deep.equal(expectedTree);
+              })
+            })
+            describe(`LCRS rendered to next [${next.map(tag)}]`, function(){
+              const f = diff(t1, null, r2);
+              diff(t2, f);
+              it("should edit prev to match next", function(){
+                expect(r2.tree).to.deep.equal(r2.render(t2));
               })
             })
           })

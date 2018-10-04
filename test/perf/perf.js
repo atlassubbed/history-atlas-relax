@@ -1,7 +1,7 @@
 const { Timer } = require("atlas-basic-timer");
 const serial = require("atlas-serial");
 const { TemplateFactory, count, printHeap, rightPad, doWork } = require("./helpers");
-const { PassThrough } = require("../Effects");
+const { Passthrough } = require("../effects");
 const { diff, Frame } = require("../../src/index");
 const { expect } = require("chai");
 const { copy } = require("../util")
@@ -13,7 +13,7 @@ const DEC = 1;
 const PAD_AMT = 25;
 const timer = Timer({dec: DEC});
 const tasks = [];
-const pass = new PassThrough;
+const pass = new Passthrough;
 const factory1 = new TemplateFactory(class Subframe1 extends Frame {
   diff(data, next){
     return doWork(DIFF_WORK), next;

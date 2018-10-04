@@ -1,9 +1,27 @@
 const { isArr, norm, clean } = require("./util")
 const { Frame: { isFrame }, applyState, emit } = require("./Frame");
 const { path, fill, unfill } = require("./step-leader");
-const { push, receive, swap, pop } = require("./lifecycle");
+const { push, receive, swap, pop } = require("./mutations");
 const { hops } = require("./entangle");
 const KeyIndex = require("./KeyIndex")
+
+/* Should be noted that the following functions take similar time
+   to insert e into x at i:
+
+     const insert = (x, e, i) => x.splice(i, 0, e);
+
+     const bubble = (x, e, i) => {
+       let j = x.push(e), s;
+       while(--j > i){
+         s = x[j], x[j] = x[j-1];
+         x[j-1] = s;
+       }
+     }
+
+   However, we represent permutations as a series of swaps rather than insertions,
+   so we avoid the quadtric term that we run into with m ~ n insertions.
+   Doing n swaps likely adds constant overhead compared to doing a splice,
+   but it's better to acquire that overhead since most updates require > 1 swaps */
 
 const lags = [], htap = [], ladd = lags.push.bind(lags);
 
@@ -15,31 +33,32 @@ const add = (f, t) => {
     while(n=t.pop()) add(push(n, effs, tau, f))
   }
 }
+
 // diff "downwards" from a frame, short circuit if next or prev have zero elements
 const subdiff = (f, t) => {
   emit("willUpdate", f), htap.push(f), t = f.temp, applyState(f);
-  let p, prev, P = (prev = f.next) ? prev.length : 0, 
+  let prev, P = (prev = f.next) ? prev.length : 0,
       next, N = (next = clean([f.diff(t.data, t.next)])).length;
   if (P || N) if (!N){
+    while(P--) pop(prev[P], f);
     f.next = null
-    while(p = prev.pop()) pop(p, f);
   } else {
     let n, effs = f.effs, tau = f.tau;
     if (!P){
       f.next = [];
       while(n = next.pop()) mount(n, effs, tau, f);
     } else {
-      let ix = new KeyIndex, pos = new WeakMap, i = P, j;
+      let ix = new KeyIndex, pos = new WeakMap, i = P, j, p;
       while(i--) pos.set(p = prev[i], i), ix.push(p);
       while(n = next.pop(++i)){
         if (p = ix.pop(n)){ // update match
           j = pos.get(p);
           if (n === p.temp) unfill(p);
           else if (receive(n, p) && !(p.affN||p.affs)) subdiff(p);
-        } else j = prev.length, mount(n, effs, tau, f, i); // mount loner
+        } else j = P++, mount(n, effs, tau, f, i); // mount loner
         j !== i && pos.set(prev[i], j) && swap(f, i, j)
       }
-      while(prev.length > N) pop(prev.pop(), f); // unmount orphans
+      while(P-- > N) pop(prev[P], f); // unmount orphans
     }
   }
 }

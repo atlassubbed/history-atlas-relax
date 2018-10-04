@@ -23,7 +23,7 @@ Frame.define = (Subframe, proto) => {
 }
 // XXX this is expensive, consider using sets/maps to reduce the internal api
 const clearFrame = f => {
-  f.state = f.nextState = f.temp = f.effs = f.affs = f._affs = null;
+  f.next = f.state = f.nextState = f.temp = f.effs = f.affs = f._affs = null;
 }
 // temp is already normalized
 const toFrame = (t, effs, tau) => {

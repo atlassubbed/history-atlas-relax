@@ -15,10 +15,16 @@ const push = (t, effs, tau, p, i) => {
   p ? p.next.push(t) : (t.isRoot = true);
   return t;
 }
+// we need to pop after the event, even though it's less conveninet
+// alternatively, we could change this event to "didPop", however,
+// for the sake of consistency, every mutation event should be either:
+//   1. an anticipation of a mutation
+//   2. a reaction to a mutation
+// thus renaming this to "didPop" would break consistency
 const pop = (f, p) => {
-  let ch = f.next, c;
-  emit("willPop", f, p)
-  if (f.next = null, ch) while(c = ch.pop()) pop(c, f);
+  emit("willPop", f, p), p && p.next.pop();
+  let ch = f.next, c = ch && ch.length;
+  while(c) pop(ch[--c], f);
   clearFrame(f);
 }
 // cannot infer what constitutes change for effect

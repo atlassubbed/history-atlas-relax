@@ -1,11 +1,11 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
-const { Tracker, PassThrough } = require("./Effects");
+const { Tracker, Passthrough } = require("./effects");
 const { diff: rawDiff } = require("../src/index");
 const { rootCase, treeCase, p, a } = require("./cases/entangle");
 const { has } = require("./util");
 
-const pass = new PassThrough;
+const pass = new Passthrough;
 const diff = (t, f, eff) => rawDiff(t, f, eff ? [eff, pass] : null);
 
 const updateHooks = ["willReceive", "willUpdate", "didUpdate"];

@@ -1,6 +1,6 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
-const { Tracker, PassThrough } = require("./Effects");
+const { Tracker, Passthrough } = require("./effects");
 const { Frame, diff } = require("../src/index");
 const { StemCell: { m } } = require("./cases/Frames");
 const { treeCase } = require("./cases/entangle");
@@ -58,7 +58,7 @@ describe("memoization and immutability support", function(){
       const events = [], tracker = new Tracker(events);
       const getTau = () => 0;
       const m1 = m(1), m2 = m(2, {getTau});
-      const f1 = diff(m(0, null, [m1, m2]), null, [tracker, new PassThrough]);
+      const f1 = diff(m(0, null, [m1, m2]), null, [tracker, new Passthrough]);
       events.length = 0;
       f1.next[1].setState({id: 2})
       const result = diff(m(0, null, [m1, m2]), f1)
@@ -77,7 +77,7 @@ describe("memoization and immutability support", function(){
         done();
       }
       const t = m(0, {getTau, didUpdate}, [m(1), m(2)])
-      const f1 = diff(t, null, [tracker, new PassThrough]);
+      const f1 = diff(t, null, [tracker, new Passthrough]);
       events.length = 0;
       f1.next[1].setState({})
       f1.setState({});

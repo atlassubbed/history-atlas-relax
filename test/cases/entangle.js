@@ -1,12 +1,12 @@
 const { Frame, diff } = require("../../src/index");
-const { Tracker, Cache, PassThrough } = require("../Effects");
+const { Tracker, Cache, Passthrough } = require("../effects");
 const { toArr } = require("../util");
 const { StemCell, StemCell2 } = require("./Frames");
 
 const p = StemCell.h, a = StemCell2.h;
 
 const getEffs = (events, nodes) => [
-  new Tracker(events), new Cache(nodes), new PassThrough
+  new Tracker(events), new Cache(nodes), new Passthrough
 ]
 
 // curry is useful

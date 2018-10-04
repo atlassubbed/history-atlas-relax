@@ -1,6 +1,6 @@
 const { describe, it, before } = require("mocha")
 const { expect } = require("chai")
-const { Timer } = require("./Effects");
+const { Timer } = require("./effects");
 const { diff } = require("../src/index");
 const { Oscillator } = require("./cases/Frames");
 const { 
