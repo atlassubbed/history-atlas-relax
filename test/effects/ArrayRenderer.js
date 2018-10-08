@@ -12,37 +12,30 @@ module.exports = class ArrayRenderer extends Renderer {
   attachChildren(node, next){
     node.next = next;
   }
-  willPush(frame, parent){
+  willAdd(f, p, s, i){
     this.counts.a++;
-    // will push frame onto parent's children
-    const node = frame._node = this.node(frame.temp);
-    if (!parent) return (this.tree = node);
-    const parentNode = parent._node;
-    (parentNode.next = parentNode.next || []).push(node);
+    const node = f._node = this.node(f.temp);
+    if (!p) return (this.tree = node);
+    p = p._node;
+    const next = p.next = p.next || [];
+    if (i == null) next.push(node);
+    else next[i] = node;
   }
-  willSwap(parent, i, j){
-    this.counts.s++
-    // will swap the i-th child with the j-th child
-    const next = parent._node.next, c = next[i];
-    next[i] = next[j], next[j] = c;
-  }
-  willPop(frame, parent){
-    // about to remove frame from parent
+  willRemove(f, p, s, i){
     this.counts.r++;
-    if (!frame._node.next || !frame._node.next.length) frame._node = null
-    if (!parent) return (this.tree = null)
-    const node = parent._node, next = node.next;
-    next.pop();
-    if (!next.length){
-      delete node.next
-      parent._node = null;
-    }
+    f._node = null;
+    if (!p) return (this.tree = null);
   }
-  willReceive(frame, temp){
+  willMove(f, p, s, i){
+    this.counts.s++;
+    p._node.next[i] = f._node;
+  }
+  willClip(f, s, P, N){
+    if (s) P > N && (f._node.next.length = N)
+    else delete f._node.next;
+  }
+  willReceive(f, t){
     this.counts.u++
-    // will be setting new temp onto frame
-    frame._node.data = temp.data;
-    if (temp.key) frame._node.key = temp.key
-    else delete frame._node.key
+    f._node.data = t.data;
   }
 }

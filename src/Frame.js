@@ -42,12 +42,11 @@ const applyState = (f, ns, s) => {
     f.nextState = null;
   }
 }
-
-const emit = (type, f, a1, a2) => {
+const emit = (type, f, p, s, i) => {
   const ef = f.effs;
   if (ef){
-    if (!isArr(ef)) return ef[type] && void ef[type](f, a1, a2);
-    for (let e of ef) e[type] && e[type](f, a1, a2)
+    if (!isArr(ef)) return ef[type] && void ef[type](f, p, s, i);
+    for (let e of ef) e[type] && e[type](f, p, s, i)
   }
 }
 

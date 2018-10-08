@@ -18,7 +18,7 @@ const blackboxRoots = allNontrivialBlackboxes.filter(n => isScalar(n.name))
 // needs to be a factory
 const renderers = () => [new ArrayRenderer, new LCRSRenderer];
 
-describe("diff", function(){
+describe.only("diff", function(){
   it("should not add void templates", function(){
     const voids = [null, true, undefined, false];
     voids.forEach(val => {

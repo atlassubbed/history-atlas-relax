@@ -14,78 +14,53 @@ const { isObj } = require("../util");
     * this is equivalent to a binary tree
     * LCRS live-view should be possible with a singly-linked list and one pointer to head
     * make no assumptions about any other pointers' existence
-    * should be able to do it in constant time with reference to indecies */
+    * should be able to do mutation ops in constant time with reference to prev sibling */
 
-// Singly-linked list operations, using an index to bypass traversal
-// remove i-th node
-const removeChild = (parentFrame, i) => {
-  const node = parentFrame.next[i]._node, next = node.sib;
-  if (i === 0) {
-    if (next) parentFrame._node.next = next;
-    else delete parentFrame._node.next;
-  } else if (next) parentFrame.next[i-1]._node.sib = next
-    else delete parentFrame.next[i-1]._node.sib;
-  delete node.sib;
-  return node;
-}
-// insert j-th (or new) node before i-th node
-const insertBefore = (parentFrame, i, jOrNode) => {
-  const node = isObj(jOrNode) ? jOrNode : removeChild(parentFrame, jOrNode)
-  let next;
-  if (i <= 0) {
-    next = parentFrame._node.next;
-    parentFrame._node.next = node;
+// insert node after s (or at front) if necessary
+// TODO: possible to do this before calling willMove?
+const insertAfter = (node, p, s, ns) => {
+  if (s) {
+    if (node === (ns = s._node.sib)) return;
+    else s._node.sib = node;
   } else {
-    const prev = parentFrame.next[i-1]._node
-    next = prev.sib;
-    prev.sib = node
+    if (node === (ns = p._node.next)) return;
+    else p._node.next = node;
   }
-  next ? (node.sib = next) : delete node.sib;
-  return node;
+  return ns ? (node.sib = ns) : delete node.sib;
 }
-// this is unacceptable, the point is to avoid swaps, so this is a placeholder
-const transpose = (parentFrame, i, j) => {
-  const ch = parentFrame.next;
-  const jPrev = ch[j-1], cj = ch[j]._node
-  const iPrev = ch[i-1], ci = ch[i]._node
-  if (i === 0) parentFrame._node.next = cj;
-  else iPrev._node.sib = cj;
-  jPrev._node.sib = ci
-  const si = ci.sib, sj = cj.sib;
-  sj ? (ci.sib = sj) : delete ci.sib;
-  si ? (cj.sib = si) : delete cj.sib;
-}
-
 module.exports = class LCRSRenderer extends Renderer {
   attachChildren(node, next){
     let child, sib, i;
     node.next = next[i = 0];
     while(child = next[i++], sib = next[i]) child.sib = sib;
   }
-  willPush(frame, parent, i){
+  willAdd(f, p, s){
     this.counts.a++;
-    const node = frame._node = this.node(frame.temp);
-    if (!parent) return (this.tree = node);
-    insertBefore(parent, parent.next.length, node);
+    const node = f._node = this.node(f.temp);
+    if (!p) return (this.tree = node);
+    insertAfter(node, p, s)
   }
-  willPop(frame, parent){
+  willRemove(f, p, s, i){
     this.counts.r++;
-    if (!parent) {
-      if (!frame._node.next) frame._node = null;
-      return (this.tree = null);
+    if (!p) this.tree = null;
+    if (i != null) {
+      const next = f._node.sib;
+      if (s && next) s._node.sib = next;
+      else if (s) delete s._node.sib;
+      else if (p && next) p._node.next = next;
+      else if (p) delete p._node.next;
     }
-    removeChild(parent, parent.next.length-1)
-    parent._node.next || (parent._node = null);
-    frame._node.next || (frame._node = null)
+    f._node = null;
   }
-  willSwap(parent, i, j){
-    this.counts.s++;
-    transpose(parent, i, j);
+  willClip(f, s){
+    if (s) s._node.sib && delete s._node.sib;
+    else delete f._node.next;
   }
-  willReceive(frame, temp){
+  willMove(f, p, s){
+    if (insertAfter(f._node, p, s)) this.counts.s++;
+  }
+  willReceive(f, t){
     this.counts.u++
-    frame._node.data = temp.data;
-    if (temp.key) frame._node.key = temp.key
-    else delete frame._node.key
+    f._node.data = t.data;
   }
 }

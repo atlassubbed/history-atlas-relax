@@ -33,7 +33,7 @@ const insert = (arr, i, el) => arr.splice(i, 0, el)
 //   Nodes are categorized as either explicit (keyed) or implicit (unkeyed),
 //   and there is unlikely to be further classification when it comes to matching nodes
 //   so this duplication appears to be tolerable.
-describe("subdiff", function(){
+describe.only("subdiff", function(){
   describe("implicit, stable matching regardless of index and density", function(){
     const makePrev = () => [
       {name: StemCell, key: "k1"},
@@ -123,12 +123,14 @@ describe("subdiff", function(){
       })
     })
   })
+  let c = 0;
   // brute force consistency checks
   describe("edits prev children to match next children", function(){
     bruteForceCases.forEach(({prevCases, nextCases}) => {
       prevCases.forEach((prev, j) => {
         describe(`with prev [${prev.map(tag)}]`, function(){
           nextCases.forEach((next, i) => {
+            // if (prev.length !== 4 || next.length !== 4 || c++ !== 2) return;
             const t2 = h(next), t1 = h(prev);
             const r1 = new ArrayRenderer, r2 = new LCRSRenderer;
             describe(`swap rendered to next [${next.map(tag)}]`, function(){

@@ -6,8 +6,10 @@ const isComp = t => !!t && isFn(t.name);
 
 const isVoid = t => t == null || typeof t === "boolean"
 
+const isObj = t => t && typeof t === "object";
+
 // XXX should nameless nodes be sterile? i.e. t.next -> null
-const norm = t => isVoid(t) ? false : typeof t === "object" ? t : {name: null, data: String(t)};
+const norm = t => isVoid(t) ? false : isObj(t) ? t : {name: null, data: String(t)};
 
 const isArr = Array.isArray;
 
@@ -21,4 +23,4 @@ const clean = dirty => {
   return next;
 }
 
-module.exports = { isFn, isArr, isComp, norm, clean, name }
+module.exports = { isFn, isArr, isComp, norm, clean, name, isObj }
