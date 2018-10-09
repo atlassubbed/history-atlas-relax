@@ -60,9 +60,8 @@ const subdiff = (f, t) => {
           n === p.temp ? unfill(p) : receive(n, p)
         } else mut[i] = n;
       }
-      i = (pos = [...pos.values()]).length; // remove orphans, carry the reference
-      while(i--) remove(prev[p = pos[i]], f, prev[p] = p && prev[p-1], p)
-      while(++i < N) // apply mutations after recycling orphans
+      for (let k of pos.values()) remove(prev[k], f, k && prev[k-1], k) // remove orphans
+      for (i = -1; ++i < N;) // apply mutations after recycling orphans
         p = mut[i], mut[i] = prev[i], n = i && prev[i-1],
         p = isObj(p) ? defer(p, effs, tau, f, n, i)
           : move(p < i ? mut[p] : prev[p], f, n, i);

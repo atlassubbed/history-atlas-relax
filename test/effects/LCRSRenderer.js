@@ -28,6 +28,12 @@ const insertAfter = (node, p, s, ns) => {
   }
   return ns ? (node.sib = ns) : delete node.sib;
 }
+const removeAfter = (p, s, ns) => {
+  if (s && ns) s._node.sib = ns;
+  else if (s) delete s._node.sib;
+  else if (p && ns) p._node.next = ns;
+  else if (p) delete p._node.next;
+}
 module.exports = class LCRSRenderer extends Renderer {
   attachChildren(node, next){
     let child, sib, i;
@@ -43,14 +49,9 @@ module.exports = class LCRSRenderer extends Renderer {
   willRemove(f, p, s, i){
     this.counts.r++;
     if (!p) this.tree = null;
-    if (i != null) {
-      const next = f._node.sib;
-      if (s && next) s._node.sib = next;
-      else if (s) delete s._node.sib;
-      else if (p && next) p._node.next = next;
-      else if (p) delete p._node.next;
-    }
-    f._node = null;
+    // if (i != null) removeAfter(p, s, f._node.sib); // not necessary since we need willClip
+    f._node = f._node.sib = null;
+
   }
   willClip(f, s){
     if (s) s._node.sib && delete s._node.sib;
