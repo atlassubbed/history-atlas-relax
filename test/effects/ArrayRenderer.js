@@ -12,29 +12,27 @@ module.exports = class ArrayRenderer extends Renderer {
   attachChildren(node, next){
     node.next = next;
   }
-  willAdd(f, p, s, i){
+  willAdd(f, p){ // assign new or recycled resources to f
     this.counts.a++;
     const node = f._node = this.node(f.temp);
-    if (!p) return (this.tree = node);
-    p = p._node;
-    const next = p.next = p.next || [];
-    if (i == null) next.push(node);
-    else next[i] = node;
+    if (!p) this.tree = node;
   }
-  willRemove(f, p, s, i){
+  willRemove(f, p){ // destroy or recycle resources from f
     this.counts.r++;
     f._node = null;
     if (!p) return (this.tree = null);
   }
-  willMove(f, p, s, i){
+  willLink(f, p, s, i){ // update the location of f
     this.counts.s++;
-    p._node.next[i] = f._node;
+    const node = p._node;
+    (node.next = node.next || [])[i] = f._node;
   }
-  willClip(f, s, P, N){
-    if (s) P > N && (f._node.next.length = N)
-    else delete f._node.next;
+  willUnlink(p, s, i){ // clip the children of p at i
+    s = p._node, p = s.next;
+    if (i) p.length > i && (p.length = i);
+    else delete s.next;
   }
-  willReceive(f, t){
+  willReceive(f, t){ // give new data to f
     this.counts.u++
     f._node.data = t.data;
   }

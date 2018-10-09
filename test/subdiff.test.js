@@ -130,7 +130,6 @@ describe("subdiff", function(){
       prevCases.forEach((prev, j) => {
         describe(`with prev [${prev.map(tag)}]`, function(){
           nextCases.forEach((next, i) => {
-            // if (prev.length !== 4 || next.length !== 4 || c++ !== 2) return;
             const t2 = h(next), t1 = h(prev);
             const r1 = new ArrayRenderer, r2 = new LCRSRenderer;
             describe(`swap rendered to next [${next.map(tag)}]`, function(){
@@ -142,8 +141,8 @@ describe("subdiff", function(){
               const { a, r, u, n, s } = r1.counts;
               it("should not contain superfluous events", function(){
                 // mounting phase should only add nodes
-                expect(mA).to.equal(prev.length + 1);
-                expect(mR).to.equal(mU).to.equal(mS).to.equal(0)
+                expect(mA).to.equal(mS + 1).to.equal(prev.length + 1);
+                expect(mR).to.equal(mU).to.equal(0)
                  // accounts for the parent div node
                 const maxUpdates = prev.length + 1;
                 expect(u).to.be.at.most(maxUpdates);

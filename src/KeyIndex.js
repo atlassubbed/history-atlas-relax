@@ -11,13 +11,13 @@ const { isArr, name } = require("./util")
 // handles dupe keys gracefully; dupe keys across names work properly
 module.exports = class KeyIndex {
   constructor(){this.cache = {}}
-  push(f){
-    let c = this.cache, t = f.temp, k;
+  push(t){
+    let c = this.cache, k;
     c = c[k = name(t)] = c[k] || {};
-    if (!(k = t.key)) (c.imp = c.imp || []).push(f);
-    else if (!(c = c.exp = c.exp || {})[k]) c[k] = f;
-    else if (isArr(c[k])) c[k].push(f);
-    else c[k] = [c[k], f];
+    if (!(k = t.key)) (c.imp = c.imp || []).push(t);
+    else if (!(c = c.exp = c.exp || {})[k]) c[k] = t;
+    else if (isArr(c[k])) c[k].push(t);
+    else c[k] = [c[k], t];
   }
   pop(t){
     let c = this.cache, k;

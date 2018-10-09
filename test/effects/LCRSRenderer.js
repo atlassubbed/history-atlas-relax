@@ -17,7 +17,7 @@ const { isObj } = require("../util");
     * should be able to do mutation ops in constant time with reference to prev sibling */
 
 // insert node after s (or at front) if necessary
-// TODO: possible to do this before calling willMove?
+// effects are responsible for short-circuiting edge cases
 const insertAfter = (node, p, s, ns) => {
   if (s) {
     if (node === (ns = s._node.sib)) return;
@@ -28,39 +28,30 @@ const insertAfter = (node, p, s, ns) => {
   }
   return ns ? (node.sib = ns) : delete node.sib;
 }
-const removeAfter = (p, s, ns) => {
-  if (s && ns) s._node.sib = ns;
-  else if (s) delete s._node.sib;
-  else if (p && ns) p._node.next = ns;
-  else if (p) delete p._node.next;
-}
 module.exports = class LCRSRenderer extends Renderer {
   attachChildren(node, next){
     let child, sib, i;
     node.next = next[i = 0];
     while(child = next[i++], sib = next[i]) child.sib = sib;
   }
-  willAdd(f, p, s){
+  willAdd(f, p){ // assign new or recycled resources to f
     this.counts.a++;
     const node = f._node = this.node(f.temp);
-    if (!p) return (this.tree = node);
-    insertAfter(node, p, s)
+    if (!p) this.tree = node;
   }
-  willRemove(f, p, s, i){
+  willRemove(f, p){ // destroy or recycle resources from f
     this.counts.r++;
-    if (!p) this.tree = null;
-    // if (i != null) removeAfter(p, s, f._node.sib); // not necessary since we need willClip
     f._node = f._node.sib = null;
-
+    if (!p) this.tree = null;
   }
-  willClip(f, s){
-    if (s) s._node.sib && delete s._node.sib;
-    else delete f._node.next;
-  }
-  willMove(f, p, s){
+  willLink(f, p, s){ // update the upstream location of f
     if (insertAfter(f._node, p, s)) this.counts.s++;
   }
-  willReceive(f, t){
+  willUnlink(p, s){ // discard the chain after s
+    if (s) s._node.sib && delete s._node.sib;
+    else delete p._node.next;
+  }
+  willReceive(f, t){ // give new data to f
     this.counts.u++
     f._node.data = t.data;
   }
