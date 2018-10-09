@@ -11,12 +11,11 @@ module.exports = class Tracker {
     const e = {[type]: f.temp.data.id};
     this.events.push(e);
   }
-  willPush(f, p){
-    this.log("wPu", f)
+  willAdd(f, p){
+    this.log("wA", f)
     if (!p) this.root = f
   }
-  willSwap(f, i, j){this.log("wS", f)}
-  willPop(f){this.log("wP", f)}
+  willRemove(f){this.log("wP", f)}
   willReceive(f){this.log("wR", f)}
   didAdd(f){this.log("dA", f)}
   willUpdate(f){this.log("wU", f)}

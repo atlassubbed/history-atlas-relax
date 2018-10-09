@@ -33,7 +33,7 @@ const factory4 = new TemplateFactory(class AsyncFrame extends Frame {
   constructor(temp, effs){
     super(temp, pass)
   }
-  willPush(f, parent){
+  willAdd(f, parent){
     if (parent) this.didUpdate = null;
   }
   didUpdate(){

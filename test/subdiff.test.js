@@ -33,7 +33,7 @@ const insert = (arr, i, el) => arr.splice(i, 0, el)
 //   Nodes are categorized as either explicit (keyed) or implicit (unkeyed),
 //   and there is unlikely to be further classification when it comes to matching nodes
 //   so this duplication appears to be tolerable.
-describe.only("subdiff", function(){
+describe("subdiff", function(){
   describe("implicit, stable matching regardless of index and density", function(){
     const makePrev = () => [
       {name: StemCell, key: "k1"},
