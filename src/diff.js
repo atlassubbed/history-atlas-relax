@@ -58,7 +58,6 @@ const subdiff = (f, t) => {
     }
   }
 }
-
 // diff "sideways" along the calculated path
 //   * initially used call stack; led to overflows for lateral updates
 //   * htap is "path" in reverse, we don't need it to avoid .reverse(), but we avoid .length = 0

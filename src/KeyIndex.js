@@ -14,20 +14,12 @@ module.exports = class KeyIndex {
   push(t){
     let c = this.cache, k;
     c = c[k = name(t)] = c[k] || {};
-    if (!(k = t.key)) (c.imp = c.imp || []).push(t);
-    else if (!(c = c.exp = c.exp || {})[k]) c[k] = t;
-    else if (isArr(c[k])) c[k].push(t);
-    else c[k] = [c[k], t];
+    (k = t.key) ? (c = c.exp = c.exp || {})[k] ? isArr(c[k]) ?
+    c[k].push(t) : (c[k] = [c[k], t]) : c[k] = t : (c.imp = c.imp || []).push(t);
   }
   pop(t){
-    let c = this.cache, k;
-    if (c = c[name(t)]){
-      if (!(k = t.key)) return (c = c.imp) && c.pop();
-      if ((c = c.exp) && c[k]){
-        if (isArr(c[k])) return c[k].pop();
-        c[k] = 0*!(k = c[k]);
-        return k;
-      }
-    }
+    let c = this.cache[name(t)], k;
+    return c ? (k = t.key) ? ((c = c.exp) && c[k]) ? isArr(c[k]) ? 
+      c[k].pop() : (c[k] = !(k = c[k]), k) : 0 : (c=c.imp) && c.pop() : 0
   }
 }
