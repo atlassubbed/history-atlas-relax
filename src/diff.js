@@ -37,10 +37,10 @@ const subdiff = (f, t) => {
   emit("willUpdate", f), htap.push(f), applyState(f);
   let prev, ix, P = (prev = f.next) ? prev.length : 0,
       next, N = (next = clean(f, P && (ix = new KeyIndex))).length;
-  if (P || N) if (!N){
+  if (!N && P){
     while(P) rem(prev[--P], f);
     f.next = null, unlink(f);
-  } else {
+  } else if (N) {
     let n, p, effs = f.effs, tau = f.tau;
     if (!P){
       f.next = [];
