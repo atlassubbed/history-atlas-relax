@@ -194,7 +194,7 @@ describe("entanglement", function(){
           expect(update).to.throw("cyclic entanglement")
         }
         expect(events).to.be.empty;
-      })      
+      })
     })
     describe("diffs in correct order", function(){
       it("should update nodes if upstream updated", function(){

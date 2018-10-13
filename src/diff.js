@@ -4,37 +4,37 @@ const { path, fill, unfill } = require("./step-leader");
 const { hops } = require("./entangle");
 const KeyIndex = require("./KeyIndex")
 
-const lags = [], htap = [], ladd = lags.push.bind(lags);
+const lags = [], htap = [], stack = [], ladd = lags.push.bind(lags);
 const defer = (t, effs, tau, f, s, i) => ((path.length ? ladd : mount)(f = add(t, effs, tau, f, s, i)), f)
-const link = (f, p, s, i=p.next.length) => (emit("willLink", f, p, s, i), p.next[i] = f);
+const link = (f, p, s, i=p.next.length) => p.next[i] = emit("willLink", f, p, s, i);
 const unlink = (p, s, i) => emit("willUnlink", p, s, i);
-const rem = (f, p) => {
-  emit("willRemove", f, p);
-  let ch = f.next, c = ch && ch.length;
-  while(c) rem(ch[--c], f);
-  clearFrame(f);
+const rem = (f, p, ch, c) => {
+  stack.push(emit("willRemove", f, p));
+  while(f = stack.pop()){
+    ch = f.next, c = ch && ch.length;
+    while(c) stack.push(emit("willRemove", ch[--c], f))
+    clearFrame(f);
+  }
 }
 const add = (t, effs, tau, p, s, i) => (
   emit("willAdd", t = toFrame(t, effs, tau), p),
   p ? link(t, p, s, i) : (t.isRoot = true, t)
 )
 const receive = (t, f) => {
-  emit("willReceive", f, t);
-  if (!(f.affN||f.affs||f.isOrig)) path.push(f);
+  if (!(emit("willReceive", f, t).affN||f.affs||f.isOrig)) path.push(f);
   return f.temp = t, f;
 }
-const mount = (f, t) => {
-  htap.push(f), t = f.temp;
-  if ((t = clean(f)).length){
-    f.next = [];
-    let tau = f.tau, effs = f.effs, n, p;
-    while(n=t.pop()) mount(p = add(n, effs, tau, f, p));
+const mount = (f, tau, effs, t, n, p) => {
+  stack.push(f);
+  while(f = stack.pop()) if (htap.push(f), (t = clean(f)).length){
+    tau = f.tau, effs = f.effs, p = !(f.next = []);
+    while(n = t.pop()) stack.push(p = add(n, effs, tau, f, p));
   }
 }
 
 // diff "downwards" from a frame, short circuit if next or prev have zero elements
 const subdiff = (f, t) => {
-  emit("willUpdate", f), htap.push(f), applyState(f);
+  htap.push(emit("willUpdate", f)), applyState(f);
   let prev, ix, P = (prev = f.next) ? prev.length : 0,
       next, N = (next = clean(f, P && (ix = new KeyIndex))).length;
   if (!N && P){
@@ -65,10 +65,9 @@ const sidediff = f => {
   while(f = path.pop()) if (f.temp && f.inPath) subdiff(f);
   while(f = lags.pop()) mount(f);
   while(f = htap.pop())
-    f.inPath ? emit("didUpdate", f, f._affN =+ (f.isOrig = f.inPath = false)) : emit("didAdd", f);
+    f.inPath ? (emit("didUpdate", f)._affN =+ (f.isOrig = f.inPath = false)) : emit("didAdd", f);
   while(f = hops.pop()) {
-    for (let [c, t] of f._affs)
-      t ? c.entangle(f) : c.detangle(f);
+    for (let [c, t] of f._affs) t ? c.entangle(f) : c.detangle(f);
     f._affs = null;
   }
 }
@@ -79,7 +78,7 @@ const diff = (t, f, effs, tau=-1) => {
   if (!isFrame(f) || !f.temp)
     return !!t && (sidediff(f = defer(t, effs, tau)), f);
   if (!f.isRoot || t === f.temp) return false;
-  if (fill(f) || !t) return !sidediff(rem(f));
+  if (fill(f, tau) || !t) return !sidediff(rem(f));
   if (t.name === f.temp.name) return sidediff(receive(t, f)), f;
   effs = effs || f.effs, sidediff(rem(f));
   return sidediff(f = defer(t, effs, tau)), f;

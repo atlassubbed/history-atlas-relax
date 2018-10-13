@@ -1,4 +1,4 @@
-const { isComp, isFn, isArr } = require("./util")
+const { isComp, isFn, isArr, merge } = require("./util")
 
 const isFrame = f => !!f && isFn(f.diff);
 
@@ -8,18 +8,14 @@ const Frame = function(t, effs){
   this.effs = effs, this.temp = t;
   this.affs = this.next = this._affs =
   this.nextState = this.state = null;
-  this.affN = this._affN = 0;
-  this.inStep = this.inPath = this.isOrig = false;
+  this.affN = this._affN = this.step = 0;
+  this.inPath = this.isOrig = false;
 }
 Frame.prototype.diff = function(data, next){ return next }
 Frame.isFrame = isFrame
 Frame.define = (Subframe, proto) => {
-  if (Subframe === Frame) 
-    throw new Error("cannot re-define base");
-  const p = new Frame;
-  for (let k in proto) p[k] = proto[k];
-  Subframe.prototype = p
-  Subframe.prototype.constructor = Subframe
+  if (Subframe === Frame) throw new Error("cannot re-define base");
+  (Subframe.prototype = merge(new Frame, proto)).constructor = Subframe
 }
 // XXX this is expensive, consider using sets/maps to reduce the internal api
 const clearFrame = f => {
@@ -35,19 +31,15 @@ const toFrame = (t, effs, tau) => {
   }
   return t.tau = t.getTau(tau), t;
 }
-const applyState = (f, ns, s) => {
-  if (ns = f.nextState){
-    if (!(s = f.state)) f.state = ns;
-    else for (let k in ns) s[k] = ns[k];
-    f.nextState = null;
-  }
+const applyState = (f, ns) => {
+  if (ns = f.nextState)f.nextState = !(f.state = merge(f.state || {}, ns))
 }
-const emit = (type, f, p, s, i) => {
-  const ef = f.effs;
-  if (ef){
-    if (!isArr(ef)) return ef[type] && void ef[type](f, p, s, i);
-    for (let e of ef) e[type] && e[type](f, p, s, i)
+const emit = (type, f, p, s, i, ef) => {
+  if (ef = f.effs){
+    if (!isArr(ef)) ef[type] && ef[type](f, p, s, i);
+    else for (let e of ef) e[type] && e[type](f, p, s, i);
   }
+  return f;
 }
 
 module.exports = { Frame, toFrame, clearFrame, applyState, emit }
