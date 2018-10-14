@@ -66,6 +66,10 @@ const sidediff = f => {
   while(f = lags.pop()) mount(f);
   while(f = htap.pop())
     f.inPath ? (emit("didUpdate", f)._affN =+ (f.isOrig = f.inPath = false)) : emit("didAdd", f);
+  // XXX 3rd order polynomial is fine since hops is typically empty;
+  // else _affs/affs are typically very small for all f.
+  // One may use ES6 Sets for affs so that entangle/detangle become sublinear, but most use cases do not warrant this,
+  // and then we'd have to use generators or some other construction at fill-time.
   while(f = hops.pop()) {
     for (let [c, t] of f._affs) t ? c.entangle(f) : c.detangle(f);
     f._affs = null;
