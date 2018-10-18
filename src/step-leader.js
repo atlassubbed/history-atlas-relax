@@ -1,4 +1,4 @@
-const { isArr } = require("./util");
+const { isArr, isObj } = require("./util");
 // XXX if removing a root, we can make a microoptimization:
 //   * for all step(c) called on the subtree of the root:
 //     * don't add c to the path, since c.temp == null at sidediff time
@@ -6,13 +6,14 @@ const { isArr } = require("./util");
 //     * it also increases file size and complexity; not worth it
 const path = [], stack = [];
 // for stack safety, we acquire overhead trying to simulate recursion's post ordering
-function* lazy(f, c){
-  if(c = f.next) yield* c
-  if(c = f.affs) yield* c
+const next = (f, ch) => {
+  if (isObj(ch = f.step)) return ch.next().value;
+  if (ch = f.next && f.next[f.step++]) return ch;
+  if (ch = f.affs) return (f.step = f.affs.values()).next().value;
 }
 const unfill = (f, c=stack.push(f)) => {
   while(f = stack.pop()) if (!(--f._affN || (f.inPath = f.isOrig)))
-    for (f = lazy(f); c = f.next().value;) stack.push(c);
+    while(c = next(f)) stack.push(c);
 }
 // XXX we could mark nodes as originators in setState, however:
 //   * step-leader state would bleed outside of the diff cycle's context
@@ -26,7 +27,7 @@ const fill = (f, t, c) => {
   else while(c = f.pop()) if(t < 0 || c.temp && c.nextState && c.tau === t) 
     c.isOrig = !!stack.push(c);
   while(t = stack.length) if (!((f = stack[t-1]).inPath && stack.pop()))
-    if (!(c = (f.step || (f.step = lazy(f))).next().value))
+    if (!(c = next(f)))
       stack.pop().inPath = !(f.step = 0), (f.affN || f.affs || f.isOrig) && path.push(f);
     else if (c.step) throw new Error("cyclic entanglement");
     else stack.push(c), c._affN++;
