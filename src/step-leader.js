@@ -12,8 +12,9 @@ const next = (f, ch) => {
   if (ch = f.affs) return (f.step = f.affs.values()).next().value;
 }
 const unfill = (f, c=stack.push(f)) => {
-  while(f = stack.pop()) if (!(--f._affN || (f.inPath = f.isOrig)))
-    while(c = next(f)) stack.push(c);
+  while(f = stack.pop()) if (!(--f._affN || (f.inPath = f.isOrig))){
+    while(c = next(f)) stack.push(c); f.step = 0;
+  }
 }
 // XXX we could mark nodes as originators in setState, however:
 //   * step-leader state would bleed outside of the diff cycle's context
@@ -27,8 +28,7 @@ const fill = (f, t, c) => {
   else while(c = f.pop()) if(t < 0 || c.temp && c.nextState && c.tau === t) 
     c.isOrig = !!stack.push(c);
   while(t = stack.length) if (!((f = stack[t-1]).inPath && stack.pop()))
-    if (!(c = next(f)))
-      stack.pop().inPath = !(f.step = 0), (f.affN || f.affs || f.isOrig) && path.push(f);
+    if (!(c = next(f))) stack.pop().inPath = !(f.step = 0), (f.affN || f.affs || f.isOrig) && path.push(f);
     else if (c.step) throw new Error("cyclic entanglement");
     else stack.push(c), c._affN++;
 }
