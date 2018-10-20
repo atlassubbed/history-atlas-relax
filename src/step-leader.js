@@ -1,4 +1,4 @@
-const { isArr, isObj } = require("./util");
+const { isArr } = require("./util");
 // XXX if removing a root, we can make a microoptimization:
 //   * for all step(c) called on the subtree of the root:
 //     * don't add c to the path, since c.temp == null at sidediff time
@@ -6,14 +6,10 @@ const { isArr, isObj } = require("./util");
 //     * it also increases file size and complexity; not worth it
 const path = [], stack = [];
 // for stack safety, we acquire overhead trying to simulate recursion's post ordering
-const next = (f, ch) => {
-  if (isObj(ch = f.step)) return ch.next().value;
-  if (ch = f.next && f.next[f.step++]) return ch;
-  if (ch = f.affs) return (f.step = f.affs.values()).next().value;
-}
+const next = (f, ch, i=f.step++) => (ch=f.next) ? ch[i] || f._affs && f._affs[i-ch.length] : f._affs && f._affs[i]
 const unfill = (f, c=stack.push(f)) => {
   while(f = stack.pop()) if (!(--f._affN || (f.inPath = f.isOrig))){
-    while(c = next(f)) stack.push(c); f.step = 0;
+    while(c = next(f)) stack.push(c); f.step = 0, f._affs = null;
   }
 }
 // XXX we could mark nodes as originators in setState, however:
@@ -27,10 +23,12 @@ const fill = (f, t, c) => {
   if (!isArr(f)) f.isOrig = !!stack.push(f);
   else while(c = f.pop()) if(t < 0 || c.temp && c.nextState && c.tau === t) 
     c.isOrig = !!stack.push(c);
-  while(t = stack.length) if (!((f = stack[t-1]).inPath && stack.pop()))
-    if (!(c = next(f))) stack.pop().inPath = !(f.step = 0), (f.affN || f.affs || f.isOrig) && path.push(f);
+  while(t = stack.length) if (!((f = stack[t-1]).inPath && stack.pop())) {
+    if (!f.step && f.affs) f._affs = [...f.affs]
+    if (!(c = next(f))) stack.pop().inPath = !(f.step = 0), path.push(f);
     else if (c.step) throw new Error("cyclic entanglement");
     else stack.push(c), c._affN++;
+  }
 }
 
 module.exports = { fill, unfill, path }

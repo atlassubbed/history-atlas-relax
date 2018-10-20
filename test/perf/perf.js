@@ -6,7 +6,7 @@ const { diff, Frame } = require("../../src/index");
 const { expect } = require("chai");
 const { copy } = require("../util")
 
-const SCALES = [50, 5];
+const SCALES = [50];
 const SAMPLES = 5e3;
 const DIFF_WORK = 0; // set to zero to compare just the implementation
 const DEC = 1;
@@ -95,18 +95,18 @@ for (let c in cases){
         const m1 = f3[0].temp, m = [Object.assign({}, m1), Object.assign({}, m1)]
         run("first update", () => diff(t1.pop(), f1[++i])), i = -1;
         run("second update", () => diff(t1.pop(), f1[++i])), i = -1;
-        run("update memoized root", () => diff(m1, f3[0])), i = -1;
+        // run("update memoized root", () => diff(m1, f3[0])), i = -1;
         run("update memoized children", () => diff(m[++i%2], f3[0])), i = -1;
         run("mount", () => diff(t1.pop())), i = -1;
-        run("set tau", () => f1[++i].setTau(i)), i = -1;
+        // run("set tau", () => f1[++i].setTau(i)), i = -1;
         run("unmount", () => diff(null, f2[++i])), i = -1;
-        run("entangle one", () => f3[++i].entangle(f3[(i+1)%SAMPLES])), i = -1;
-        run("detangle one", () => f3[++i].detangle(f3[(i+1)%SAMPLES])), i = -1;
+        // run("entangle one", () => f3[++i].entangle(f3[(i+1)%SAMPLES])), i = -1;
+        // run("detangle one", () => f3[++i].detangle(f3[(i+1)%SAMPLES])), i = -1;
         run("entangle one to many", () => f3[0].entangle(f3[++i])), i = -1;
         run("update one to many", () => diff(t3.pop(), f3[++i])), i = -1;
         run("detangle one to many", () => f3[0].detangle(f3[++i])), i = -1;
-        run("entangle many to one", () => f3[++i].entangle(f3[0])), i = -1;
-        run("detangle many to one", () => f3[++i].detangle(f3[0])), i = -1;
+        // run("entangle many to one", () => f3[++i].entangle(f3[0])), i = -1;
+        // run("detangle many to one", () => f3[++i].detangle(f3[0])), i = -1;
         runAsync("update async", done => {
           f4[++i].done = done;
           f4[i].setState({})

@@ -61,10 +61,9 @@ describe("entanglement", function(){
         const {nodes, events} = rootCase.get();
         diff(a(0), nodes[0])
         expect(events).to.deep.equal([ 
-          {wP: 0},
+          {wP: 0}, {wA: 0},
           {wU: 1}, {wU: 2}, {wU: 3},
-          {dU: 3}, {dU: 2}, {dU: 1},
-          {wA: 0}, {dA: 0}
+          {dA: 0}, {dU: 3}, {dU: 2}, {dU: 1}
         ])
       })
       it("should not update all nodes if downstream updated", function(){
@@ -222,11 +221,10 @@ describe("entanglement", function(){
         const {nodes, events} = treeCase.get();
         diff(a(0), nodes[0])
         expect(events).to.deep.equal([ 
-          {wP: 0}, {wP: 1}, {wP: 3}, {wP: 2},
+          {wP: 0}, {wP: 1}, {wP: 3}, {wP: 2}, {wA: 0},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
           {wU: 6}, {wU: 8}, {wU: 7},
-          {dU: 7}, {dU: 8}, {dU: 6}, {dU: 5}, {dU: 4},
-          {wA: 0}, {dA: 0}
+          {dA: 0}, {dU: 7}, {dU: 8}, {dU: 6}, {dU: 5}, {dU: 4},
         ])
       })
       it("should not update all nodes if downstream updated", function(){
@@ -253,9 +251,8 @@ describe("entanglement", function(){
         diff(a(4), nodes[4])
         expect(events).to.deep.equal([ 
           {wP: 4}, {wP: 8}, {wP: 5},
-          {wP: 7}, {wP: 6},
-          {wU: 3}, {dU: 3},
-          {wA: 4}, {dA: 4},
+          {wP: 7}, {wP: 6}, {wA: 4},
+          {wU: 3}, {dA: 4}, {dU: 3},
         ])
       })
       it("should reflect post-diff changes in entanglement in the next diff", function(){
@@ -329,9 +326,8 @@ describe("entanglement", function(){
         const result = [ 
           {wR: 0}, {wU: 0}, {wR: 1}, {wU: 1}, {wR: 2}, {wR: 3},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
-          {wU: 2}, {wR: 9}, {wR: 11}, {wU: 11}, {wU: 9}, {wR: 10}, {wU: 10},
-          {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},
-          {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3}, {dU: 10}, {dU: 9}, {dU: 11}, {dU: 2}, {dU: 5}, {dU: 4}, {dU: 1}, {dU: 0} 
+          {wU: 2}, {wR: 9}, {wR: 11}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7}, {wU: 11}, {wU: 9}, {wR: 10}, {wU: 10},
+          {dU: 10}, {dU: 9}, {dU: 11}, {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3}, {dU: 2}, {dU: 5}, {dU: 4}, {dU: 1}, {dU: 0}
         ]
         const update = () => diff(treeCase.tag0(), nodes[0]);
         update(), events.length = 0, update();
@@ -369,12 +365,12 @@ describe("entanglement", function(){
             }
           }
         })
-        const result = [ 
+        const result = [
           {wR: 0}, {wU: 0}, {wR: 1}, {wU: 1}, {wR: 2}, {wR: 3},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
-          {wU: 2}, {wR: 9}, {wR: 11}, {wU: 11},
-          {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7}, {wU: 9}, {wR: 10}, {wU: 10},
-          {dU: 10}, {dU: 9}, {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3}, {dU: 11},
+          {wU: 2}, {wR: 9}, {wR: 11},
+          {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7}, {wU: 11}, {wU: 9}, {wR: 10}, {wU: 10},
+          {dU: 10}, {dU: 9}, {dU: 11}, {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3},
           {dU: 2}, {dU: 5}, {dU: 4}, {dU: 1}, {dU: 0} 
         ]
         const update = () => diff(treeCase.tag0(), nodes[0]);
@@ -416,11 +412,11 @@ describe("entanglement", function(){
         })
         const result = [ 
           {wR: 0}, {wU: 0}, {wR: 1}, {wU: 1}, {wR: 2}, {wR: 3},
-          {wU: 2}, {wR: 9}, {wR: 11}, {wU: 11}, {wU: 9}, {wR: 10}, {wU: 10},
+          {wU: 2}, {wR: 9}, {wR: 11}, {wU: 11}, {wU: 9}, {wR: 10},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
-          {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},
-          {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3}, 
-          {dU: 5}, {dU: 4}, {dU: 10}, {dU: 9}, {dU: 11}, {dU: 2}, {dU: 1}, {dU: 0} 
+          {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},  {wU: 10},
+          {dU: 10}, {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3},
+          {dU: 5}, {dU: 4}, {dU: 9}, {dU: 11}, {dU: 2}, {dU: 1}, {dU: 0}
         ]
         const update = () => diff(treeCase.tag0(), nodes[0]);
         update(), events.length = 0, update();
@@ -441,7 +437,7 @@ describe("entanglement", function(){
           {wR: 0}, {wU: 0}, {wP: 1}, {wP: 3}, {wP: 2},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
           {wU: 6}, {wU: 8}, {wU: 7},
-          {dU: 7}, {dU: 8}, {dU: 6}, {dU: 5}, {dU: 4}, {dU: 0} 
+          {dU: 7}, {dU: 8}, {dU: 6}, {dU: 5}, {dU: 4}, {dU: 0}
         ]
         diff(treeCase.tag0(), nodes[0]);
         expect(events).to.deep.equal(result);

@@ -8,7 +8,7 @@ const Frame = function(t, effs){
   this.effs = effs, this.temp = t;
   this.affs = this.next = this._affs =
   this.nextState = this.state = null;
-  this.affN = this._affN = this.step = 0;
+  this._affN = this.step = 0;
   this.inPath = this.isOrig = false;
 }
 Frame.prototype.diff = function(data, next){ return next }
