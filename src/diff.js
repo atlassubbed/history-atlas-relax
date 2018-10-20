@@ -1,6 +1,6 @@
 const { isArr, norm, clean } = require("./util")
 const { Frame: { isFrame }, applyState, emit, toFrame, clearFrame } = require("./Frame");
-const { path, fill, unfill } = require("./step-leader");
+const { path, fill, touch, unfill } = require("./step-leader");
 const KeyIndex = require("./KeyIndex")
 
 const lags = [], htap = [], rems = [];
@@ -67,9 +67,9 @@ const diff = (t, f, effs, tau=-1) => {
   if (!isFrame(f) || !f.temp)
     return !!t && (sidediff(f = add(t, effs, tau)), f);
   if (!f.isRoot || t === f.temp) return false;
-  if (fill(f, tau) || !t) return !sidediff(rem(f));
-  if (t.name === f.temp.name) return sidediff(receive(t, f)), f;
-  return effs = effs || f.effs, rem(f), sidediff(f = add(t, effs, tau)), f;
+  if (!t) return touch(f, tau), !sidediff(rem(f));
+  if (t.name === f.temp.name) return fill(f, tau), sidediff(receive(t, f)), f;
+  return effs = effs || f.effs, touch(f, tau), rem(f), sidediff(f = add(t, effs, tau)), f;
 }
 
 module.exports = { diff, rediff }

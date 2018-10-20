@@ -21,14 +21,25 @@ const unfill = (f, c=stack.push(f)) => {
 // don't consider nodes that are in path, removed, or diffed
 const fill = (f, t, c) => {
   if (!isArr(f)) f.isOrig = !!stack.push(f);
-  else while(c = f.pop()) if(t < 0 || c.temp && c.nextState && c.tau === t) 
+  else while(c = f.pop()) if(t < 0 || c.temp && c.nextState && c.tau === t)
     c.isOrig = !!stack.push(c);
-  while(t = stack.length) if (!((f = stack[t-1]).inPath && stack.pop())) {
+  while(t = stack.length) if (!(((f = stack[t-1]).inPath || f.step < 0) && stack.pop())) {
     if (!f.step && f.affs) f._affs = [...f.affs]
     if (!(c = next(f))) stack.pop().inPath = !(f.step = 0), path.push(f);
-    else if (c.step) throw new Error("cyclic entanglement");
+    else if (c.step > 0) throw new Error("cyclic entanglement");
     else stack.push(c), c._affN++;
   }
 }
 
-module.exports = { fill, unfill, path }
+const touch = (f, t, ch, c) => {
+  stack.push(f);
+  let orig = [];
+  while(f = stack.pop()){
+    ch = f.next, c = ch && ch.length, f.step = -1;
+    while(c) stack.push(ch[--c]);
+    if (ch = f.affs) for (c of ch) orig.push(c);
+  }
+  fill(orig, t);
+}
+
+module.exports = { fill, unfill, touch, path }
