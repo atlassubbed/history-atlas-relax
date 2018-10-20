@@ -37,7 +37,8 @@ const touch = (f, t, ch, c) => {
   while(f = stack.pop()){
     ch = f.next, c = ch && ch.length, f.step = -1;
     while(c) stack.push(ch[--c]);
-    if (ch = f.affs) for (c of ch) orig.push(c);
+    if (ch = f.affs && f.affs.values())
+      while(c = ch.next().value) orig.push(c);
   }
   fill(orig, t);
 }

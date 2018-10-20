@@ -67,9 +67,10 @@ const diff = (t, f, effs, tau=-1) => {
   if (!isFrame(f) || !f.temp)
     return !!t && (sidediff(f = add(t, effs, tau)), f);
   if (!f.isRoot || t === f.temp) return false;
-  if (!t) return touch(f, tau), !sidediff(rem(f));
-  if (t.name === f.temp.name) return fill(f, tau), sidediff(receive(t, f)), f;
-  return effs = effs || f.effs, touch(f, tau), rem(f), sidediff(f = add(t, effs, tau)), f;
+  if (t && t.name === f.temp.name) 
+    return fill(f, tau), sidediff(receive(t, f)), f;
+  touch(f, tau), effs = effs || f.effs, rem(f);
+  return t ? (sidediff(f = add(t, effs, tau)), f) : !sidediff();
 }
 
 module.exports = { diff, rediff }
