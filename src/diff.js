@@ -1,6 +1,6 @@
 const { isArr, norm, clean } = require("./util")
 const { Frame: { isFrame }, applyState, emit, toFrame, clearFrame } = require("./Frame");
-const { path, fill, unfill } = require("./step-leader");
+const { path, fill, refill, unmark } = require("./step-leader");
 const KeyIndex = require("./KeyIndex")
 
 const lags = [], htap = [], stack = [];
@@ -37,7 +37,7 @@ const subdiff = (f, t) => {
       let i = 0, mv = new Map;
       while(p = prev[i++]) // handle removes and receives
         (n=ix.pop(p.temp)) ? mv.set(n,p) && n === p.temp ?
-          unfill(p) : receive(n, p) : rem(p, f);
+          unmark(p) : receive(n, p) : rem(p, f);
       for (i = -1; n=next.pop(++i);) // handle adds and moves
         ix = i && prev[i-1], (p=mv.get(n)) ?
           link(p, f, ix, i) : (p = add(n, effs, tau, f, ix, i));
@@ -63,12 +63,11 @@ const rediff = (f, tau=-1) => sidediff(fill(f, tau))
 // public diff (mount, unmount and update frames)
 const diff = (t, f, effs, tau=-1) => {
   if (isArr(t = norm(t))) return false;
-  if (!isFrame(f) || !f.temp)
-    return !!t && (sidediff(f = add(t, effs, tau)), f);
+  if (!isFrame(f) || !f.temp) return !!t && (sidediff(f = add(t, effs, tau)), f);
   if (!f.isRoot || t === f.temp) return false;
-  if (fill(f, tau) || !t) return !sidediff(rem(f));
-  if (t.name === f.temp.name) return sidediff(receive(t, f)), f;
-  return effs = effs || f.effs, rem(f), sidediff(f = add(t, effs, tau)), f;
+  if (t && t.name === f.temp.name) return fill(f), sidediff(receive(t, f)), f;
+  refill(f), effs = effs || f.effs, rem(f)
+  return sidediff(f = !t || add(t, effs, tau)), f;
 }
 
 module.exports = { diff, rediff }
