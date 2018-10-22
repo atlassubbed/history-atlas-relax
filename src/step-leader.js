@@ -27,7 +27,7 @@ const fill = (f, t, c) => {
     if (!f.step && f.affs) f._affs = [...f.affs]
     if (!(c = next(f))) stack.pop().inPath = !(f.step = 0), path.push(f);
     else if (c.step) throw new Error("cyclic entanglement");
-    else stack.push(c), c._affN++;
+    else c.inPath || stack.push(c), c._affN++;
   }
 }
 
