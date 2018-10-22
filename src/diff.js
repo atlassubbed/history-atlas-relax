@@ -3,15 +3,15 @@ const { Frame: { isFrame }, applyState, emit, toFrame, clearFrame } = require(".
 const { path, fill, unfill } = require("./step-leader");
 const KeyIndex = require("./KeyIndex")
 
-const lags = [], htap = [], rems = [];
+const lags = [], htap = [], stack = [];
 const link = (f, p, s, i=p.next.length) => p.next[i] = emit("willLink", f, p, s, i);
 const unlink = (p, s, i) => emit("willUnlink", p, s, i);
 const receive = (t, f) => {emit("willReceive", f, t), f.temp = t}
 const rem = (f, p, ch, c) => {
-  rems.push(emit("willRemove", f, p));
-  while(f = rems.pop()){
+  stack.push(emit("willRemove", f, p));
+  while(f = stack.pop()){
     ch = f.next, c = ch && ch.length;
-    while(c) rems.push(emit("willRemove", ch[--c], f))
+    while(c) stack.push(emit("willRemove", ch[--c], f))
     clearFrame(f);
   }
 }
@@ -52,13 +52,12 @@ const subdiff = (f, t) => {
 const sidediff = f => {
   while(f = path.pop()) if (f.temp && f.inPath) subdiff(f);
   let tau, effs, p, n, t;
-  while(f = lags.pop()) if (htap.push(f), (t = clean(f)).length){
+  while(f = lags.pop()) if (stack.push(f), (t = clean(f)).length){
     tau = f.tau, effs = f.effs, p = !(f.next = []), n;
-    while(n = t.pop()) p = add(n, effs, tau, f, p)
+    while(n = t.pop()) p = add(n, effs, tau, f, p);
   }
-  while(f = htap.pop()) f.inPath ?
-    (emit("didUpdate", f)._affN =+ (f._affs = null, f.isOrig = f.inPath = false)) :
-    emit("didAdd", f);
+  while(f = stack.pop()) emit("didAdd", f);
+  while(f = htap.pop()) emit("didUpdate", f)._affN =+ (f._affs = null, f.isOrig = f.inPath = false)
 }
 const rediff = (f, tau=-1) => sidediff(fill(f, tau))
 // public diff (mount, unmount and update frames)

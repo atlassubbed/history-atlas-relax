@@ -1,11 +1,10 @@
-const { Timer } = require("atlas-basic-timer");
-const { shuffle, int, insert, sample } = require("atlas-random");
+const { insert } = require("atlas-random");
 
 class Node {
   constructor(){
-    this.step = this.affN = 0;
+    this.step = this._affN = 0;
     this.inPath = this.isOrig = false;
-    this.next = this.affs = null;
+    this.next = this.affs = this._affs = null;
   }
   *[Symbol.iterator](){
     const { next, affs } = this;
@@ -62,6 +61,7 @@ class Forest extends Graph {
         if (next.length) parent.next = next;
       }
     }
+    this.treeSize = size;
   }
 }
 
@@ -81,13 +81,11 @@ const isOrdered = path => {
       if (seen.has(c)) return false;
   return true;
 }
-
-const toposortDFS = () => {
-
+const isVanilla = graph => {
+  for (let f of graph.nodes){
+    if (f.step !== 0 || f._affN !== 0 || f.inPath || f.isOrig || f._affs) return false;
+  }
+  return true;
 }
 
-const toposortKahn = () => {
-
-}
-
-module.exports = { Forest, Graph, hasCycles, hasDupes, isOrdered }
+module.exports = { Forest, Graph, hasCycles, hasDupes, isOrdered, isVanilla }
