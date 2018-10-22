@@ -22,6 +22,13 @@ const type = str => {
   return str.slice(0, i).trim();
 }
 
+const deepIgnore = (node, txfm) => {
+  txfm(node);
+  if (node.next) for (let c of toArr(node.next))
+    deepIgnore(c, txfm);
+  return node;
+}
+
 const pretty = tree => JSON.stringify(tree, null, 2)
 
 // pseudo-deep copy a multi-dimensional array
@@ -29,5 +36,5 @@ const copy = t => t && (isArr(t) ? t.map(copy) : Object.assign({}, t));
 
 module.exports = { 
   isArr, isObj, isFn, isVoid, isScalar,
-  toArr, has, inject, type, pretty, copy
+  toArr, has, inject, type, pretty, copy, deepIgnore
 }

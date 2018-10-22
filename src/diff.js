@@ -34,13 +34,13 @@ const subdiff = (f, t) => {
       f.next = [];
       while(n = next.pop()) p = add(n, effs, tau, f, p);
     } else {
-      let i = 0, mv = new Map;
+      let i = 0;
       while(p = prev[i++]) // handle removes and receives
-        (n=ix.pop(p.temp)) ? mv.set(n,p) && n === p.temp ?
+        (n=ix.pop(p.temp)) ? n === (n.p=p).temp ?
           unmark(p) : receive(n, p) : rem(p, f);
       for (i = -1; n=next.pop(++i);) // handle adds and moves
-        ix = i && prev[i-1], (p=mv.get(n)) ?
-          link(p, f, ix, i) : (p = add(n, effs, tau, f, ix, i));
+        ix = i && prev[i-1], (p=n.p) ? link(p, f, ix, i, n.p=null) :
+          (p = add(n, effs, tau, f, ix, i));
       (P=prev.length) >= N && unlink(f, p, N), P > N && (prev.length = N); // ditch garbage
     }
   }
