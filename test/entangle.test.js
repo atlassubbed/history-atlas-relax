@@ -22,6 +22,15 @@ describe("entanglement", function(){
       expect(() => diff(p(0), r1)).to.throw("cyclic entanglement")
       expect(events).to.be.empty;
     })
+    it("should clean up unmounted entangled affects by the end of the next cycle", function(){
+      const r1 = diff(p(0)), r2 = diff(p(1));
+      r2.entangle(r1);
+      expect(r1.affs).to.contain(r2);
+      diff(null, r2);
+      expect(r1.affs).to.contain(r2);
+      diff(p(0), r1);
+      expect(r1.affs).to.be.null
+    })
     allHooks.forEach(hook => {
       it(`should throw before the next diff runs if cycles are introduced in ${hook}`, function(){
         const events = [], t1 = new Tracker(events), t2 = new Tracker(events);
@@ -170,6 +179,15 @@ describe("entanglement", function(){
       c[0].entangle(c[1]), c[1].entangle(c[0]), events.length = 0;
       expect(() => diff(p(0, null, [p(1), p(2)]), r)).to.throw("cyclic entanglement")
       expect(events).to.be.empty;
+    })
+    it("should clean up unmounted entangled affects by the end of the next cycle", function(){
+      const r = diff(p(0, null, p(1))), c = r.next[0];
+      c.entangle(r);
+      expect(r.affs).to.contain(c);
+      diff(p(0), r);
+      expect(r.affs).to.contain(c);
+      diff(p(0), r);
+      expect(r.affs).to.be.null
     })
     allHooks.forEach(hook => {
       if (hook === "willAdd") return;

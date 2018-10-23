@@ -6,6 +6,7 @@ const mark = (f, c, i) => {
   while(i = stack.length) if (!(((f = stack[i-1]).inPath || f.step < 0) && stack.pop())) {
     if (!f.step && f.affs) f._affs = [...f.affs]
     if (!(c = next(f))) stack.pop().inPath = !(f.step = 0), path.push(f);
+    else if (!c.temp) c.detangle(f);
     else if (!c.step) c.inPath || stack.push(c), c._affN++;
     else if (c.step > 0) throw new Error("cyclic entanglement");
   }
