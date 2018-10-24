@@ -2,11 +2,13 @@ const { isArr } = require("./util");
 const path = [], stack = [];
 // for stack safety, we acquire overhead trying to simulate recursion's post ordering
 const next = (f, ch, i=f.step++) => (ch=f.next) ? ch[i] || f._affs && f._affs[i-ch.length] : f._affs && f._affs[i]
-const mark = (f, c, i) => {
+const mark = (f, c, i, ch) => {
   while(i = stack.length) if (!(((f = stack[i-1]).inPath || f.step < 0) && stack.pop())) {
-    if (!f.step && f.affs) f._affs = [...f.affs]
+    if (!f.step && f.affs) {
+      ch = f._affs = [];
+      for (c of f.affs) c.temp ? ch.push(c) : c.detangle(f);
+    }
     if (!(c = next(f))) stack.pop().inPath = !(f.step = 0), path.push(f);
-    else if (!c.temp) c.detangle(f);
     else if (!c.step) c.inPath || stack.push(c), c._affN++;
     else if (c.step > 0) throw new Error("cyclic entanglement");
   }
@@ -34,8 +36,7 @@ const refill = (f, ch, c) => {
   while(f = path.pop()){
     ch = f.next, c = ch && ch.length, f.step = -1;
     while(c) path.push(ch[--c]);
-    if (ch = f.affs && f.affs.values())
-      while(c = ch.next().value) c.isOrig = !!stack.push(c);
+    if (ch = f.affs) for (c of ch) c.isOrig = !!stack.push(c);
   }
   mark();
 }
