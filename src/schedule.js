@@ -22,20 +22,21 @@ const queue = tau => {
   const j = () => rediff(schedule[tau], tau);
   tau ? setTimeout(j, tau) : asap(j).catch(reject)
 }
-const add = (f, tau) => (schedule[tau] = schedule[tau] || []).push(f) > 1 || queue(tau);
+const add = (f, tau) => (schedule[tau=Math.max(tau, 0)] = schedule[tau] || []).push(f) > 1 || queue(tau);
 const dt = (t1, t2) => !(t1 === t2 || t1 < 0 && t2 < 0);
 
 // getTau can return an unchanging value to short-circuit cascading
 Frame.prototype.getTau = function(next){ return next }
 // setTau cascades down the subtree and reschedules diffs
 // this is no longer recursive, since we want stack safety
-Frame.prototype.setTau = function(tau){
-  let f = this, ch;
-  if (dt(f.tau, f.tau = tau) && stack.push(f)){
+Frame.prototype.setTau = function(t){
+  let f = this, ch, on = rediff.on;
+  if (dt(f.tau, f.tau = t) && stack.push(f)){
     while(f = stack.pop()){
-      if (tau = f.tau, ch = f.next) for (let c of ch)
-        if (dt(c.tau, c.tau = c.getTau(tau))) stack.push(c);
-      if (f.nextState) tau < 0 ? sync.push(f) : add(f, tau);
+      if (t = f.tau, ch = f.next) for (let c of ch)
+        if (dt(c.tau, c.tau = c.getTau(t))) stack.push(c);
+      if (!f.inPath && f.nextState) 
+        t < 0 && !on ? sync.push(f) : add(f, t);
     }
     sync.length && rediff(sync);
   }
@@ -46,9 +47,9 @@ Frame.prototype.setTau = function(tau){
 //     note that recreating the update fn per call will hurt perf
 //     users are expected to cache their update fns...
 Frame.prototype.setState = function(part, next){
-  if (next = this.nextState)
+  const p = this.inPath, t = this.tau, store = p ? "state" : "nextState";
+  if (next = this.nextState || this[store])
     return isFn(part) ? part(next) : merge(next, part);
-  isFn(part) ? part(merge(this.nextState = {}, this.state))
-    : (this.nextState = part);
-  this.tau < 0 ? rediff(this) : add(this, this.tau);
+  isFn(part) ? part(merge(this[store] = {}, this.state)) : (this[store] = part);
+  p || (t < 0 && !rediff.on ? rediff(this) : add(this, t))
 }

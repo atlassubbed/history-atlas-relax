@@ -18,16 +18,4 @@ const merge = (a, b) => {
 
 const isArr = Array.isArray;
 
-// flattens next (a shallow copy, thus safe)
-// we avoid .push(...t) to avoid stack overflow
-// ix is an optional KeyIndex
-const clean = (f, ix) => {
-  let next = [], t = f.temp
-  f = [f.diff(t.data, t.next)];
-  while(f.length) if (t = norm(f.pop()))
-    if (isArr(t)) for (let i of t) f.push(i);
-    else next.push(t), ix && ix.push(t);
-  return next;
-}
-
-module.exports = { isFn, isArr, isComp, norm, clean, name, isObj, merge }
+module.exports = { isFn, isArr, isComp, norm, name, isObj, merge }

@@ -28,6 +28,11 @@ const insertAfter = (node, p, s, ns) => {
   }
   return ns ? (node.sib = ns) : delete node.sib;
 }
+const removeAfter = (p, s, ns) => {
+  if (s) ns = s._node.sib, s._node.sib = ns.sib;
+  else ns = p._node.next, p._node.next = ns.sib;
+  if (!ns.sib) s ? delete s._node.sib : delete p._node.next;
+}
 module.exports = class LCRSRenderer extends Renderer {
   attachChildren(node, next){
     let child, sib, i;
@@ -47,8 +52,9 @@ module.exports = class LCRSRenderer extends Renderer {
   willLink(f, p, s){ // update the upstream location of f
     if (insertAfter(f._node, p, s)) this.counts.s++;
   }
-  willUnlink(p, s){ // discard the chain after s
-    if (s) s._node.sib && delete s._node.sib;
+  willUnlink(p, s, i, onlyOne){ // discard the node or chain after s
+    if (onlyOne) removeAfter(p, s);
+    else if (s) s._node.sib && delete s._node.sib;
     else delete p._node.next;
   }
   willReceive(f, t){ // give new data to f

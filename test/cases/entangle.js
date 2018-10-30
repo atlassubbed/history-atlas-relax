@@ -5,9 +5,9 @@ const { StemCell, StemCell2 } = require("./Frames");
 
 const p = StemCell.h, a = StemCell2.h;
 
-const getEffs = (events, nodes) => [
+const getEffs = (events, nodes) => ({effs: [
   new Tracker(events), new Cache(nodes), new Passthrough
-]
+]})
 
 // curry is useful
 const P = (id, allHooks={}) => (...next) => {

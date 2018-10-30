@@ -20,7 +20,8 @@ describe("Frame", function(){
       expect(f._affN).to.equal(f.step).to.equal(0)
       expect(f.hasOwnProperty("effs")).to.be.true;
       expect(f.effs).to.be.undefined;
-      expect(f.inPath).to.equal(f.isOrig).to.be.false;
+      expect(f.inPath).to.be.true;
+      expect(f.isOrig).to.be.false;
     })
     it("should set template and effects onto the instance", function(){
       const name = 1, data = 2, next = 3, key = 4, effs = [5];

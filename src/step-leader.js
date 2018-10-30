@@ -27,7 +27,7 @@ const unmark = (f, c=stack.push(f)) => {
 // don't consider nodes that are in path, removed, or diffed
 const fill = (f, tau=-1, c) => {
   if (!isArr(f)) f.isOrig = !!stack.push(f);
-  else while(c = f.pop()) if(tau < 0 || c.temp && c.nextState && c.tau === tau) 
+  else while(c = f.pop()) if(tau < 0 || c.temp && c.nextState && (c.tau === tau || c.tau <= 0)) 
     c.isOrig = !!stack.push(c);
   mark();
 }

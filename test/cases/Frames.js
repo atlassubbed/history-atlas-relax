@@ -131,6 +131,10 @@ class Oscillator extends StemCell {
   static h(id, tau, next){
     return {name: Oscillator, data: {id, tau, copy: true}, next};
   }
+  static p(id, data, next){
+    data.copy = true, data.id = id;
+    return {name: Oscillator, data, next}
+  }
 }
 
 class B extends Frame {}

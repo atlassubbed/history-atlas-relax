@@ -72,20 +72,20 @@ const update = (...order) => (p, c, states) => {
   })
 }
 const resultP = (p, c, states) => [
-  wU(0, p, p), wU(1, p, c), dU(1), dU(0, states[0])
+  wU(0, p, p, states[0]), wU(1, p, c), dU(1), dU(0, states[0])
 ]
 const resultC = (p, c, states) => [
-  wU(1, c, c), dU(1, states[0])
+  wU(1, c, c, states[0]), dU(1, states[0])
 ]
 const resultPC = (p, c, states) => [
-  ...resultP(p, c, states), wU(1, c, c), dU(1, states[1])
+  ...resultP(p, c, states), wU(1, c, c, states[1]), dU(1, states[1])
 ]
 const resultParentSlower = (p, c, states) => [
-  wU(1, c, c), dU(1, states[1]), 
-  wU(0, p, p), wU(1, p, c, states[1]), dU(1, states[1]), dU(0, states[0])
+  wU(1, c, c, states[1]), dU(1, states[1]),
+  wU(0, p, p, states[0]), wU(1, p, c, states[1]), dU(1, states[1]), dU(0, states[0])
 ]
 const resultParentFaster = (p, c, states) => [
-  wU(0, p, p), wU(1, p, c), dU(1, states[1]), dU(0, states[0])
+  wU(0, p, p, states[0]), wU(1, p, c, states[1]), dU(1, states[1]), dU(0, states[0])
 ]
 // all scheduling tests can be boiled down to, for each region in phase space:
 //   1. an action that modifies the DAG
@@ -160,7 +160,7 @@ const childFirstCases = [
     action: update({c:0}, {p:1}),
     result: (p, c, states) => [
       ...resultC(p, c, states),
-      wU(0, p, p), wU(1, p, c, states[0]), dU(1, states[0]), dU(0, states[1])
+      wU(0, p, p, states[1]), wU(1, p, c, states[0]), dU(1, states[0]), dU(0, states[1])
     ]
   },
   {
@@ -168,7 +168,7 @@ const childFirstCases = [
     filter: (p, c) => p < 0 && c >= 0,
     action: update({c:0}, {p:1}),
     result: (p, c, states) => [
-      wU(0, p, p), wU(1, p, c), dU(1, states[0]), dU(0, states[1])
+      wU(0, p, p, states[1]), wU(1, p, c, states[0]), dU(1, states[0]), dU(0, states[1])
     ] 
   },
   {
@@ -198,7 +198,7 @@ const doubleCases = [
     action: update({p:0}, {p:1}),
     result: (p, c, states) => [
       ...resultP(p, c, states),
-      wU(0, p, p, states[0]), wU(1, p, c), dU(1), dU(0, states[1])
+      wU(0, p, p, states[1]), wU(1, p, c), dU(1), dU(0, states[1])
     ]
   },
   {
@@ -207,20 +207,20 @@ const doubleCases = [
     action: update({c:0}, {c:1}),
     result: (p, c, states) => [
       ...resultC(p, c, states),
-      wU(1, c, c, states[0]), dU(1, states[1])
+      wU(1, c, c, states[1]), dU(1, states[1])
     ]
   },
   {
     name: "wait tau_p and only update p -> c once when p sets state twice",
     filter: (p, c) => p >= 0,
     action: update({p:0}, {p:1}),
-    result: (p, c, states) => [wU(0, p, p), wU(1, p, c), dU(1), dU(0, states[1])]
+    result: (p, c, states) => [wU(0, p, p, states[1]), wU(1, p, c), dU(1), dU(0, states[1])]
   },
   {
     name: "wait tau_c and only update c once when c sets state twice",
     filter: (p, c) => c >= 0,
     action: update({c:0}, {c:1}),
-    result: (p, c, states) => [wU(1, c, c), dU(1, states[1])]
+    result: (p, c, states) => [wU(1, c, c, states[1]), dU(1, states[1])]
   }
 ]
 
@@ -230,7 +230,7 @@ const dynamicTauCases = [
     filter: (p, c) => p < 0,
     action: update({p:0}, {c:1}),
     result: (p, c, states) => [
-      wU(0, p, p), wU(1, p, c), dU(1, states[1]), dU(0, states[0])
+      wU(0, p, p, states[0]), wU(1, p, c, states[1]), dU(1, states[1]), dU(0, states[0])
     ]
   },
   {

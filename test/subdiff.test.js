@@ -72,7 +72,7 @@ describe("subdiff", function(){
           insert(next, n2, t2)
           insert(prev, p1, pt1)
           insert(prev, p2, pt2)
-          diff(h(next), diff(h(prev), null, new Passthrough))
+          diff(h(next), diff(h(prev), null, {effs: new Passthrough}))
           expect(didR1).to.equal(didR2).to.equal(didU1).to.equal(didU2).to.equal(1);
         })
       })
@@ -117,7 +117,7 @@ describe("subdiff", function(){
           insert(next, n2, t2)
           insert(prev, p1, pt1)
           insert(prev, p2, pt2)
-          diff(h(next), diff(h(prev), null, new Passthrough))
+          diff(h(next), diff(h(prev), null, {effs: new Passthrough}))
           expect(didR1).to.equal(didR2).to.equal(didU1).to.equal(didU2).to.equal(1);
         })
       })
@@ -133,7 +133,7 @@ describe("subdiff", function(){
             const t2 = h(next), t1 = h(prev);
             const r1 = new ArrayRenderer, r2 = new LCRSRenderer;
             describe(`swap rendered to next [${next.map(tag)}]`, function(){
-              const f = diff(t1, null, r1);
+              const f = diff(t1, null, {effs: r1});
               const { a: mA, r: mR, u: mU, s: mS } = r1.counts;
               r1.resetCounts(), diff(t2, f);
               const expectedTree = r1.render(t2)
@@ -157,7 +157,7 @@ describe("subdiff", function(){
               })
             })
             describe(`LCRS rendered to next [${next.map(tag)}]`, function(){
-              const f = diff(t1, null, r2);
+              const f = diff(t1, null, {effs: r2});
               diff(t2, f);
               it("should edit prev to match next", function(){
                 expect(r2.tree).to.deep.equal(r2.render(t2));

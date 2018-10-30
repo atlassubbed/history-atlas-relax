@@ -6,10 +6,9 @@ const isFrame = f => !!f && isFn(f.diff);
 const Frame = function(t, effs){
   if (!t) return;
   this.effs = effs, this.temp = t;
-  this.affs = this.next = this._affs =
-  this.nextState = this.state = null;
+  this.affs = this.next = this._affs = this.nextState = this.state = null;
   this._affN = this.step = 0;
-  this.inPath = this.isOrig = false;
+  this.inPath = true, this.isOrig = false;
 }
 Frame.prototype.diff = function(data, next){ return next }
 Frame.isFrame = isFrame

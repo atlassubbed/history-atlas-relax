@@ -26,12 +26,12 @@ const SYNC_ERROR = 10
 
 const mount = (pTau, cTau, events) => {
   const t = h(0, pTau, h(1, cTau));
-  const f = diff(t, null, events && new Timer(events))
+  const f = diff(t, null, {effs: events && new Timer(events)})
   return { p: f, c: f.next[0]}
 }
 const entangle = (pTau, cTau, events) => {
-  const t1 = h(0, pTau), f1 = diff(t1, null, events && new Timer(events));
-  const t2 = h(1, cTau), f2 = diff(t2, null, events && new Timer(events));
+  const t1 = h(0, pTau), f1 = diff(t1, null, {effs: events && new Timer(events)});
+  const t2 = h(1, cTau), f2 = diff(t2, null, {effs: events && new Timer(events)});
   f2.entangle(f1);
   return { p: f1, c: f2 }
 }
@@ -54,7 +54,7 @@ const verify = (events, expected) => {
     m++;
   }
   expect(m).to.equal(expected.length, pretty(events));
-}
+} 
 
 describe("scheduling", function(){
   this.timeout(ALLOW);

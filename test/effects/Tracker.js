@@ -5,16 +5,12 @@
 module.exports = class Tracker {
   constructor(events){
     this.events = events; 
-    this.root = null;
   }
   log(type, f){
     const e = {[type]: f.temp.data.id};
     this.events.push(e);
   }
-  willAdd(f, p){
-    this.log("wA", f)
-    if (!p) this.root = f
-  }
+  willAdd(f, p){this.log("wA", f)}
   willRemove(f){this.log("wP", f)}
   willReceive(f){this.log("wR", f)}
   didAdd(f){this.log("dA", f)}

@@ -1,5 +1,5 @@
 // Timer is used to record update times.
-module.exports = class Timer {
+class Timer {
   constructor(events){
     this.events = events;
     this.start = Date.now()
@@ -15,3 +15,10 @@ module.exports = class Timer {
   willUpdate(f){this.log("wU", f)}
   didUpdate(f){this.log("dU", f)}
 }
+
+class FullTimer extends Timer {
+  willAdd(f){this.log("wA", f)};
+  didAdd(f){this.log("dA", f)}
+}
+
+module.exports = { Timer, FullTimer }

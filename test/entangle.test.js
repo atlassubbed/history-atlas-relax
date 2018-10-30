@@ -6,7 +6,7 @@ const { rootCase, treeCase, p, a } = require("./cases/entangle");
 const { has } = require("./util");
 
 const pass = new Passthrough;
-const diff = (t, f, eff) => rawDiff(t, f, eff ? [eff, pass] : null);
+const diff = (t, f, eff) => rawDiff(t, f, {effs: eff ? [eff, pass] : null});
 
 const updateHooks = ["willReceive", "willUpdate", "didUpdate"];
 const addHooks = ["willAdd", "didAdd"];
@@ -66,15 +66,6 @@ describe("entanglement", function(){
           {dU: 3}, {dU: 2}, {dU: 1}
         ])
       })
-      it("should update nodes if upstream replaced", function(){
-        const {nodes, events} = rootCase.get();
-        diff(a(0), nodes[0])
-        expect(events).to.deep.equal([ 
-          {wP: 0}, {wA: 0},
-          {wU: 1}, {wU: 2}, {wU: 3},
-          {dA: 0}, {dU: 3}, {dU: 2}, {dU: 1}
-        ])
-      })
       it("should not update all nodes if downstream updated", function(){
         const {nodes, events} = rootCase.get();
         diff(p(3), nodes[3])
@@ -84,11 +75,6 @@ describe("entanglement", function(){
         const {nodes, events} = rootCase.get();
         diff(null, nodes[3])
         expect(events).to.deep.equal([{wP: 3}])
-      })
-      it("should not update all nodes if downstream replaced", function(){
-        const {nodes, events} = rootCase.get();
-        diff(a(3), nodes[3])
-        expect(events).to.deep.equal([{wP: 3}, {wA: 3}, {dA: 3}])
       })
       it("should reflect post-diff changes in entanglement in the next diff", function(){
         const {nodes, events} = rootCase.get();
@@ -235,16 +221,6 @@ describe("entanglement", function(){
           {dU: 7}, {dU: 8}, {dU: 6}, {dU: 5}, {dU: 4}
         ])
       })
-      it("should update nodes if upstream replaced", function(){
-        const {nodes, events} = treeCase.get();
-        diff(a(0), nodes[0])
-        expect(events).to.deep.equal([ 
-          {wP: 0}, {wP: 1}, {wP: 3}, {wP: 2}, {wA: 0},
-          {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
-          {wU: 6}, {wU: 8}, {wU: 7},
-          {dA: 0}, {dU: 7}, {dU: 8}, {dU: 6}, {dU: 5}, {dU: 4},
-        ])
-      })
       it("should not update all nodes if downstream updated", function(){
         const {nodes, events} = treeCase.get();
         diff(treeCase.tag4(), nodes[4])
@@ -262,15 +238,6 @@ describe("entanglement", function(){
           {wP: 4}, {wP: 8}, {wP: 5},
           {wP: 7}, {wP: 6},
           {wU: 3}, {dU: 3} 
-        ])
-      })
-      it("should not update all nodes if downstream replaced", function(){
-        const {nodes, events} = treeCase.get();
-        diff(a(4), nodes[4])
-        expect(events).to.deep.equal([ 
-          {wP: 4}, {wP: 8}, {wP: 5},
-          {wP: 7}, {wP: 6}, {wA: 4},
-          {wU: 3}, {dA: 4}, {dU: 3},
         ])
       })
       it("should reflect post-diff changes in entanglement in the next diff", function(){
