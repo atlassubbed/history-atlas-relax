@@ -11,8 +11,9 @@ module.exports = class Renderer {
     this.counts = {a: 0, r: 0, u: 0, n: 0, s: 0}
   }
   node({name, key, data}){
-    const node = { name, data };
-    if (key) node.key = key;
+    const node = { name, next: null, sib: null };
+    if (key != null) node.key = key;
+    if (data != null) node.data = data;
     return node;
   }
   diff(temp){
@@ -24,10 +25,10 @@ module.exports = class Renderer {
     return name(data, next);
   }
   render(temp){
-    if (isVoid(temp)) return;
+    if (isVoid(temp)) return null;
     this.counts.n++;
     if (!isObj(temp)) 
-      return {name: null, data: String(temp)};
+      return this.node({name: null, data: String(temp)});
     const rendered = this.node(temp);
     let next = this.diff(temp);
     if (isVoid(next)) return rendered;

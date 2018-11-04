@@ -24,8 +24,10 @@ const type = str => {
 
 const deepIgnore = (node, txfm) => {
   txfm(node);
-  if (node.next) for (let c of toArr(node.next))
+  let c;
+  if (c = node.next) do {
     deepIgnore(c, txfm);
+  } while(c = c.sib)
   return node;
 }
 

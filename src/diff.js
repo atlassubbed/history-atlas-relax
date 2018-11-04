@@ -1,74 +1,48 @@
-const { isArr, norm } = require("./util")
-const { Frame: { isFrame }, applyState, emit, toFrame, clearFrame } = require("./Frame");
+const { isArr, norm, link, unlink } = require("./util")
+const { Frame: { isFrame }, applyState, emit, toFrame, clearFrame, render } = require("./Frame");
 const { path, fill, refill, unmark } = require("./step-leader");
 const KeyIndex = require("./KeyIndex")
 
-const lags = [], htap = [], stack = [], flat = [];
-const link = (f, p, s, i=p.next.length) => p.next[i] = emit("willLink", f, p, s, i);
-const unlink = (p, s, i) => emit("willUnlink", p, s, i);
-const receive = (t, f) => {emit("willReceive", f, t).temp = t}
-const receiveRoot = (t, f, p, s, prevS, hasParent=isFrame(p)) => {
-  t === f.temp || (emit("willReceive", f, t).temp = t);
-  if (hasParent && s){
-    emit("willUnlink", p, prevS, null, true);
-    emit("willLink", f, p, s);
-  }
+const lags = [], rems = [], htap = [], stack = [];
+const add = (t, p, s) => t && lags.push(emit("willAdd", t = toFrame(t, p.effs, p.tau), p, s)) && link(t, p, s);
+const remove = (f, p, s=f.prev) => rems.push(emit("willRemove", f, p, s)) && unlink(f, p, s);
+const move = (f, p, s, s2=f.prev) => (emit("willMove", f, p, s2, s), unlink(f, p, s2), link(f, p, s));
+const receive = (f, t) => (f.temp === t ? unmark(f) : (emit("willReceive", f, t).temp = t), f.sib)
+const mount = (f, p, next) => {
+  while(f = lags.pop()) if (stack.push(f), (next = render(f)).length)
+    while(p = add(next.pop(), f, p));
+  while(f = stack.pop()) emit("didAdd", f);
 }
-const rem = (f, p, ch, c) => {
-  stack.push(emit("willRemove", f, p));
-  while(f = stack.pop()){
-    ch = f.next, c = ch && ch.length;
-    while(c) stack.push(emit("willRemove", ch[--c], f))
-    clearFrame(f);
-  }
+const unmount = (f, c) => {
+  while(c = rems.pop()) if (stack.push(c) && c.next)
+    while(remove(c.next, c));
+  while(c = stack.pop()) emit("didRemove", c), clearFrame(c);
+  return f;
 }
-const remRoot = (f, p, s, hasParent=isFrame(p)) => {
-  hasParent && emit("willUnlink", p, s, null, true);
-  rem(f, hasParent && p)
+const receiveRoot = (t, f, p, s, prevS) => {
+  if (f.temp !== t) emit("willReceive", f, t).temp = t;
+  if (isFrame(p) && s !== prevS) emit("willMove", f, p, prevS, s)
 }
-const add = (t, p, s, i) => (lags.push(emit("willAdd", t = toFrame(t, p.effs, p.tau), p)), link(t, p, s, i))
-const addRoot = (t, p, s, hasParent=isFrame(p)) => {
+const remRoot = (f, p, s) => {
+  unmount(rems.push(emit("willRemove", f, isFrame(p) && p, s)));
+}
+const addRoot = (t, p, s) => {
   let effs = p && p.effs, tau = p && p.tau != null ? p.tau : -1;
-  lags.push(emit("willAdd", t = toFrame(t, effs, tau), hasParent && p));
-  hasParent && emit("willLink", t, p, s);
+  lags.push(emit("willAdd", t = toFrame(t, effs, tau), isFrame(p) && p, s));
   return t.isRoot = true, t;
 }
 
-// render a frame's next children
-//   * flattens and returns the output of frame's diff function
-//   * note that arr.push(...huge) is not stack-safe.
-//   * ix is an option KeyIndex
-const render = (f, ix) => {
-  let next = [], t = f.temp
-  flat.push(f.diff(t.data, t.next))
-  while(flat.length) if (t = norm(flat.pop()))
-    if (isArr(t)) for (let i of t) flat.push(i);
-    else next.push(t), ix && ix.push(t);
-  return f.inPath = false, next;
-}
 // diff "downwards" from a frame, short circuit if next or prev have zero elements
-const subdiff = (f, t) => {
-  applyState(f); htap.push(emit("willUpdate", f));
-  let prev, P = (prev = f.next) ? prev.length : 0, ix,
-      next = render(f, P && (ix = new KeyIndex)), N = next.length;
-  if (!N && P){
-    while(P) rem(prev[--P], f);
-    f.next = null, unlink(f);
-  } else if (N) {
-    let n, p;
-    if (!P){
-      f.next = [];
-      while(n = next.pop()) p = add(n, f, p);
-    } else {
-      let i = 0;
-      while(p = prev[i++]) // handle removes and receives
-        (n=ix.pop(p.temp)) ? n === (n.p=p).temp ?
-          unmark(p) : receive(n, p) : rem(p, f);
-      for (i = -1; n=next.pop(++i);) // handle adds and moves
-        ix = i && prev[i-1], (p=n.p) ? link(p, f, ix, i, n.p=null) :
-          (p = add(n, f, ix, i));
-      (P=prev.length) >= N && unlink(f, p, N), P > N && (prev.length = N); // ditch garbage
-    }
+const subdiff = f => {
+  applyState(f), htap.push(emit("willUpdate", f));
+  let p = f.next, ix, next = render(f, p && (ix = new KeyIndex)), n = next.length;
+  if (!n && p) while(unmount(remove(f.next, f)));
+  else if (n) if (!p) while(p = add(next.pop(), f, p));
+  else {
+    while(p = (n = ix.pop(p.temp)) ? receive(n.p = p, n) : unmount(remove(p, f)));
+    for(let c = f.next; c && (n = next.pop());) (p = n.p) ? (c === p ?
+      (c = c.sib) : move(p, f, c.prev), n.p = null) : add(n, f, c.prev);
+    while(p = add(next.pop(), f, p));
   }
 }
 
@@ -77,21 +51,16 @@ const subdiff = (f, t) => {
 //   * htap is "path" in reverse, we don't need it to avoid .reverse(), but we avoid .length = 0
 const sidediff = f => {
   while(f = path.pop()) if (f.temp && f.inPath) subdiff(f);
-  let p, n, t;
-  while(f = lags.pop()) if (stack.push(f), (t = render(f)).length){
-    p = !(f.next = []);
-    while(n = t.pop()) p = add(n, f, p)
-  }
-  while(f = stack.pop()) emit("didAdd", f);
+  mount();
   while(f = htap.pop()) emit("didUpdate", f)._affN =+ (f._affs = null, f.isOrig = false);
 }
-const rootdiff = (t, f, p, s, prevS) => {
-  if (isArr(t = norm(t))) return false;
-  if (!isFrame(f) || !f.temp) return !!t && (sidediff(f = addRoot(t, p, s)), f);
-  if (!f.isRoot || t && (t.name !== f.temp.name)) return false;
-  if (t === f.temp && !s) return false;
-  if (t) return fill(f), sidediff(receiveRoot(t, f, p, s, prevS)), f;
-  return refill(f), !sidediff(remRoot(f, p, s));
+const rootdiff = (t, f, p, s, prevS, r=false) => {
+  if (!isArr(t = norm(t))){
+    if (!isFrame(f) || !f.temp) t && mount(r = addRoot(t, p, s));
+    else if (f.isRoot && (!t || (t === f.temp ? s !== prevS : t.name === f.temp.name)))
+      sidediff(t ? receiveRoot(t, f, p, s, prevS, fill(r = f)) : remRoot(f, p, s, r = !refill(f)));
+  }
+  return r;
 }
 const rediff = (f, tau=-1) => (rediff.on = true, rediff.on = !!sidediff(fill(f, tau)))
 rediff.on = false;

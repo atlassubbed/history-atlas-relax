@@ -15,23 +15,14 @@ const { isObj } = require("../util");
     * LCRS live-view should be possible with a singly-linked list and one pointer to head
     * make no assumptions about any other pointers' existence
     * should be able to do mutation ops in constant time with reference to prev sibling */
-
-// insert node after s (or at front) if necessary
-// effects are responsible for short-circuiting edge cases
-const insertAfter = (node, p, s, ns) => {
-  if (s) {
-    if (node === (ns = s._node.sib)) return;
-    else s._node.sib = node;
-  } else {
-    if (node === (ns = p._node.next)) return;
-    else p._node.next = node;
-  }
-  return ns ? (node.sib = ns) : delete node.sib;
+const insertAfter = (f, p, s) => {
+  f.sib = s ? s.sib : p.next;
+  if (s) s.sib = f;
+  else p.next = f;
 }
-const removeAfter = (p, s, ns) => {
-  if (s) ns = s._node.sib, s._node.sib = ns.sib;
-  else ns = p._node.next, p._node.next = ns.sib;
-  if (!ns.sib) s ? delete s._node.sib : delete p._node.next;
+const removeAfter = (f, p, s) => {
+  if (s) s.sib = f.sib;
+  else p.next = f.sib;
 }
 module.exports = class LCRSRenderer extends Renderer {
   attachChildren(node, next){
@@ -39,26 +30,28 @@ module.exports = class LCRSRenderer extends Renderer {
     node.next = next[i = 0];
     while(child = next[i++], sib = next[i]) child.sib = sib;
   }
-  willAdd(f, p){ // assign new or recycled resources to f
+  willAdd(f, p, s){
     this.counts.a++;
     const node = f._node = this.node(f.temp);
     if (!p) this.tree = node;
+    p && insertAfter(node, p._node, s && s._node);
   }
-  willRemove(f, p){ // destroy or recycle resources from f
+  willRemove(f, p, s){
     this.counts.r++;
-    f._node = f._node.sib = null;
-    if (!p) this.tree = null;
+    if (!p) return (this.tree = null);
+    removeAfter(f._node, p._node, s && s._node);
   }
-  willLink(f, p, s){ // update the upstream location of f
-    if (insertAfter(f._node, p, s)) this.counts.s++;
+  didRemove(f){
+    f._node = null
   }
-  willUnlink(p, s, i, onlyOne){ // discard the node or chain after s
-    if (onlyOne) removeAfter(p, s);
-    else if (s) s._node.sib && delete s._node.sib;
-    else delete p._node.next;
+  willMove(f, p, ps, ns){
+    this.counts.s++;
+    const node = f._node, parent = p._node;
+    removeAfter(node, parent, ps && ps._node);
+    insertAfter(node, parent, ns && ns._node);
   }
-  willReceive(f, t){ // give new data to f
+  willReceive(f, t){
     this.counts.u++
-    f._node.data = t.data;
+    if (t.data != null) f._node.data = t.data;
   }
 }

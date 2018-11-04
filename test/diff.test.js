@@ -20,7 +20,7 @@ const ignoreMetaTemp = node => deepIgnore(node, n => {
 })
 
 // needs to be a factory
-const renderers = () => [new ArrayRenderer, new LCRSRenderer];
+const renderers = () => [new LCRSRenderer];
 
 describe("diff", function(){
   describe("standard interface", function(){
@@ -115,8 +115,7 @@ describe("diff", function(){
           expect(renderer.render({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
           const { a, r, u, n, s } = renderer.counts;
           expect(a).to.equal(n).to.equal(2);
-          expect(s).to.equal(1);
-          expect(r).to.equal(u).to.equal(0)
+          expect(r).to.equal(u).to.equal(s).to.equal(0)
         })
       })
       it("should mount a new frame as the first virtual child if the parent already has virtual children", function(){
@@ -131,8 +130,7 @@ describe("diff", function(){
           expect(renderer.render(tree)).to.deep.equal(renderer.tree);
           const { a, r, u, n, s } = renderer.counts;
           expect(a).to.equal(n).to.equal(3);
-          expect(s).to.equal(2);
-          expect(r).to.equal(u).to.equal(0);
+          expect(r).to.equal(u).to.equal(s).to.equal(0);
         })
       })
       it("should not be able to mount multiple frames at once", function(){
@@ -157,8 +155,7 @@ describe("diff", function(){
         expect(renderer.render({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(2);
-        expect(s).to.equal(1);
-        expect(r).to.equal(u).to.equal(0)
+        expect(r).to.equal(u).to.equal(s).to.equal(0)
       })
       it("should not remove non-root frames", function(){
         const renderer = new LCRSRenderer;
@@ -169,8 +166,7 @@ describe("diff", function(){
         expect(renderer.render({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(2);
-        expect(s).to.equal(1);
-        expect(r).to.equal(u).to.equal(0)
+        expect(r).to.equal(u).to.equal(s).to.equal(0)
       })
       it("should remove the frame and unlink the first virtual child of the parent", function(){
         const renderer = new LCRSRenderer;
@@ -182,9 +178,9 @@ describe("diff", function(){
         expect(renderer.render({name:"p", next: {name: "c2"}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(3);
-        expect(s).to.equal(n).to.equal(2);
+        expect(n).to.equal(2);
         expect(r).to.equal(1);
-        expect(u).to.equal(0)
+        expect(u).to.equal(s).to.equal(0)
       })
       it("should not be able to replace a frame with a different species", function(){
         const renderer = new LCRSRenderer;
@@ -195,8 +191,7 @@ describe("diff", function(){
         expect(renderer.render({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(2);
-        expect(s).to.equal(1);
-        expect(r).to.equal(u).to.equal(0)
+        expect(r).to.equal(u).to.equal(s).to.equal(0)
       })
       it("should not be able to replace a frame with multiple templates", function(){
         const renderer = new LCRSRenderer;
@@ -207,8 +202,7 @@ describe("diff", function(){
         expect(renderer.render({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(2);
-        expect(s).to.equal(1);
-        expect(r).to.equal(u).to.equal(0)
+        expect(r).to.equal(u).to.equal(s).to.equal(0)
       })
       it("should not update or move frames if diffed with a memoized template", function(){
         const renderer = new LCRSRenderer;
@@ -219,8 +213,7 @@ describe("diff", function(){
         expect(renderer.render({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(2);
-        expect(s).to.equal(1);
-        expect(r).to.equal(u).to.equal(0)
+        expect(r).to.equal(u).to.equal(s).to.equal(0)
       })
       it("should update but not move a frame if a new template is provided", function(){
         const renderer = new LCRSRenderer;
@@ -231,8 +224,8 @@ describe("diff", function(){
         expect(renderer.render({name:"p", next: {name: "c", data:{n:1}}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(2);
-        expect(s).to.equal(u).to.equal(1);
-        expect(r).to.equal(0)
+        expect(u).to.equal(1);
+        expect(r).to.equal(s).to.equal(0)
       })
       it("should not require a parent reference to a frame to update the frame without moving it", function(){
         const renderer = new LCRSRenderer;
@@ -243,8 +236,8 @@ describe("diff", function(){
         expect(renderer.render({name:"p", next: {name: "c", data: {n:1}}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(2);
-        expect(s).to.equal(u).to.equal(1);
-        expect(r).to.equal(0)
+        expect(u).to.equal(1);
+        expect(r).to.equal(s).to.equal(0)
       })
     })
     describe("allows positional placement of virtual children under parents and after siblings", function(){
@@ -260,8 +253,7 @@ describe("diff", function(){
           expect(renderer.render({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
           const { a, r, u, n, s } = renderer.counts;
           expect(a).to.equal(n).to.equal(2);
-          expect(s).to.equal(1);
-          expect(r).to.equal(u).to.equal(0)
+          expect(r).to.equal(u).to.equal(s).to.equal(0)
         })
       })
       it("should mount a new frame after the specified virtual sibling if diffing on top of a null frame", function(){
@@ -276,8 +268,7 @@ describe("diff", function(){
           expect(renderer.render(tree)).to.deep.equal(renderer.tree);
           const { a, r, u, n, s } = renderer.counts;
           expect(a).to.equal(n).to.equal(3);
-          expect(s).to.equal(2);
-          expect(r).to.equal(u).to.equal(0);
+          expect(r).to.equal(u).to.equal(s).to.equal(0)
         })
       })
       it("should not be able to mount multiple frames at once", function(){
@@ -292,8 +283,7 @@ describe("diff", function(){
           expect(renderer.render(tree)).to.deep.equal(renderer.tree);
           const { a, r, u, n, s } = renderer.counts;
           expect(a).to.equal(n).to.equal(2);
-          expect(s).to.equal(1);
-          expect(r).to.equal(u).to.equal(0);
+          expect(r).to.equal(u).to.equal(s).to.equal(0)
         })
       })
       it("should not remove non-frames", function(){
@@ -307,8 +297,7 @@ describe("diff", function(){
         expect(renderer.render(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(3);
-        expect(s).to.equal(2);
-        expect(r).to.equal(u).to.equal(0)
+        expect(r).to.equal(u).to.equal(s).to.equal(0)
       })
       it("should not remove non-root frames", function(){
         const renderer = new LCRSRenderer;
@@ -320,8 +309,7 @@ describe("diff", function(){
         expect(renderer.render(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(3);
-        expect(s).to.equal(2);
-        expect(r).to.equal(u).to.equal(0)
+        expect(r).to.equal(u).to.equal(s).to.equal(0)
       })
       it("should remove and unlink the frame after the specified virtual sibling", function(){
         const renderer = new LCRSRenderer;
@@ -335,9 +323,9 @@ describe("diff", function(){
         expect(renderer.render(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(4);
-        expect(s).to.equal(n).to.equal(3);
+        expect(n).to.equal(3);
         expect(r).to.equal(1);
-        expect(u).to.equal(0)
+        expect(u).to.equal(s).to.equal(0)
       })
       it("should not be able to replace a frame with a different species", function(){
         const renderer = new LCRSRenderer;
@@ -350,8 +338,7 @@ describe("diff", function(){
         expect(renderer.render(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(3);
-        expect(s).to.equal(2);
-        expect(r).to.equal(u).to.equal(0)
+        expect(r).to.equal(u).to.equal(s).to.equal(0)
       })
       it("should not be able to replace a frame with multiple templates", function(){
         const renderer = new LCRSRenderer;
@@ -364,8 +351,7 @@ describe("diff", function(){
         expect(renderer.render(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(3);
-        expect(s).to.equal(2);
-        expect(r).to.equal(u).to.equal(0)
+        expect(r).to.equal(u).to.equal(s).to.equal(0)
       })
       it("should move the first child frame after the specified virtual sibling but not update it if diffed with a memoized template", function(){
         const renderer = new LCRSRenderer;
@@ -378,7 +364,7 @@ describe("diff", function(){
         expect(renderer.render(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(3);
-        expect(s).to.equal(3);
+        expect(s).to.equal(1);
         expect(r).to.equal(u).to.equal(0)
       })
       it("should move an aribtrary child frame after the specified virtual sibling but not update it if diffed with a memoized template", function(){
@@ -393,7 +379,7 @@ describe("diff", function(){
         expect(renderer.render(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(4);
-        expect(s).to.equal(4);
+        expect(s).to.equal(1);
         expect(r).to.equal(u).to.equal(0)
       })
       it("should update and move a frame", function(){
@@ -407,8 +393,7 @@ describe("diff", function(){
         expect(renderer.render(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(3);
-        expect(s).to.equal(3);
-        expect(u).to.equal(1);
+        expect(u).to.equal(s).to.equal(1)
         expect(r).to.equal(0)
       })
       it("should update but not move a frame if the previous virtual sibling was unchanged", function(){
@@ -423,9 +408,8 @@ describe("diff", function(){
         expect(renderer.render(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(4);
-        expect(s).to.equal(4);
-        expect(u).to.equal(1);
-        expect(r).to.equal(0)
+        expect(u).to.equal(1)
+        expect(r).to.equal(s).to.equal(0)
       })
     })
   })

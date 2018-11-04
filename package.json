@@ -5,7 +5,8 @@
   "scripts": {
     "test-server": "mocha --colors --watch --recursive './test/**/*.test.js'",
     "test": "mocha --colors --recursive './test/**/*.test.js'",
-    "perf": "node --max_old_space_size=4096 --stack-size=1024 --expose-gc ./test/perf/perf"
+    "perf": "node --max_old_space_size=8192 --stack-size=1024 --expose-gc ./test/perf/perf",
+    "lcrs": "node ./test/perf/lcrs"
   },
   "main": "./src/index.js",
   "keywords": [

@@ -162,12 +162,12 @@ describe("entanglement", function(){
     it("should throw before the next diff runs if there are cycles", function(){
       const events = [], t = new Tracker(events);
       const r = diff(p(0, null, [p(1), p(2)]), null, t), c = r.next;
-      c[0].entangle(c[1]), c[1].entangle(c[0]), events.length = 0;
+      c.entangle(c.sib), c.sib.entangle(c), events.length = 0;
       expect(() => diff(p(0, null, [p(1), p(2)]), r)).to.throw("cyclic entanglement")
       expect(events).to.be.empty;
     })
     it("should clean up unmounted entangled affects by the end of the next cycle", function(){
-      const r = diff(p(0, null, p(1))), c = r.next[0];
+      const r = diff(p(0, null, p(1))), c = r.next;
       c.entangle(r);
       expect(r.affs).to.contain(c);
       diff(p(0), r);
@@ -182,11 +182,11 @@ describe("entanglement", function(){
         const hooks = {
           willAdd: (f, p) => {f.parent = p},
           [hook]: f => {
-            f.entangle(f.parent.next[0])
+            f.entangle(f.parent.next)
           }
         }
         const r = diff(p(0, null, [p(1), p(2, hooks)]), null, t);
-        r.next[0].entangle(r.next[1])
+        r.next.entangle(r.next.sib)
         events.length = 0;
         const update = () => diff(p(0, null, [p(1), p(2)]), r)
         if (has(addHooks, hook)){

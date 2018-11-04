@@ -30,11 +30,12 @@ Frame.prototype.getTau = function(next){ return next }
 // setTau cascades down the subtree and reschedules diffs
 // this is no longer recursive, since we want stack safety
 Frame.prototype.setTau = function(t){
-  let f = this, ch, on = rediff.on;
+  let f = this, c, on = rediff.on;
   if (dt(f.tau, f.tau = t) && stack.push(f)){
     while(f = stack.pop()){
-      if (t = f.tau, ch = f.next) for (let c of ch)
-        if (dt(c.tau, c.tau = c.getTau(t))) stack.push(c);
+      if (t = f.tau, c = f.next) do {
+        dt(c.tau, c.tau = c.getTau(t)) && stack.push(c);
+      } while (c = c.sib);
       if (!f.inPath && f.nextState) 
         t < 0 && !on ? sync.push(f) : add(f, t);
     }
@@ -50,6 +51,6 @@ Frame.prototype.setState = function(part, next){
   const p = this.inPath, t = this.tau, store = p ? "state" : "nextState";
   if (next = this.nextState || this[store])
     return isFn(part) ? part(next) : merge(next, part);
-  isFn(part) ? part(merge(this[store] = {}, this.state)) : (this[store] = part);
+  isFn(part) ? part(merge(this[store] = {}, this.state)) : (this[store] = part || {});
   p || (t < 0 && !rediff.on ? rediff(this) : add(this, t))
 }

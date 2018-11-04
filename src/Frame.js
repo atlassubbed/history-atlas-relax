@@ -1,4 +1,4 @@
-const { isComp, isFn, isArr, merge } = require("./util")
+const { isComp, isFn, isArr, merge, norm } = require("./util")
 
 const isFrame = f => !!f && isFn(f.diff);
 
@@ -6,7 +6,7 @@ const isFrame = f => !!f && isFn(f.diff);
 const Frame = function(t, effs){
   if (!t) return;
   this.effs = effs, this.temp = t;
-  this.affs = this.next = this._affs = this.nextState = this.state = null;
+  this.affs = this.next = this._affs = this.nextState = this.state = this.sib = this.it = this.prev = null;
   this._affN = this.step = 0;
   this.inPath = true, this.isOrig = false;
 }
@@ -18,7 +18,7 @@ Frame.define = (Subframe, proto) => {
 }
 // XXX this is expensive, consider using sets/maps to reduce the internal api
 const clearFrame = f => {
-  f.next = f.state = f.nextState = f.temp = f.effs = f.affs = f._affs = null;
+  f.sib = f.prev = f.state = f.nextState = f.temp = f.effs = f.affs = f._affs = null;
 }
 // temp is already normalized
 const toFrame = (t, effs, tau) => {
@@ -40,5 +40,17 @@ const emit = (type, f, p, s, i, ef) => {
   }
   return f;
 }
+// render a frame's next children
+//   * flattens and returns the output of frame's diff function
+//   * note that arr.push(...huge) is not stack-safe.
+//   * ix is an optional KeyIndex
+const flat = [], render = (f, ix) => {
+  let next = [], t = f.temp
+  flat.push(f.diff(t.data, t.next))
+  while(flat.length) if (t = norm(flat.pop()))
+    if (isArr(t)) for (let i of t) flat.push(i);
+    else next.push(t), ix && ix.push(t);
+  return f.inPath = false, next;
+}
 
-module.exports = { Frame, toFrame, clearFrame, applyState, emit }
+module.exports = { Frame, toFrame, clearFrame, applyState, emit, render }

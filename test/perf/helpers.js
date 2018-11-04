@@ -53,10 +53,11 @@ class TemplateFactory {
 }
 
 const count = tree => {
-  let stack = [toArr(tree.next)], n = 0, next;
+  let stack = [tree], n = 0, next;
   while(next = stack.pop()){
     n++;
-    for (let c of next) if (c) stack.push(toArr(c.next));
+    if (next.next) stack.push(next.next);
+    if (!next.prev) while(next = next.sib) stack.push(next);
   }
   return n;
 }

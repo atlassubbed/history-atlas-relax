@@ -131,34 +131,27 @@ describe("subdiff", function(){
         describe(`with prev [${prev.map(tag)}]`, function(){
           nextCases.forEach((next, i) => {
             const t2 = h(next), t1 = h(prev);
-            const r1 = new ArrayRenderer, r2 = new LCRSRenderer;
-            describe(`swap rendered to next [${next.map(tag)}]`, function(){
-              const f = diff(t1, null, {effs: r1});
-              const { a: mA, r: mR, u: mU, s: mS } = r1.counts;
-              r1.resetCounts(), diff(t2, f);
-              const expectedTree = r1.render(t2)
+            const r2 = new LCRSRenderer;
+            describe(`LCRS rendered to next [${next.map(tag)}]`, function(){
+              const f = diff(t1, null, {effs: r2});
+              const { a: mA, r: mR, u: mU, s: mS } = r2.counts;
+              r2.resetCounts(), diff(t2, f);
+              const expectedTree = r2.render(t2)
               // add, remove, update, total N, swaps
-              const { a, r, u, n, s } = r1.counts;
+              const { a, r, u, n, s } = r2.counts;
+              diff(t2, f);
               it("should not contain superfluous events", function(){
                 // mounting phase should only add nodes
-                expect(mA).to.equal(mS + 1).to.equal(prev.length + 1);
-                expect(mR).to.equal(mU).to.equal(0)
+                expect(mA).to.equal(prev.length + 1);
+                expect(mR).to.equal(mU).to.equal(mS).to.equal(0)
                  // accounts for the parent div node
                 const maxUpdates = prev.length + 1;
                 expect(u).to.be.at.most(maxUpdates);
                 expect(a).to.equal(next.length - prev.length + r); // sanity check
                 expect(r).to.equal(maxUpdates - u); // if we didn't update a node, we removed it.
-                expect(s).to.be.at.most(u - 1 + a); // we should never do more swaps than this
+                expect(s).to.be.at.most(u - 1 + a); // we should never do more moves than this
                 expect(n).to.equal(next.length + 1) // sanity check
               })
-              it("should edit prev to match next", function(){
-                // the edit path is correct
-                expect(r1.tree).to.deep.equal(expectedTree);
-              })
-            })
-            describe(`LCRS rendered to next [${next.map(tag)}]`, function(){
-              const f = diff(t1, null, {effs: r2});
-              diff(t2, f);
               it("should edit prev to match next", function(){
                 expect(r2.tree).to.deep.equal(r2.render(t2));
               })

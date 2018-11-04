@@ -60,7 +60,7 @@ describe("memoization and immutability support", function(){
       const m1 = m(1), m2 = m(2, {getTau});
       const f1 = diff(m(0, null, [m1, m2]), null, {effs: [tracker, new Passthrough]});
       events.length = 0;
-      f1.next[1].setState({id: 2})
+      f1.next.sib.setState({id: 2})
       const result = diff(m(0, null, [m1, m2]), f1)
       expect(result).to.be.an.instanceOf(Frame);
       expect(events).to.deep.equal([
@@ -79,13 +79,13 @@ describe("memoization and immutability support", function(){
       const t = m(0, {getTau, didUpdate}, [m(1), m(2)])
       const f1 = diff(t, null, {effs: [tracker, new Passthrough]});
       events.length = 0;
-      f1.next[1].setState({})
+      f1.next.sib.setState({})
       f1.setState({});
     })
     it("should remove child's influence if it only depends on parent", function(){
       const { nodes, events } = treeCase.get();
       nodes[0].diff = function(data, next){
-        return this.next[0].temp;
+        return this.next.temp;
       }
       nodes[0].setState();
       expect(events).to.deep.equal([
@@ -96,7 +96,7 @@ describe("memoization and immutability support", function(){
     it("should remove child's influence if it's entangled to nodes not in path", function(){
       const { nodes, events } = treeCase.get();
       nodes[0].diff = function(data, next){
-        return this.next[0].temp
+        return this.next.temp
       }
       const disjointRoot = diff(m(9), null, {effs: new Tracker(events)});
       events.length = 0;
@@ -110,7 +110,7 @@ describe("memoization and immutability support", function(){
     it("should prevent child's receipt of new template, but keep its influence if it's entangled to nodes in path", function(){
       const { nodes, events } = treeCase.get();
       nodes[1].diff = function(data, next){
-        next[0] = this.next[0].temp;
+        next[0] = this.next.temp;
         return next;
       }
       nodes[0].setState();
