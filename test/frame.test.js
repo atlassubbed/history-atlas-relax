@@ -11,11 +11,14 @@ describe("Frame", function(){
       expect(Object.keys(new Frame)).to.be.empty;
     })
     it("should set cache-related properties to their initial value", function(){
-      const f = new Frame({})
+      const f = new Frame({});
       expect(f.affs).to.equal
         (f._affs).to.equal
         (f.next).to.equal
         (f.state).to.equal
+        (f.prev).to.equal
+        (f.sib).to.equal
+        (f.it).to.equal
         (f.nextState).to.be.null
       expect(f._affN).to.equal(f.step).to.equal(0)
       expect(f.hasOwnProperty("effs")).to.be.true;

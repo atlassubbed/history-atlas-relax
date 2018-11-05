@@ -21,13 +21,15 @@ const clearFrame = f => {
   f.sib = f.prev = f.state = f.nextState = f.temp = f.effs = f.affs = f._affs = null;
 }
 // temp is already normalized
-const toFrame = (t, effs, tau) => {
+const toFrame = (t, p, isRoot) => {
+  let effs = p && p.effs, tau = p && p.tau != null ? p.tau : -1;
   if (!isComp(t)) t = new Frame(t, effs);
   else {
     const Sub = t.name;
     if (isFrame(Sub.prototype)) t = new Sub(t, effs);
     else t = new Frame(t, effs), t.diff = Sub;
   }
+  if (isRoot) t.isRoot = true;
   return t.tau = t.getTau(tau), t;
 }
 const applyState = (f, ns) => {
