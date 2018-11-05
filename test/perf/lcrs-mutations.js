@@ -19,8 +19,11 @@ const render = (next, ix) => {
 const subdiff = f => {
   htap.push(emit("willUpdate", f));
   let p = f.next, ix, next = render(f.temp.next, p && (ix = new KeyIndex)), n = next.length;
-  if (!n && p) while(unmount(remove(f.next, f)));
-  else if (n) if (!p) while(p = add(next.pop(), f, p));
+  if (!n && p) {
+    while(p.sib) p = p.sib;
+    do { remove(p, c)} while(p = p.prev);
+    unmount();
+  } else if (n) if (!p) while(p = add(next.pop(), f, p));
   else { // both non-trivial
     while(p = (n = ix.pop(p.temp)) ? receive(n.p = p, n) : unmount(remove(p, f))); // handle unmounts and matches
     for(let c = f.next; c && (n = next.pop());) (p = n.p) ? (c === p ? // handle mounts and moves
@@ -34,9 +37,11 @@ const mount = (f, p, next) => {
   while(f = stack.pop()) emit("didAdd", f);
 }
 
-const unmount = (f, c) => {
-  while(c = rems.pop()) if (stack.push(c) && c.next)
-    while(remove(c.next, c));
+const unmount = (f, c, p) => {
+  while(c = rems.pop()) if (stack.push(c) && (p = c.next)){
+    while(p.sib) p = p.sib;
+    do { remove(p, c)} while(p = p.prev);
+  }
   while(c = stack.pop()) emit("didRemove", c), clearFrame(c);
   return f;
 }

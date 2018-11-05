@@ -32,7 +32,6 @@ const unlink = (f, p, s) => {
   else if (s) s.sib = null;
   else if (next) (p.next = next).prev = null;
   else p.next = null;
-  return next;
 }
 
 const isArr = Array.isArray;

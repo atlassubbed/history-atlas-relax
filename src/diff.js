@@ -17,24 +17,21 @@ const mount = (f, p, next) => {
     while(p = add(next.pop(), f, p));
   while(f = stack.pop()) emit("didAdd", f);
 }
-const unmount = (f, c) => {
-  while(c = rems.pop()) if (stack.push(c) && c.next)
-    while(rem(c.next, c));
-  while(c = stack.pop()) emit("didRemove", c), clearFrame(c);
-  return f;
-}
+const rev = (c, p) => {while(c.sib) c = c.sib; while(c) rem(c, p, c = c.prev)}
+const unmount = f => {while(f = rems.pop()) clearFrame(f), f.next && rev(f.next, f)}
 
-// diff "downwards" from a frame, short circuit if next or prev have zero elements
-const subdiff = f => {
-  applyState(f), htap.push(emit("willUpdate", f));
-  let p = f.next, ix, next = render(f, p && (ix = new KeyIndex)), n = next.length;
-  if (!n && p) while(unmount(rem(f.next, f)));
-  else if (n) if (!p) while(p = add(next.pop(), f, p));
+// diff "downwards" from a parent, p, short circuit if next or prev have zero elements
+const subdiff = p => {
+  applyState(p), htap.push(emit("willUpdate", p));
+  let c = p.next, i, next = render(p, c && (i = new KeyIndex)), n = next.length;
+  if (!n && c) unmount(rev(c, p));
+  else if (n) if (!c) while(c = add(next.pop(), p, c));
   else {
-    while(p = (n = ix.pop(p.temp)) ? (n === (n.p = p).temp ? unmark(p) : receive(p, n), p.sib) : unmount(rem(p, f)));
-    for(let c = f.next; c && (n = next.pop());) (p = n.p) ? (c === p ?
-      (c = c.sib) : move(p, f, c.prev), n.p = null) : add(n, f, c.prev);
-    while(p = add(next.pop(), f, p));
+    do (n = i.pop(c.temp)) ? n === (n.p = c).temp ? unmark(c) : receive(c, n) : stack.push(c); while(c = c.sib);
+    while(i = stack.pop()) unmount(rem(i, p));
+    for(i = p.next; i && (n = next.pop());) (c = n.p) ? (i === c ?
+      (i = i.sib) : move(c, p, i.prev), n.p = null) : add(n, p, i.prev);
+    while(c = add(next.pop(), p, c));
   }
 }
 

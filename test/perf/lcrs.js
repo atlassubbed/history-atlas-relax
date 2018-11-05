@@ -25,6 +25,8 @@ console.log(assertList(f))
 assertTree(renderer, temp);
 print(f)
 
+const nodes = cache.nodes.map(n => n._node);
+
 console.log(nextChildren.map(t => t.key).join(" "))
 diff(nextTemp, f)
 console.log(assertList(f))
@@ -32,8 +34,9 @@ assertTree(renderer, nextTemp);
 print(f)
 
 diff(null, f);
+console.log(cache.nodes)
+console.log(nodes)
 console.log(assertList(f))
-// console.log(cache.nodes)
 assertNull(cache.nodes)
 assertTree(renderer, null);
 print(f)

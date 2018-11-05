@@ -38,11 +38,12 @@ module.exports = class LCRSRenderer extends Renderer {
   }
   willRemove(f, p, s){
     this.counts.r++;
-    if (!p) return (this.tree = null);
-    removeAfter(f._node, p._node, s && s._node);
-  }
-  didRemove(f){
-    f._node = null
+    const node = f._node;
+    if (!p) this.tree = null;
+    else if (p._node) removeAfter(node, p._node, s && s._node);
+     // could also set the sib/next pointers to null here
+     // but garbage collect should work without doing so
+    f._node = null;
   }
   willMove(f, p, ps, ns){
     this.counts.s++;

@@ -35,12 +35,10 @@ class SinglyLinkedEffect extends Renderer {
   willRemove(f, p, s){
     console.log("REMOVE", f.temp.key, p && p.temp.key, s && s.temp.key)
     this.counts.r++;
-    if (!p) return (this.tree = null);
-    removeAfter(f._node, p._node, s && s._node);
-  }
-  didRemove(f){
-    console.log("DID REMOVE", f.temp.key)
-    f._node = null
+    const node = f._node;
+    if (!p) this.tree = null;
+    else if (p._node) removeAfter(node, p._node, s && s._node);
+    f._node = f._node.sib = f._node.next = null;
   }
   willMove(f, p, ps, ns){
     console.log("MOVE", f.temp.key, p.temp.key, ps && ps.temp.key, ns && ns.temp.key)
