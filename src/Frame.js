@@ -2,6 +2,7 @@ const { isFn, merge } = require("./util")
 
 const isFrame = f => !!f && isFn(f.diff);
 const isComp = f => !!f && isFn(f.name);
+const isOther = (a, b) => isFrame(a) && a !== b;
 
 // not to be instantiated by caller
 const Frame = function(temp, effs){
@@ -12,6 +13,15 @@ const Frame = function(temp, effs){
   this.inPath = true, this.isOrig = false;
 }
 Frame.prototype.diff = function(data, next){ return next }
+// typical code will make sparing use of en/detangle
+//   * we'll use sets for brevity, and also for sub-linearity in add/remove
+//   * note that en/detangle are idempotent
+Frame.prototype.entangle = function(f, a){
+  if (isOther(f, this)) (a = f.affs = f.affs || new Set).has(this) || a.add(this);
+}
+Frame.prototype.detangle = function(f, a){
+  if (isOther(f, this)) (a=f.affs) && a.delete(this) && a.size || (f.affs = null)
+}
 Frame.isFrame = isFrame
 Frame.define = (Subframe, proto) => {
   if (Subframe === Frame) throw new Error("cannot re-define base");
