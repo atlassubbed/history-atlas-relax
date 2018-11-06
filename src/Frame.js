@@ -1,11 +1,12 @@
-const { isComp, isFn, isArr, merge, norm } = require("./util")
+const { isFn, merge } = require("./util")
 
 const isFrame = f => !!f && isFn(f.diff);
+const isComp = f => !!f && isFn(f.name);
 
 // not to be instantiated by caller
-const Frame = function(t, effs){
-  if (!t) return;
-  this.effs = effs, this.temp = t;
+const Frame = function(temp, effs){
+  if (!temp) return;
+  this.effs = effs, this.temp = temp;
   this.affs = this.next = this._affs = this.nextState = this.state = this.sib = this.it = this.prev = null;
   this._affN = this.step = 0;
   this.inPath = true, this.isOrig = false;
@@ -17,11 +18,11 @@ Frame.define = (Subframe, proto) => {
   (Subframe.prototype = merge(new Frame, proto)).constructor = Subframe
 }
 // XXX this is expensive, consider using sets/maps to reduce the internal api
-const clearFrame = f => {
+const del = f => {
   f.sib = f.prev = f.state = f.nextState = f.temp = f.effs = f.affs = f._affs = null;
 }
 // temp is already normalized
-const toFrame = (t, p, isRoot) => {
+const node = (t, p) => {
   let effs = p && p.effs, tau = p && p.tau != null ? p.tau : -1;
   if (!isComp(t)) t = new Frame(t, effs);
   else {
@@ -29,30 +30,7 @@ const toFrame = (t, p, isRoot) => {
     if (isFrame(Sub.prototype)) t = new Sub(t, effs);
     else t = new Frame(t, effs), t.diff = Sub;
   }
-  if (isRoot) t.isRoot = true;
   return t.tau = t.getTau(tau), t;
 }
-const applyState = (f, ns) => {
-  if (ns = f.nextState)f.nextState = !(f.state = merge(f.state || {}, ns))
-}
-const emit = (type, f, p, s, i, ef) => {
-  if (ef = f.effs){
-    if (!isArr(ef)) ef[type] && ef[type](f, p, s, i);
-    else for (let e of ef) e[type] && e[type](f, p, s, i);
-  }
-  return f;
-}
-// render a frame's next children
-//   * flattens and returns the output of frame's diff function
-//   * note that arr.push(...huge) is not stack-safe.
-//   * ix is an optional KeyIndex
-const flat = [], render = (f, ix) => {
-  let next = [], t = f.temp
-  flat.push(f.diff(t.data, t.next))
-  while(flat.length) if (t = norm(flat.pop()))
-    if (isArr(t)) for (let i of t) flat.push(i);
-    else next.push(t), ix && ix.push(t);
-  return f.inPath = false, next;
-}
 
-module.exports = { Frame, toFrame, clearFrame, applyState, emit, render }
+module.exports = { Frame, node, del }
