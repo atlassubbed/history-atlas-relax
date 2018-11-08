@@ -49,20 +49,6 @@ describe("Frame", function(){
       expect(Frame.isFrame(() => {})).to.be.false
     })
   })
-  describe("static define", function(){
-    it("should throw an error if provided base frame class", function(){
-      expect(() => Frame.define(Frame, {diff(){return null}}))
-        .to.throw("cannot re-define base")
-    })
-    it("should turn the provided class into a subclass of frame", function(){
-      const Subframe = function(temp, effs){Frame.call(this, temp, effs)}
-      const methods = {diff(){return null}};
-      Frame.define(Subframe, methods);
-      expect(Subframe.prototype.constructor).to.equal(Subframe)
-      expect(Subframe.prototype.diff).to.equal(methods.diff)
-      expect(new Subframe({})).to.be.an.instanceOf(Frame)
-    })
-  })
   describe("entangle", function(){
     it("should be idempotent", function(){
       const nodes = ["p","p","p"].map(name => diff({name}));

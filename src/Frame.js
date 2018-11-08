@@ -23,10 +23,6 @@ Frame.prototype.detangle = function(f, a){
   if (isOther(f, this)) (a=f.affs) && a.delete(this) && a.size || (f.affs = null)
 }
 Frame.isFrame = isFrame
-Frame.define = (Subframe, proto) => {
-  if (Subframe === Frame) throw new Error("cannot re-define base");
-  (Subframe.prototype = merge(new Frame, proto)).constructor = Subframe
-}
 // XXX this is expensive, consider using sets/maps to reduce the internal api
 const del = f => {
   f.sib = f.prev = f.state = f.nextState = f.temp = f.effs = f.affs = f._affs = null;
