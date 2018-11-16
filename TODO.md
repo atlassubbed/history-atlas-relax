@@ -1,69 +1,43 @@
-1. Added/changed/remove API
-  * This would lead to contradictions with the diffing algorithm.
-  * Investigate efficient patterns made possible by entanglement
-  * Last resort is to implement some sort of mirrored state/map API
-  * Could investing supporting diff(tempArr, frameArr)
-    * managed diffs/low level control over a subdiff
+Considerations:
 
-2. Refactor entanglement tests
-  * use an array of test cases for trees/roots and then generate the tests prodecdurally
-  * each case should implement the appropriate in-diff/post-diff entanglement changes
-  * each case should implement the appropriate initiator diff (e.g. diff(..., tree/node)) 
-  * should generate the expected event sequence based on the final expected DAG
-  * could also note that the output sequence must be topologically ordered, use that to reduce duplication in the test code
+1. well-defined diffs, isFirst argument to diff(...)
+2. error boundaries
+3. async diffs, streaming api, effects api
+4. Online updates of path instead of fill/mark before every diff cycle
+5. Deprecating setTau and getTau (tau 1-to-1 with frame) for setState (tau 1-to-1 with update)
 
-3. Subdiff algorithm considerations
-  1. LCRS representation
-    * stores more pointers, but outputs fewer edit events compared to swapping algorithm
-    * semantically closer to DOM target.
-    * increases tree depth, will have to limit recursion by using own stack (pop/add/fill)
-    * semantically closer to DOM target
-  2. Array representation
-    * currently uses swapping algorithm, mutating an existing array
-    * could instead recreate the array every time, avoiding swap events
-  3. Output events options for effects
-    * LCRS only
-    * Array only, support mutate or re-create or both?
-    * support both Array and LCRS separately
-    * find a clever way to derive Array and LCRS from the same events
-  4. Group theory
-    * the subdiff algorithm can be thought of as an element of a symmetric group, sigma
-      * where A = Union(prev, next) and sigma lives in S_|A|.
-      * Represent sigma as a product of swaps (which are just 2-cycles)
-      * the number of swaps is N - K where K is the number of disjoint cycles in sigma
-      * options:
-        * build up A, then apply N - K swaps after the matching has been done.
-        * apply potentially more than N - K (but still linear) swaps during the matching phase.
+Minor considerations:
 
-Micro-performance considerations after everything else is already done:
+1. Minor performance boosts, at the expense of increased code complexity:
+   * don't add implicit nodes to path
+   * don't increase aff count for parent-child edges
+   * don't increase step count for parent-child stepping
+   * selectively defer mounts
+   * don't snapshot affects, instead defer entangle/detangle changes to apply at end of cycle
+     * downside: affects must be an array (O(n) en/detangle) or a set (no random access for fill/mark)
+2. Either use the "it" field to link the path instead of using a stack, or use Kahn's algorithm
+3. Rename entangle/detangle to sub/unsub, rename diff to render, rename setState to diff, effects to plugins
+4. Calling setTau, setState, entangle, detangle on a removed frame will short-circuit or error
 
-7. Call stack:
-  * Both atlas-frame an preact will throw an error when trying to mount trees that exceed a certain height.
-  * React does not throw an error, because it probably uses its own stack to perform subdiffs
-  * This is an extreme edge case, and may be considered in the future
+Application-level considerations (things that can be built without changing the engine):
 
-TODO (minor):
-  2. degenerate tau value for simulating batches at app-level? think degeneracy levels
-  8. Calling setState and setTau during a diff cycle need to be well-defined.
-  9. Caling diff during a diff cycle needs to be well-defined for removes/updates/subs
-  10. should all entangled willUpdates be called before all diffs, before all didUpdates?
-    * |-willUpdates-|-diffs-|-didUpdates-|
-    * to ensure that every frame has access to prev and next data and state during willUpdate
-      * for all affectors and self
-      * should not make this data available and encourage memoization instead
-  11. Once keys are implemented, the subdiff algorithm will be complete, we can consider:
-    * an alternative to popping the path -- Kahn's algorithm after DFS marks the nodes with their in-degree.
-      * might allow us to avoid unmarking subpaths that decided not to update
-      * will, however, incur decrement costs on all nodes (not just ones that were unmarked)
-    * recalculating paths IFF an entanglement change occured since the last time the path was calculated
-      * i suspect this will not make a huge difference and will incur more memory cost than we want
-    * is normalzing to an array more expensive than allowing a field to be an array or non-array and performing checks everywhere?
-      * isArray checks would increase computation and file size
-      * normalizing to an array involves wrapping scalars in an unnecessary array.
-  12. h() before diff()
-    * currently, we flatten the output of diff inside subdiff, 
-    * this means that even memoized return values will be run through the flattening process.
-    * Instead, we can flatten before memoization, inside of h(...).
-    * Counterarguments to this proposal:
-      * If we need to use an ephemeral key table for "next", we might as well flatten inside of diff since we iterate anyway
-      * Most people are not going to be returning crap like [[[[[[{name: "p"}]], {name: "div"}]]]] in their diff functions
+1. Degenerate tau: splitting a common tau to achieve segmentation/batching in a diff cycle.
+2. Managed subdiff with many virtual children should perform much better than an automatic subdiff
+   * should be able to build an efficient Collection component which supports queries (sort, limit, filter)
+   * Should be able to implement an efficient virtualized list component
+   * Should be able to avoid doing N subdiffs if N components depend on the same changing list
+3. setTau and getTau should make it easy to have fluid update priorities
+   * make sure that setTau and getTau are the right abstraction.
+   * instead we could always supply a tau value to setState
+   * supply a function to setTau, acting as the "current getTau function"
+   * try other abstraction if the current is wrong
+4. Implement a basic synchronous view framework.
+5. Implement a more advanced view framework which uses requestAnimationFrame
+6. Implement "hooks-like" API using a special effect which lets you register multiple cleanup callbacks
+7. functional nodes (standalone render functions) should be able to have state and entanglement.
+8. Should be able to implement reactive variables on top of entanglement abstraction
+   * ReactiveVar component with .set and .get methods.
+   * ReactiveDict component with .set and .get methods (composed of ReactiveVars)
+   * e.g. reactiveVar.get(val => template) returns a template', owned by the surrounding context
+   * or you can this.entangle(reactiveVar) directly, since it is just a frame anyway
+   * reactiveDict could let you .get multiple fields at once, or specify a projection, could even support nesting
