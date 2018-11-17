@@ -7,15 +7,13 @@ const {
   states, pTrans, cTrans, 
   parentCases, parentFirstCases,
   childCases, childFirstCases,
-  doubleCases, dynamicTauCases
+  doubleCases
 } = require("./cases/schedule");
-const { isFn, pretty } = require("./util");
+const { pretty } = require("./util");
 const DeferredTests = require("./DeferredTests")
 
 const allCases = [...parentCases, ...parentFirstCases, ...childCases, ...childFirstCases, ...doubleCases];
 const h = Oscillator.h;
-
-// don't test doing this during diffs yet.
 
 // timescale config
 const T = 1000
@@ -35,8 +33,6 @@ const entangle = (pTau, cTau, events) => {
   f2.entangle(f1);
   return { p: f1, c: f2 }
 }
-
-const hypot = (a, b) => Math.sqrt(a*a + b*b);
 
 // XXX this warrants its own test, so it needs to be rewritten.
 const verify = (events, expected) => {
@@ -88,7 +84,7 @@ describe("scheduling", function(){
 //     * total time taken ~ 5N*T = 5*250*.05 seconds ~ 1 minute
 //     * decreasing T is not an option because variance(time) ~ 1/T
 //   * mocha does not make it easy to write concurrent async tests
-//     * with the DeferredTests skeleton, we run every simulation simulataneously (concurrently)
+//     * with the DeferredTests skeleton, we run every simulation simultaneously (concurrently)
 //       * total time taken becomes ~ 5*T
 //       * this allows us to increase T to .5s and enjoy lower variance (higher confidence)
 
@@ -162,34 +158,6 @@ function buildMochaScaffold(){
                 result: () => result(pTau, cTauNext, state())
               }))
             }) 
-          })
-          if (isEntangled) return; // tau doesn't propagate to entangled frames
-          scaffold.describe("setting new tau on p when c has a dynamic tau getter and both have pending updates", () => {
-            pTrans[i].forEach((isAdj, j) => {
-              if (pTau < 0 || cTau < 0) return;
-              let {phase: nextPhase, p: nextP, c: nextC} = states[j];
-              if ((!pTau && !nextP(T)) || (!cTau && !nextC(T))) return;
-              nextPhase = nextPhase.replace("p", "tau_p").replace("c", "tau_c");
-              let NT;
-              if (!pTau && !cTau) NT = T;
-              else if (!pTau || !cTau) NT = hypot(pTau || cTau, pTau || cTau)
-              else if (pTau === cTau) NT = hypot(pTau, cTau);
-              else NT = (pTau + cTau)/2
-              const pTauNext = nextP(NT)
-              const getCTau = function(next){
-                return next <= 0 && nextC(NT) > 0 ? nextC(NT) : nextC(next)
-              }
-              const cTauNext = getCTau(pTauNext);
-              const state = () => [{n: 0}, {n: 1}]
-              dynamicTauCases.forEach(({name, action, result, filter}) => {
-                if (!filter(pTauNext, cTauNext)) return; 
-                scaffold.push(makeCase({
-                  desc: `should ${name} such that new ${nextPhase}`,
-                  action: (p, c) => (action(p, c, state()), c.getTau = getCTau.bind(c), p.setTau(pTauNext)),
-                  result: () => result(pTauNext, cTauNext, state()),
-                }))     
-              })
-            })
           })
         })
       })

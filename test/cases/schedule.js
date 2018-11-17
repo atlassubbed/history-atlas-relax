@@ -224,42 +224,12 @@ const doubleCases = [
   }
 ]
 
-const dynamicTauCases = [
-  {
-    name: "immediately update only p -> c when p sets tau",
-    filter: (p, c) => p < 0,
-    action: update({p:0}, {c:1}),
-    result: (p, c, states) => [
-      wU(0, p, p, states[0]), wU(1, p, c, states[1]), dU(1, states[1]), dU(0, states[0])
-    ]
-  },
-  {
-    name: "immediately update c, then wait new tau_p and update p -> c when p sets tau",
-    filter: (p, c) => p >= 0 && c < 0,
-    action: update({p:0}, {c:1}),
-    result: resultParentSlower
-  },
-  {
-    name: "wait new tau_c and update c, then wait new tau_p-new tau_c and update p -> c when p sets tau",
-    filter: (p, c) => p >= 0 && c >= 0 && c < p,
-    action: update({p:0}, {c:1}),
-    result: resultParentSlower
-  },
-  {
-    name: "wait new tau_p and update only p -> c when p sets tau",
-    filter: (p, c) => p >= 0 && c >= 0 && c >= p,
-    action: update({p:0}, {c:1}),
-    result: resultParentFaster
-  },
-]
-
 module.exports = { 
   parentCases,
   parentFirstCases,
   childFirstCases,
   doubleCases,
   childCases, 
-  dynamicTauCases,
   states, 
   pTrans: trans(1,0), 
   cTrans: trans(0,1)

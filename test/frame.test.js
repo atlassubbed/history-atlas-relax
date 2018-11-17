@@ -88,35 +88,4 @@ describe("Frame", function(){
       expect(nodes[1]).to.deep.equal(nodes[2])
     })
   })
-  describe("setTau", function(){
-    it("should propagate tau changes if new tau is set", function(){
-      const f = diff(h(0, 100, h(1, 40)));
-      let propagated = false
-      f.next.getTau = function(){ propagated = true }
-      f.setTau(1000);
-      expect(propagated).to.be.true;
-    })
-    it("should not propagate tau changes if current tau is re-set", function(){
-      const f = diff(h(0, 100, h(1, 40)));
-      let propagated = false
-      f.next.getTau = function(){ propagated = true }
-      f.setTau(100);
-      expect(propagated).to.be.false;
-    })
-    it("should not propagate tau changes if tau < 0 and next tau < 0", function(){
-      const f = diff(h(0, -1, h(1, 40)));
-      let propagated = false
-      f.next.getTau = function(){ propagated = true }
-      f.setTau(-200);
-      expect(propagated).to.be.false;
-    })
-    it("should not propagate tau changes to entangled frames", function(){
-      const f1 = diff(h(0, 100)), f2 = diff(h(0, 40));
-      f2.entangle(f1);
-      let propagated = false
-      f2.getTau = function(){ propagated = true }
-      f1.setTau(1000);
-      expect(propagated).to.be.false;
-    })
-  })
 })

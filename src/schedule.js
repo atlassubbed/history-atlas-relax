@@ -3,8 +3,6 @@ const { rediff } = require("./diff");
 const { isFn, merge } = require("./util");
 
 // XXX This is a first implementation
-//   setTau is O(|Subtree|), can optimize later
-//     * this isn't being called a lot anyway
 //   schedule blow-up problem for extreme (unlikely) edge case
 //     * if setTau(T(t)) is called in rapid succession such that T(t) !== T(t+1)
 //       then this will "blow up" the list.
@@ -27,20 +25,11 @@ const dt = (t1, t2) => !(t1 === t2 || t1 < 0 && t2 < 0);
 
 // getTau can return an unchanging value to short-circuit cascading
 Frame.prototype.getTau = function(next){ return next }
-// setTau cascades down the subtree and reschedules diffs
-// this is no longer recursive, since we want stack safety
+// setTau changes the relaxation time of a node and potentially reschedules diffs
 Frame.prototype.setTau = function(t){
   let f = this, c, on = rediff.on;
-  if (dt(f.tau, f.tau = t) && stack.push(f)){
-    while(f = stack.pop()){
-      if (t = f.tau, c = f.next) do {
-        dt(c.tau, c.tau = c.getTau(t)) && stack.push(c);
-      } while (c = c.sib);
-      if (!f.inPath && f.nextState) 
-        t < 0 && !on ? sync.push(f) : add(f, t);
-    }
-    sync.length && rediff(sync);
-  }
+  if (dt(f.tau, f.tau = t) && !f.inPath && f.nextState)
+    t < 0 && !on ? rediff(f) : add(f, t);
 }
 // expect setState to be called a lot (unlike setTau/entangle/detangle)
 //   * creating and merging partial state objects is expensive
