@@ -47,42 +47,42 @@ describe("Frame", function(){
       expect(Frame.isFrame(() => {})).to.be.false
     })
   })
-  describe("entangle", function(){
+  describe("sub", function(){
     it("should be idempotent", function(){
       const nodes = ["p","p","p"].map(name => diff({name}));
       expect(nodes[0]).to.deep.equal(nodes[1]).to.deep.equal(nodes[2])
-      nodes[1].entangle(nodes[0])
-      nodes[1].entangle(nodes[2])
+      nodes[1].sub(nodes[0])
+      nodes[1].sub(nodes[2])
       expect(nodes[0]).to.deep.equal(nodes[2]);
-      nodes[1].entangle(nodes[0])
+      nodes[1].sub(nodes[0])
       expect(nodes[0]).to.deep.equal(nodes[2]);
     })
     it("should do nothing if entangling with self", function(){
       const f1 = diff({name:"p", next: {name: "div"}});
       const f2 = diff({name:"p", next: {name: "div"}});
       expect(f1).to.deep.equal(f2);
-      f1.entangle(f1)
+      f1.sub(f1)
       expect(f1).to.deep.equal(f2);
     })
   })
-  describe("detangle", function(){
+  describe("unsub", function(){
     it("should be idempotent", function(){
       const nodes = ["p","p","p"].map(name => diff({name}));
       expect(nodes[0]).to.deep.equal(nodes[1]).to.deep.equal(nodes[2])
-      nodes[1].entangle(nodes[0])
-      nodes[1].entangle(nodes[2])
+      nodes[1].sub(nodes[0])
+      nodes[1].sub(nodes[2])
       expect(nodes[0]).to.deep.equal(nodes[2]);
-      nodes[1].detangle(nodes[2])
-      nodes[1].detangle(nodes[0])
-      nodes[1].detangle(nodes[0])
+      nodes[1].unsub(nodes[2])
+      nodes[1].unsub(nodes[0])
+      nodes[1].unsub(nodes[0])
       expect(nodes[0]).to.deep.equal(nodes[2]);
     })
-    it("should be the inverse of entangle if removing last edge", function(){
+    it("should be the inverse of sub if removing last edge", function(){
       const nodes = ["p","p","p"].map(name => diff({name}));
       expect(nodes[0]).to.deep.equal(nodes[1]).to.deep.equal(nodes[2])
-      nodes[0].entangle(nodes[1])
+      nodes[0].sub(nodes[1])
       expect(nodes[1]).to.not.deep.equal(nodes[2]);
-      nodes[0].detangle(nodes[1]);
+      nodes[0].unsub(nodes[1]);
       expect(nodes[1]).to.deep.equal(nodes[2])
     })
   })

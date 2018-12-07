@@ -19,11 +19,11 @@ Minor considerations:
    * don't increase aff count for parent-child edges
    * don't increase step count for parent-child stepping
    * selectively defer mounts
-   * don't snapshot affects, instead defer entangle/detangle changes to apply at end of cycle
-     * downside: affects must be an array (O(n) en/detangle) or a set (no random access for fill/mark)
+   * don't snapshot affects, instead defer sub/unsub changes to apply at end of cycle
+     * downside: affects must be an array (O(n) (un)sub) or a set (no random access for fill/mark)
 2. Either use the "it" field to link the path instead of using a stack, or use Kahn's algorithm
-3. Rename entangle/detangle to sub/unsub, rename diff to render, rename setState to diff, effects to plugins
-4. Calling frame.diff, entangle, detangle on a removed frame will short-circuit or error
+3. Rename effects to plugins?
+4. Calling frame.diff, sub, unsub on a removed frame will short-circuit or error
    * currently, you can call frame.diff({}, tau) on a null frame, and it will continue to schedule it.
 5. Use a base class of "Particle" and a subclass of "Oscillator"
    * Particle class doesn't implement state or entanglement, used for irreducible "dumb" nodes
@@ -47,7 +47,7 @@ Application-level considerations (things that can be built without changing the 
    * ReactiveVar component with .set and .get methods.
    * ReactiveDict component with .set and .get methods (composed of ReactiveVars)
    * e.g. reactiveVar.get(val => template) returns a template', owned by the surrounding context
-   * or you can this.entangle(reactiveVar) directly, since it is just a frame anyway
+   * or you can this.sub(reactiveVar) directly, since it is just a frame anyway
    * reactiveDict could let you .get multiple fields at once, or specify a projection, could even support nesting
 9. Implement "short" or "memo" function which seamlessly integrates into template/JSX syntax
 10. Implement "jsx" template literal operator/function which makes it easy to not use JSX.

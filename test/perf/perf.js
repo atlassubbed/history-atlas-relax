@@ -95,9 +95,9 @@ for (let c in cases){
         run("update memoized", () => diff(++i%2 ? m1 : m2, f2[0])), i = -1;
         run("mount", () => diff(t10)), i = -1;
         run("unmount", () => diff(null, f1[++i])), i = -1;
-        run("entangle one to many", () => f2[0].entangle(f2[++i])), i = -1;
+        run("entangle one to many", () => f2[0].sub(f2[++i])), i = -1;
         run("update entangled", () => diff(t20, f2[++i])), i = -1;
-        run("detangle one to many", () => f2[0].detangle(f2[++i])), i = -1;
+        run("detangle one to many", () => f2[0].unsub(f2[++i])), i = -1;
         run("update first sync", () => f3[++i].diff(state4)), i = -1;
         run("update first sync (fn)", () => f3[++i].diff(upd1)), i = -1;
         run("update sync", () => f3[0].diff(++i%2 ? state3 : state4)), i = -1;

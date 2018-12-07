@@ -9,7 +9,7 @@ const next = (f, i=f.step++) => i ? f.it ?
 
 const mark = (f, c, i, ch) => {
   while(i = stack.length) if (!(((f = stack[i-1]).inPath || f.step < 0) && stack.pop())) {
-    if (!f.step && f.affs) for (c of (ch = f._affs = [], f.affs)) c.temp ? ch.push(c) : c.detangle(f);
+    if (!f.step && f.affs) for (c of (ch = f._affs = [], f.affs)) c.temp ? ch.push(c) : c.unsub(f);
     if (!(c = next(f))) stack.pop().inPath = !(f.step = 0), path.push(f);
     else if (!c.step) c.inPath || stack.push(c), c._affN++;
     else if (c.step > 0) throw new Error("cyclic entanglement");

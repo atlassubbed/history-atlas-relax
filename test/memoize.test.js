@@ -27,7 +27,7 @@ describe("memoization and immutability support", function(){
       const events = [], t1 = new Tracker(events), t2 = new Tracker(events);
       const t = m(0), f1 = diff(t, null, {effs: t1}), f2 = diff(m(0), null, {effs: t1});
       events.length = 0;
-      f2.entangle(f1);
+      f2.sub(f1);
       const result = diff(t, f1);
       expect(result).to.be.false;
       expect(events).to.be.empty;
@@ -98,7 +98,7 @@ describe("memoization and immutability support", function(){
       }
       const disjointRoot = diff(m(9), null, {effs: new Tracker(events)});
       events.length = 0;
-      nodes[1].entangle(disjointRoot)
+      nodes[1].sub(disjointRoot)
       nodes[0].diff();
       expect(events).to.deep.equal([
         {wU: 0}, {wU: 2}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},

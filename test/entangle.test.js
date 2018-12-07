@@ -18,13 +18,13 @@ describe("entanglement", function(){
     it("should throw before the next diff runs if there are cycles", function(){
       const events = [], t1 = new Tracker(events), t2 = new Tracker(events); 
       const r1 = diff(p(0), null, t1), r2 = diff(p(0), null, t2);
-      r1.entangle(r2), r2.entangle(r1), events.length = 0;
+      r1.sub(r2), r2.sub(r1), events.length = 0;
       expect(() => diff(p(0), r1)).to.throw("cyclic entanglement")
       expect(events).to.be.empty;
     })
     it("should clean up unmounted entangled affects by the end of the next cycle", function(){
       const r1 = diff(p(0)), r2 = diff(p(1));
-      r2.entangle(r1);
+      r2.sub(r1);
       expect(r1.affs).to.contain(r2);
       diff(null, r2);
       expect(r1.affs).to.contain(r2);
@@ -35,8 +35,8 @@ describe("entanglement", function(){
       it(`should throw before the next diff runs if cycles are introduced in ${hook}`, function(){
         const events = [], t1 = new Tracker(events), t2 = new Tracker(events);
         const r1 = diff(p(0), null, t1); 
-        const r2 = diff(p(1, {[hook]: f => r1.entangle(f)}), null, t2);
-        r2.entangle(r1), events.length = 0;
+        const r2 = diff(p(1, {[hook]: f => r1.sub(f)}), null, t2);
+        r2.sub(r1), events.length = 0;
         const update = () => diff(p(1), r2);
         if (has(addHooks, hook)){
           expect(update).to.throw("cyclic entanglement")
@@ -80,8 +80,8 @@ describe("entanglement", function(){
         const {nodes, events} = rootCase.get();
         diff(p(0), nodes[0]);
         events.length = 0;
-        nodes[2].detangle(nodes[1]);
-        nodes[1].entangle(nodes[2]);
+        nodes[2].unsub(nodes[1]);
+        nodes[1].sub(nodes[2]);
         diff(p(0), nodes[0])
         expect(events).to.deep.equal([ 
           {wR: 0}, {wU: 0}, {wU: 2}, {wU: 1}, {wU: 3}, 
@@ -94,8 +94,8 @@ describe("entanglement", function(){
         it(`should update nodes in new order if edges are introduced in ${hook}`, function(){
           const { nodes, events } = rootCase.get({
             0: {[hook]: f => {
-              nodes[2].detangle(nodes[1]);
-              nodes[1].entangle(nodes[2]);
+              nodes[2].unsub(nodes[1]);
+              nodes[1].sub(nodes[2]);
             }}
           })
           const result = [
@@ -115,7 +115,7 @@ describe("entanglement", function(){
           const { nodes, events } = rootCase.get({
             0: {[hook]: f => {
               if (!p4) p4 = diff(p(4), null, new Tracker(events));
-              p4.entangle(nodes[3])
+              p4.sub(nodes[3])
             }}
           })
           const update = () => diff(p(0), nodes[0]);
@@ -162,13 +162,13 @@ describe("entanglement", function(){
     it("should throw before the next diff runs if there are cycles", function(){
       const events = [], t = new Tracker(events);
       const r = diff(p(0, null, [p(1), p(2)]), null, t), c = r.next;
-      c.entangle(c.sib), c.sib.entangle(c), events.length = 0;
+      c.sub(c.sib), c.sib.sub(c), events.length = 0;
       expect(() => diff(p(0, null, [p(1), p(2)]), r)).to.throw("cyclic entanglement")
       expect(events).to.be.empty;
     })
     it("should clean up unmounted entangled affects by the end of the next cycle", function(){
       const r = diff(p(0, null, p(1))), c = r.next;
-      c.entangle(r);
+      c.sub(r);
       expect(r.affs).to.contain(c);
       diff(p(0), r);
       expect(r.affs).to.contain(c);
@@ -182,11 +182,11 @@ describe("entanglement", function(){
         const hooks = {
           willAdd: (f, p) => {f.parent = p},
           [hook]: f => {
-            f.entangle(f.parent.next)
+            f.sub(f.parent.next)
           }
         }
         const r = diff(p(0, null, [p(1), p(2, hooks)]), null, t);
-        r.next.entangle(r.next.sib)
+        r.next.sub(r.next.sib)
         events.length = 0;
         const update = () => diff(p(0, null, [p(1), p(2)]), r)
         if (has(addHooks, hook)){
@@ -244,8 +244,8 @@ describe("entanglement", function(){
         const {nodes, events} = treeCase.get();
         diff(treeCase.tag0(), nodes[0])
         events.length = 0;
-        nodes[3].detangle(nodes[2]);
-        nodes[2].entangle(nodes[3]);
+        nodes[3].unsub(nodes[2]);
+        nodes[2].sub(nodes[3]);
         diff(treeCase.tag0(), nodes[0])
         expect(events).to.deep.equal([ 
           {wR: 0}, {wU: 0}, {wR: 1}, {wU: 1}, {wR: 2}, {wR: 3},
@@ -261,8 +261,8 @@ describe("entanglement", function(){
         it(`should update nodes in new order if edges are introduced in ${hook}`, function(){
           const { nodes, events } = treeCase.get({
             2: {[hook]: f => {
-              nodes[3].detangle(f);
-              f.entangle(nodes[3]);
+              nodes[3].unsub(f);
+              f.sub(nodes[3]);
             }}
           })
           const result = [ 
@@ -322,7 +322,7 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           2: {
             willUpdate: f => {
-              f.nextChildren = [p(9, {ctor: f => f.entangle(nodes[7])}, p(10)), p(11)]
+              f.nextChildren = [p(9, {ctor: f => f.sub(nodes[7])}, p(10)), p(11)]
             },
             render(data, next){
               return this.nextChildren
@@ -343,7 +343,7 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           2: {
             willUpdate: f => {
-              f.nextChildren = [p(9, {ctor: f => f.entangle(nodes[7])}, p(10)), p(11)]
+              f.nextChildren = [p(9, {ctor: f => f.sub(nodes[7])}, p(10)), p(11)]
             },
             render(data, next){
               return this.nextChildren
@@ -367,7 +367,7 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           2: {
             willUpdate: f => {
-              f.nextChildren = [p(9, {ctor: f => nodes[4].entangle(f)}, p(10)), p(11)]
+              f.nextChildren = [p(9, {ctor: f => nodes[4].sub(f)}, p(10)), p(11)]
             },
             render(data, next){
               return this.nextChildren
@@ -388,7 +388,7 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           2: {
             willUpdate: f => {
-              f.nextChildren = [p(9, {ctor: f => nodes[4].entangle(f)}, p(10)), p(11)]
+              f.nextChildren = [p(9, {ctor: f => nodes[4].sub(f)}, p(10)), p(11)]
             },
             render(data, next){
               return this.nextChildren
@@ -453,7 +453,7 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           0: {
             willUpdate: f => {
-              f.nextChildren = a(9, {ctor: f => f.entangle(nodes[4])});
+              f.nextChildren = a(9, {ctor: f => f.sub(nodes[4])});
             },
             render(data, next){
               return this.nextChildren || next;
@@ -473,7 +473,7 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           0: {
             willUpdate: f => {
-              f.nextChildren = a(9, {ctor: f => f.entangle(nodes[4])});
+              f.nextChildren = a(9, {ctor: f => f.sub(nodes[4])});
             },
             render(data, next){
               return this.nextChildren || next;

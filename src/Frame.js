@@ -13,14 +13,14 @@ const Frame = function(temp, effs){
   this.inPath = true, this.isOrig = false;
 }
 Frame.prototype.render = function(data, next){ return next }
-// typical code will make sparing use of en/detangle
+// typical code will make sparing use of (un)sub
 //   * we'll use sets for brevity, and also for sub-linearity in add/remove
-//   * note that en/detangle are idempotent
-Frame.prototype.entangle = function(f, a){
+//   * note that (un)sub is idempotent
+Frame.prototype.sub = function(f, a){
   if (isFrame(f) && f !== this)
     (a = f.affs = f.affs || new Set).has(this) || a.add(this);
 }
-Frame.prototype.detangle = function(f, a){
+Frame.prototype.unsub = function(f, a){
   if (isFrame(f) && f !== this)
     (a=f.affs) && a.delete(this) && a.size || (f.affs = null)
 }

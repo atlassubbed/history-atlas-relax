@@ -37,7 +37,7 @@ const rootCase = {
     events.length = 0;
     for (let i in this.adj)
       for (let j of this.adj[i])
-        nodes[j].entangle(nodes[i]);
+        nodes[j].sub(nodes[i]);
     return {nodes, events};
   }
 }
@@ -86,7 +86,7 @@ const treeCase = {
     events.length = 0;
     for (let i in this.adj)
       for (let j of this.adj[i])
-        nodes[j].entangle(nodes[i]);
+        nodes[j].sub(nodes[i]);
     return {nodes, events};
   }
 }

@@ -44,7 +44,7 @@ const mountRoots = events => {
 
 const mountEntangledRoots = events => {
   const roots = mountRoots(events);
-  roots.c.entangle(roots.p);
+  roots.c.sub(roots.p);
   return roots;
 }
 
