@@ -3,16 +3,16 @@ const { Tracker, Cache, Passthrough } = require("../effects");
 const { toArr } = require("../util");
 const { StemCell, StemCell2 } = require("./Frames");
 
-const p = StemCell.h, a = StemCell2.h;
+// we don't need oscillation
+const p = (id, hooks, next) => StemCell.h(id, {hooks}, next);
+const a = (id, hooks, next) => StemCell2.h(id, {hooks}, next);
 
 const getEffs = (events, nodes) => ({effs: [
   new Tracker(events), new Cache(nodes), new Passthrough
 ]})
 
 // curry is useful
-const P = (id, allHooks={}) => (...next) => {
-  return p(id, allHooks[id], next);
-}
+const P = (id, allHooks={}) => (...next) => p(id, allHooks[id], next)
 
 const rootCase = {
   /* entangled roots

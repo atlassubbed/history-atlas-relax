@@ -60,11 +60,11 @@ class StatefulFunctionalVector extends Frame {
 
 // StemCell frames are useful for testing
 //   * they take lifecycle methods as template props
-//   * thus they become "differentiated" upon addition
+//   * thus they become "differentiated" upon construction
 class StemCell extends Frame {
   constructor(temp, effs){
+    let data = temp.data, hooks = data && data.hooks;
     super(temp, effs);
-    const hooks = temp.data && temp.data.hooks;
     if (hooks){
       if (hooks.ctor) hooks.ctor.bind(this)(this);
       for (let h in hooks)
@@ -74,34 +74,20 @@ class StemCell extends Frame {
   diff(data, next){
     return (data && data.copy) ? copy(next) : next;
   }
-  static h(id, hooks, next){
-    return {name: StemCell, data: {id, hooks, copy: true}, next};
+  static h(id, data, next){
+    data = data || {}, data.id = id, data.copy = true;
+    return {name: StemCell, data, next};
   }
-  static m(id, hooks, next){
-    return {name: StemCell, data: {id, hooks}, next};
+  static m(id, data, next){
+    data = data || {}, data.id = id;
+    return {name: StemCell, data, next};
   }
 }
 
 class StemCell2 extends StemCell {
-  static h(id, hooks, next){
-    return {name: StemCell2, data: {id, hooks}, next};
-  }
-}
-
-// Oscillator frames implement getTau and "relax" into new state
-//   * extends StemCell for future testing purposes
-//   * behaves as an oscillator when update frequency >> 1/tau
-class Oscillator extends StemCell {
-  getTau(tau){
-    const myTau = this.temp.data.tau;
-    return myTau != null ? myTau : tau;
-  }
-  static h(id, tau, next){
-    return {name: Oscillator, data: {id, tau, copy: true}, next};
-  }
-  static p(id, data, next){
-    data.copy = true, data.id = id;
-    return {name: Oscillator, data, next}
+  static h(id, data, next){
+    data = data || {}, data.id = id;
+    return {name: StemCell2, data, next};
   }
 }
 
@@ -112,7 +98,6 @@ module.exports = {
   B,
   StemCell,
   StemCell2,
-  Oscillator,
   Blackboxes: [
     StatelessBlackboxScalar, StatefulBlackboxScalar,
     StatelessBlackboxVector, StatefulBlackboxVector

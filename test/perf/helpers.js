@@ -67,9 +67,10 @@ const printHeap = () => {
   console.log(`\n${Math.floor(mb)} MB being used`)
 }
 
-const rightPad = (str, n) => {
-  const numPad = Math.max(0, n-str.length)
-  return str + Array(numPad+1).fill().join(" ");
+const printTitle = (name, padding) => {
+  const numPad = Math.max(0, padding-name.length)
+  name = name + Array(numPad+1).fill().join(" ");
+  process.stdout.write(`    ${name} `);
 }
 
 const doWork = n => {
@@ -79,4 +80,4 @@ const doWork = n => {
   }
 }
 
-module.exports = { TemplateFactory, count, printHeap, rightPad, doWork }
+module.exports = { TemplateFactory, count, printHeap, printTitle, doWork }

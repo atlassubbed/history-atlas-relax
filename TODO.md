@@ -3,8 +3,14 @@ Considerations:
 1. well-defined diffs, isFirst argument to diff(...)
 2. error boundaries
 3. async diffs, streaming api, effects api
-4. Online updates of path instead of fill/mark before every diff cycle
-5. Deprecating setTau and getTau (tau 1-to-1 with frame) for setState (tau 1-to-1 with update)
+4. Online updates of path instead of fill/mark before every diff cycle (rebasing the path)
+6. Min-heap scheduling algorithm
+   * can be used to vastly limit timer usage
+   * provide a basis for implementing online diffs (e.g. prioritized diff cycles, rebasing)
+   * diff caller can provide a queueing function (e.g. rIC/rAF)
+7. Allow diff(...) to allow the template arg to be a function
+   * diff(fn) treated as: diff({name: func}) for simple shorthand
+8. Test non-happy cases for setState, etc. (e.g. is calling setState("string") defined?) 
 
 Minor considerations:
 
@@ -17,7 +23,14 @@ Minor considerations:
      * downside: affects must be an array (O(n) en/detangle) or a set (no random access for fill/mark)
 2. Either use the "it" field to link the path instead of using a stack, or use Kahn's algorithm
 3. Rename entangle/detangle to sub/unsub, rename diff to render, rename setState to diff, effects to plugins
-4. Calling setTau, setState, entangle, detangle on a removed frame will short-circuit or error
+4. Calling setState, entangle, detangle on a removed frame will short-circuit or error
+   * currently, you can call setState({}, tau) on a null frame, and it will continue to schedule it.
+5. Use a base class of "Particle" and a subclass of "Oscillator"
+   * Particle class doesn't implement state or entanglement, used for irreducible "dumb" nodes
+   * Components and functions will be constructed as Oscillators (w/ entanglement and state)
+   * Advantage is that the vast majority of nodes are irreducible, and have leaner constructors.
+   * Disadvantage is that there are now TWO flavors of node - or is this an advantage?
+6. Investigate using weakmaps or symbols, falling back to strings for internal fields
 
 Application-level considerations (things that can be built without changing the engine):
 
@@ -26,11 +39,6 @@ Application-level considerations (things that can be built without changing the 
    * should be able to build an efficient Collection component which supports queries (sort, limit, filter)
    * Should be able to implement an efficient virtualized list component
    * Should be able to avoid doing N subdiffs if N components depend on the same changing list
-3. setTau and getTau should make it easy to have fluid update priorities
-   * make sure that setTau and getTau are the right abstraction.
-   * instead we could always supply a tau value to setState
-   * supply a function to setTau, acting as the "current getTau function"
-   * try other abstraction if the current is wrong
 4. Implement a basic synchronous view framework.
 5. Implement a more advanced view framework which uses requestAnimationFrame
 6. Implement "hooks-like" API using a special effect which lets you register multiple cleanup callbacks
@@ -41,3 +49,5 @@ Application-level considerations (things that can be built without changing the 
    * e.g. reactiveVar.get(val => template) returns a template', owned by the surrounding context
    * or you can this.entangle(reactiveVar) directly, since it is just a frame anyway
    * reactiveDict could let you .get multiple fields at once, or specify a projection, could even support nesting
+9. Implement "short" or "memo" function which seamlessly integrates into template/JSX syntax
+10. Implement "jsx" template literal operator/function which makes it easy to not use JSX.

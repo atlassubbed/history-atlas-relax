@@ -1,5 +1,1 @@
-const { Frame } = require("./Frame");
-const { diff } = require("./diff");
-require("./schedule");
-
-module.exports = { Frame, diff }
+module.exports = { Frame: require("./Frame").Frame, diff: require("./diff") }

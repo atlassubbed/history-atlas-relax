@@ -1,6 +1,6 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
-const { ArrayRenderer, LCRSRenderer, Cache } = require("./effects");
+const { LCRSRenderer, Cache } = require("./effects");
 const { Frame, diff } = require("../src/index");
 const { isScalar, type, inject, deepIgnore } = require("./util")
 const { 
@@ -19,7 +19,7 @@ const ignoreMetaTemp = node => deepIgnore(node, n => {
   delete n.temp.p;
 })
 
-// needs to be a factory
+// XXX needs to be a factory, this is a legacy factory which used to support ArrayRenderers
 const renderers = () => [new LCRSRenderer];
 
 describe("diff", function(){

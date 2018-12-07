@@ -1,5 +1,7 @@
-const { isArr } = require("./util");
+const { pop } = require("./field");
+
 const path = [], stack = [];
+
 // for stack safety, we acquire overhead trying to simulate recursion's post ordering
 const next = (f, i=f.step++) => i ? f.it ?
   (f.it = f.it.sib) || f._affs && f._affs[(f.step = 1)-1] :
@@ -24,17 +26,15 @@ const unmark = (f, c=stack.push(f)) => {
 //   * such "premature" updates would be considered unexpected behavior
 // below we mark nodes as originators to ensure they are in the physical path
 // and compute a topologically ordered path to diff along
-// don't consider nodes that are in path, removed, or diffed
-const fill = (f, tau=-1, c) => {
-  if (!isArr(f)) f.isOrig = !!stack.push(f);
-  else while(c = f.pop()) if(tau < 0 || c.temp && c.nextState && (c.tau === tau || c.tau <= 0)) 
-    c.isOrig = !!stack.push(c);
-  mark();
+const fill = (f, tau) => {
+  if (f) f.isOrig = !!stack.push(f);
+  else while(f = pop(tau)) f.isOrig = !!stack.push(f);
+  mark()
 }
 const refill = (f, ch, c) => {
   path.push(f);
   while(f = path.pop()){
-    if (f.step = -1, c = f.next) do {path.push(c)} while(c = c.sib)
+    if (f.step = -1, c = f.next) do path.push(c); while(c = c.sib)
     if (ch = f.affs) for (c of ch) c.isOrig = !!stack.push(c);
   }
   mark();

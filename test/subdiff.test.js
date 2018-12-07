@@ -1,12 +1,12 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
-const { ArrayRenderer, LCRSRenderer, Passthrough } = require("./effects");
+const { LCRSRenderer, Passthrough } = require("./effects");
 const { StemCell } = require("./cases/Frames");
 const { diff } = require("../src/index");
 const { bruteForceCases, matchingCases } = require("./cases/subdiff");
 const { inject, has, isFn } = require("./util")
-const { m } = StemCell;
 
+const m = (id, hooks, next) => StemCell.m(id, {hooks}, next);
 const tag = ({name: n, key: k, data: {id}}) => {
   n = isFn(n) ? n.name : n;
   if (k) n += `-${k}`;

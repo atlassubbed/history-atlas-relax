@@ -56,11 +56,10 @@ describe("memoization and immutability support", function(){
     })
     it("should not update children which receive old templates even if the child owns a future diff cycle", function(){
       const events = [], tracker = new Tracker(events);
-      const getTau = () => 0;
-      const m1 = m(1), m2 = m(2, {getTau});
+      const m1 = m(1), m2 = m(2);
       const f1 = diff(m(0, null, [m1, m2]), null, {effs: [tracker, new Passthrough]});
       events.length = 0;
-      f1.next.sib.setState({id: 2})
+      f1.next.sib.setState({id: 2}, 0)
       const result = diff(m(0, null, [m1, m2]), f1)
       expect(result).to.be.an.instanceOf(Frame);
       expect(events).to.deep.equal([
@@ -69,18 +68,17 @@ describe("memoization and immutability support", function(){
     })
     it("should update children which receive old templates as long as the child owns the current diff cycle", function(done){
       const events = [], tracker = new Tracker(events);
-      const getTau = () => 0;
       const didUpdate = () => {
         expect(events).to.deep.equal([
           {wU: 0}, {wU: 2}, {dU: 2}, {dU: 0}
         ])
         done();
       }
-      const t = m(0, {getTau, didUpdate}, [m(1), m(2)])
+      const t = m(0, {hooks: {didUpdate}}, [m(1), m(2)])
       const f1 = diff(t, null, {effs: [tracker, new Passthrough]});
       events.length = 0;
-      f1.next.sib.setState({})
-      f1.setState({});
+      f1.next.sib.setState({}, 0)
+      f1.setState({}, 0);
     })
     it("should remove child's influence if it only depends on parent", function(){
       const { nodes, events } = treeCase.get();

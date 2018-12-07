@@ -5,6 +5,9 @@ const { Cache } = require("../effects");
 
 let id = 0;
 
+// XXX This is legacy playground code; I am not removing it, perhaps it is useful to inspect.
+//   It will probably not work anymore as APIs have changed.
+
 const makeTemps = n => {
   let list = [];
   for (let i = 0; i < n; i++) list[i] = {name:"p", key: id++};

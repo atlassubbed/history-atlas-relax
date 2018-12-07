@@ -8,6 +8,11 @@ const Renderer = require("./Renderer");
 // when didUpdate is called on the last element in the cycle, flush all events:
 //   e.g. first remove all orphans (perhaps recycle their resources)
 //        then push all
+
+// XXX This is no longer in use and won't work, but I'm leaving it here because it is useful to inspect.
+// Before I modified the internal representation to be an LCRS tree, the engine supported array-based
+// renderers. I felt they were gimmicky and pretty much inferior to LCRCs trees for this use-case.
+// Effects should not be doing random access on children. They are supposed to be dumb.
 module.exports = class ArrayRenderer extends Renderer {
   attachChildren(node, next){
     node.next = next;

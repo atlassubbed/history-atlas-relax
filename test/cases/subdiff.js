@@ -1,50 +1,11 @@
 const { copy } = require("../util");
 const { B } = require("./Frames");
+const { findAll, genPermGraph } = require("./combinatorics");
 
 /* Properties of subdiffs (arrays -> arrays):
      1. should be stable for implicit keys
      2. should be stable for explicit keys
-     3. should produce a correct edit path in linear time
-   We want set, K, of all permutations of the elements in power set, P, of S
-     1. (n m) = n!/((n-m)!*m!)
-     2. let P be the power set of S, i.e. the set of all subsets.
-        |P| = 2^|S|, each element p in P has |p|! permutations
-     3. let K be the set of all permutations for all p in P
-        |K| = SUM((|S| s)*s!, s = 0 to s = |S|) = SUM(|S|!/s!, s = 0 to s = |S|) */
-
-// do these steps separately to keep it simple
-
-/* generates a trie which stores all elements in K
-   e.g. if S = {1,2,3}
-   then the generated trie is something like
-       START
-      /  |  \
-     1   2   3
-    / \ / \ / \
-    2 3 1 3 1 2
-    | | | | | |
-    3 2 3 1 2 1
-  reduce is used to accumulate entries in the trie */
-const genIndexPermutationGraph = indexes => indexes.reduce((p, i) => {
-  p[i] = genIndexPermutationGraph(indexes.filter(j => j !== i));
-  return p;
-}, {})
-
-/* finds every unique sequence stored in a trie
-  e.g. if our trie looks something like:
-    START
-    /   \
-   1     2
-   |     |
-   2     1
-  and we get the set, K, of sequences:
-    {[], [1], [2], [1,2], [2,1]}
-  which is just a set of all elements in the trie */
-const findAll = (trie, res=[], cur=[]) => {
-  res.push(cur);
-  for (let i in trie) findAll(trie[i], res, [...cur, i]);
-  return res;
-}
+     3. should produce a correct edit path in linear time */
 
 // maps our sequences to our (transformed) test cases
 const mapToBasis = (seqs, S) => seqs.map(s => s.map(el => copy(S[el])));
@@ -71,7 +32,7 @@ const bruteForceCases = [
     {name: B, data: {id: 4}}
   ]
 ].map(genSet => {
-  const seqs = findAll(genIndexPermutationGraph(genSet.map((e, i) => i)));
+  const seqs = findAll(genPermGraph(genSet.map((e, i) => i)));
   return {
     prevCases: mapToBasis(seqs, genSet),
     nextCases: mapToBasis(seqs, genSet)

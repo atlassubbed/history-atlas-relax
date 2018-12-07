@@ -1,10 +1,10 @@
 const { Timer } = require("atlas-basic-timer");
 const serial = require("atlas-serial");
-const { TemplateFactory, count, printHeap, rightPad, doWork } = require("./helpers");
+const { TemplateFactory, count, printHeap, printTitle, doWork } = require("./helpers");
 const { Passthrough } = require("../effects");
 const { diff, Frame } = require("../../src/index");
 const { expect } = require("chai");
-const { copy } = require("../util")
+const { copy, isArr } = require("../util")
 
 const SCALES = [50];
 const SAMPLES = 5e3;
@@ -13,39 +13,26 @@ const DEC = 1;
 const PAD_AMT = 25;
 const timer = Timer({dec: DEC});
 const tasks = [];
-const pass = new Passthrough;
-const factory1 = new TemplateFactory(class Subframe1 extends Frame {
+const opts = {effs: new Passthrough};
+
+// don't wanna doWork during initialization
+let init = true;
+
+class Subframe extends Frame {
   diff(data, next){
-    return doWork(DIFF_WORK), next;
-  }
-});
-const factory2 = new TemplateFactory(class Subframe2 extends Frame {
-  diff(data, next){
-    return doWork(DIFF_WORK), next;
-  }
-});
-const factory3 = new TemplateFactory(class Subframe3 extends Frame {
-  diff(data, next){
-    return doWork(DIFF_WORK), next;
-  }
-});
-const factory4 = new TemplateFactory(class AsyncFrame extends Frame {
-  constructor(temp, effs){
-    super(temp, pass)
-  }
-  willAdd(f, parent){
-    if (parent) this.didUpdate = null;
+    const s = this.state;
+    init || doWork(DIFF_WORK)
+    return s && s.next || next;
   }
   didUpdate(){
-    this.done()
+    if (this.done) this.done();
   }
-  diff(data, next){
-    return doWork(DIFF_WORK), copy(next);
-  }
-  getTau(){
-    return 0
-  }
-});
+}
+
+const factory1 = new TemplateFactory(class Subframe1 extends Subframe {});
+const factory2 = new TemplateFactory(class Subframe2 extends Subframe {});
+const factory3 = new TemplateFactory(class Subframe3 extends Subframe {});
+
 const cases = {
   star: {},
   keyedStar: {},
@@ -54,11 +41,11 @@ const cases = {
 }
 
 const run = (name, job) => {
-  process.stdout.write(`    ${rightPad(name, PAD_AMT)} `);
+  printTitle(name, PAD_AMT)
   timer(job, SAMPLES);
 }
 const runAsync = (name, job, cb) => {
-  process.stdout.write(`    ${rightPad(name, PAD_AMT)} `);
+  printTitle(name, PAD_AMT)
   timer(job, SAMPLES, errs => {
     if (errs.length) throw errs[0];
     cb();
@@ -69,18 +56,22 @@ const runAsync = (name, job, cb) => {
 for (let c in cases){
   const cache = cases[c];
   for (let s of SCALES){
-    const t1 = [], t3 = [], f1 = [], f2 = [], f3 = [], f4 = [];
-    cache[s] = { t1, t3, f1, f2, f3, f4 };
+    const t1 = [], t2 = [], t3 = [], f1 = [], f2 = [], f3 = [];
+    cache[s] = { t1, t2, t3, f1, f2, f3 };
+    for (let i = 0; i < 5; i++) t3.push(factory3[c](s));
+    t2.push(factory2[c](s))
+    t1.push(factory1[c](s))
+    t1.push(factory1[c](s))
     for (let i = SAMPLES; i--;) {
-      for (let j = 0; j < 3; j++) t1.push(factory1[c](s))
-      t3.push(factory3[c](s))
       f1.push(diff(factory1[c](s)))
       f2.push(diff(factory2[c](s)))
-      f3.push(diff(factory3[c](s)))
-      f4.push(diff(factory4[c](s)))
+      f3.push(diff(factory3[c](s), null, opts))
     }
   }
 }
+
+// initialization is over, now we wanna doWork during diffs
+init = false;
 
 // add tests to the task list
 for (let c in cases){
@@ -90,27 +81,37 @@ for (let c in cases){
     for (let s of SCALES){
       subtasks.push(taskDone => {
         console.log(`  N = ${s}`);
-        const { t1, t3, f1, f2, f3, f4 } = cases[c][s];
+        const { t1, t2, t3, f1, f2, f3 } = cases[c][s];
         let i = -1;
-        const m1 = f3[0].temp, m = [Object.assign({}, m1), Object.assign({}, m1)]
-        run("first update", () => diff(t1.pop(), f1[++i])), i = -1;
-        run("second update", () => diff(t1.pop(), f1[++i])), i = -1;
-        // run("update memoized root", () => diff(m1, f3[0])), i = -1;
-        run("update memoized children", () => diff(m[++i%2], f3[0])), i = -1;
-        run("mount", () => diff(t1.pop())), i = -1;
-        // run("set tau", () => f1[++i].setTau(i)), i = -1;
-        run("unmount", () => diff(null, f2[++i])), i = -1;
-        // run("entangle one", () => f3[++i].entangle(f3[(i+1)%SAMPLES])), i = -1;
-        // run("detangle one", () => f3[++i].detangle(f3[(i+1)%SAMPLES])), i = -1;
-        run("entangle one to many", () => f3[0].entangle(f3[++i])), i = -1;
-        run("update one to many", () => diff(t3.pop(), f3[++i])), i = -1;
-        run("detangle one to many", () => f3[0].detangle(f3[++i])), i = -1;
-        // run("entangle many to one", () => f3[++i].entangle(f3[0])), i = -1;
-        // run("detangle many to one", () => f3[++i].detangle(f3[0])), i = -1;
-        runAsync("update async", done => {
-          f4[++i].done = done;
-          f4[i].setState({})
-        }, () => taskDone())
+        const m1 = Object.assign({}, f2[0].temp), m2 = Object.assign({}, f2[0].temp);
+        const t10 = t1.pop(), t11 = t1.pop(), t20 = t2.pop();
+        const s1 = t3.pop().next, s2 = t3.pop().next;
+        const upd1 = s => s.next = s1, upd2 = s => s.next = s2;
+        const state3 = {next: t3.pop().next};
+        const state4 = {next: t3.pop().next};
+        const state5 = {next: t3.pop().next};
+        run("update first", () => diff(t10, f1[++i])), i = -1;
+        run("update", () => diff(++i%2 ? t10 : t11, f1[0])), i = -1;
+        run("update memoized", () => diff(++i%2 ? m1 : m2, f2[0])), i = -1;
+        run("mount", () => diff(t10)), i = -1;
+        run("unmount", () => diff(null, f1[++i])), i = -1;
+        run("entangle one to many", () => f2[0].entangle(f2[++i])), i = -1;
+        run("update entangled", () => diff(t20, f2[++i])), i = -1;
+        run("detangle one to many", () => f2[0].detangle(f2[++i])), i = -1;
+        run("update first sync", () => f3[++i].setState(state4)), i = -1;
+        run("update first sync (fn)", () => f3[++i].setState(upd1)), i = -1;
+        run("update sync", () => f3[0].setState(++i%2 ? state3 : state4)), i = -1;
+        run("update sync (fn)", () => f3[0].setState(++i%2 ? upd1 : upd2)), i = SAMPLES-1;
+        run("schedule polycolor", () => f3[0].setState(state3, --i));
+        run("schedule monocolor", () => f3[0].setState(state4, ++i === SAMPLES ? -1 : 1)), i = -1;
+        run("schedule immediate", () => f3[0].setState(state3, ++i === SAMPLES ? -1 : 0)), i = -1;
+        runAsync("update first async", done => {
+          f3[++i].done = done;
+          f3[i].setState(state4, 0)
+        }, () => runAsync("update async", done => {
+          f3[0].done = done;
+          f3[0].setState(++i%2 ? state3 : state5, 0)
+        }, () => taskDone()))
       })
     }
     serial(subtasks, errs => {
@@ -127,17 +128,17 @@ serial(tasks, () => {
   // cleanup the cache and ensure that frames are in final state
   for (let c in cases){
     for (let s of SCALES){
-      const { t1, t3, f1, f2, f3, f4 } = cases[c][s];
+      const { t1, t2, t3, f1, f2, f3 } = cases[c][s];
       expect(t1).to.be.empty;
+      expect(t2).to.be.empty;
       expect(t3).to.be.empty;
       for (let i = SAMPLES; i--;) {
-        expect(f2[i].temp).to.be.null
-        expect(count(f2[i])).to.equal(1);
-        expect(count(f1[i])).to.equal(s);
+        expect(f1[i].temp).to.be.null
+        expect(count(f1[i])).to.equal(1);
+        expect(count(f2[i])).to.equal(s);
         expect(count(f3[i])).to.equal(s);
-        expect(count(f4[i])).to.equal(s);
-        expect(f3[i].affs).to.equal(null)
-        f1[i] = f2[i] = f3[i] = f4[i] = null
+        expect(f2[i].affs).to.equal(null)
+        f1[i] = f2[i] = f3[i] = null
       }
     }
   }

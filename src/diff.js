@@ -1,7 +1,8 @@
-const { isArr, norm, merge } = require("./util")
-const { Frame: { isFrame }, node, del } = require("./Frame");
+const { isArr, norm, merge, isFn } = require("./util")
+const { Frame, node, del } = require("./Frame"), { isFrame } = Frame;
 const { path, fill, refill, unmark } = require("./step-leader");
 const KeyIndex = require("./KeyIndex")
+const { relax, excite } = require("./field")
 
 // auxiliary stacks
 //   * htap & lags are needed for the whole diff
@@ -60,7 +61,7 @@ const unmount = f => {while(f = aux1.pop()) del(f), f.next && rev(f.next, f)}
 
 // diff "downwards" from a parent, p, short circuit if next or prev have zero elements
 const subdiff = p => {
-  if (p.nextState) p.nextState = !(p.state = merge(p.state || {}, p.nextState))
+  if (p.nextState) p.nextState = !(p.state = merge(p.state || {}, p.nextState)), relax(p);
   htap.push(emit("willUpdate", p));
   let c = p.next, i, next = render(p, c && (i = new KeyIndex)), n = next.length;
   if (!n && c) unmount(rev(c, p));
@@ -81,8 +82,19 @@ const sidediff = f => {
   mount();
   while(f = htap.pop()) emit("didUpdate", f)._affN =+ (f._affs = null, f.isOrig = false);
 }
-// diff a root node, supports virtual/managed diffs for imperative backdooring
-const rootdiff = (t, f, p, s, ps, r) => {
+// might even move this into sidediff directly if we can properly implement well-defined mounts/unmounts
+let on = false;
+const rediff = tau => () => on = !!sidediff(fill(!(on = true), tau));
+Frame.prototype.setState = function(part, tau=-1, next){
+  const p = this.inPath, store = p ? "state" : "nextState";
+  if (next = this.nextState || this[store]) isFn(part) ? part(next) : merge(next, part);
+  else isFn(part) ? part(merge(this[store] = {}, this.state)) : (this[store] = part || {});
+  p || (tau < 0 && !on ? (on = !!sidediff(fill(this,on=true))) : excite(this, Math.max(tau, 0), rediff));
+}
+// public diff (mount, unmount and update frames)
+//   * diff root node, supports virtual/managed diffs for imperative backdooring
+module.exports = (t, f, p, s, ps) => {
+  let r; on = true;
   if (!isArr(t = norm(t))){
     if (!isFrame(f) || !f.temp) t && (mount(r = addR(t, p, s)), r.isRoot = true);
     else if (f.isRoot && (!t || t.name === f.temp.name))
@@ -90,13 +102,5 @@ const rootdiff = (t, f, p, s, ps, r) => {
         (t === f.temp || receive(f, t, fill(r = f)), s === ps || moveR(r = f, p, s, ps)) :
         unmount(remR(f, p, s, r = !refill(f))));
   }
-  return r || false;
+  return on = false, r || false;
 }
-
-// public entry points, keeps track of whether or not the program is already in a diff
-const rediff = (f, tau=-1) => (rediff.on = true, rediff.on = !!sidediff(fill(f, tau)))
-rediff.on = false;
-// public diff (mount, unmount and update frames)
-const diff = (t, f, p, s, ps) => (rediff.on = true, t = rootdiff(t, f, p, s, ps), rediff.on = false, t)
-
-module.exports = { diff, rediff }

@@ -1,6 +1,7 @@
 const { isArr, toArr, isObj, isVoid, isFn } = require("../util")
 
 // Base Renderer (subclasses implement attachChildren)
+//   * The complicated abstration here is so that other types of renderers may extend the base renderer
 //   * Given a template, recursively diff and render it into a fully evaluated literal tree
 //   * The output will be used to verify the live-view is correct after a series of edits
 module.exports = class Renderer {
