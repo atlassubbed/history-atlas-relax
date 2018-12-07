@@ -22,7 +22,6 @@ Minor considerations:
    * don't snapshot affects, instead defer sub/unsub changes to apply at end of cycle
      * downside: affects must be an array (O(n) (un)sub) or a set (no random access for fill/mark)
 2. Either use the "it" field to link the path instead of using a stack, or use Kahn's algorithm
-3. Rename effects to plugins?
 4. Calling frame.diff, sub, unsub on a removed frame will short-circuit or error
    * currently, you can call frame.diff({}, tau) on a null frame, and it will continue to schedule it.
 5. Use a base class of "Particle" and a subclass of "Oscillator"
