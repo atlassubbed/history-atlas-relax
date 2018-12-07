@@ -66,7 +66,7 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should immediately reflect new state in postorder events without triggering a new update for tau ${rel} 0 nodes`,
         task: effs => {
-          diff(h(id, hooks("diff", f => f.setState({n: 0}, tau))), null, {effs})
+          diff(h(id, hooks("render", f => f.setState({n: 0}, tau))), null, {effs})
         },
         result: [
           {wA: id, dt: -1, state: null}, {dA: id, dt: -1, state: {n: 0}}
@@ -76,7 +76,7 @@ function buildMochaScaffold(){
         desc: `should immediately coalesce all new state updates in postorder events without triggering a new update for tau ${rel} 0 nodes`,
         task: effs => {
           const job = f => {f.setState({n: 0}, tau), f.setState({n: 1}, tau)}
-          diff(h(id, hooks("diff", job)), null, {effs})
+          diff(h(id, hooks("render", job)), null, {effs})
         },
         result: [
           {wA: id, dt: -1, state: null}, {dA: id, dt: -1, state: {n: 1}}

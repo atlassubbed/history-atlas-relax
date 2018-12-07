@@ -136,7 +136,7 @@ describe("subdiff", function(){
               const f = diff(t1, null, {effs: r2});
               const { a: mA, r: mR, u: mU, s: mS } = r2.counts;
               r2.resetCounts(), diff(t2, f);
-              const expectedTree = r2.render(t2)
+              const expectedTree = r2.renderStatic(t2)
               // add, remove, update, total N, swaps
               const { a, r, u, n, s } = r2.counts;
               diff(t2, f);
@@ -153,7 +153,7 @@ describe("subdiff", function(){
                 expect(n).to.equal(next.length + 1) // sanity check
               })
               it("should edit prev to match next", function(){
-                expect(r2.tree).to.deep.equal(r2.render(t2));
+                expect(r2.tree).to.deep.equal(r2.renderStatic(t2));
               })
             })
           })

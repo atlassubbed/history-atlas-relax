@@ -19,7 +19,7 @@ const StatelessBlackboxScalar = data => ({
   ]
 })
 class StatefulBlackboxScalar extends Frame {
-  diff(data){
+  render(data){
     return StatelessBlackboxScalar(data)
   }
 }
@@ -29,7 +29,7 @@ const StatelessBlackboxVector = data => [
   {name: "p", data}
 ]
 class StatefulBlackboxVector extends Frame {
-  diff(data){
+  render(data){
     return StatelessBlackboxVector(data)
   }
 }
@@ -42,7 +42,7 @@ const StatelessFunctionalScalar = (data, next) => ({
   ]
 })
 class StatefulFunctionalScalar extends Frame {
-  diff(data, next){
+  render(data, next){
     return StatelessFunctionalScalar(data, next);
   }
 }
@@ -53,7 +53,7 @@ const StatelessFunctionalVector = (data, next) => [
   ...toArr(next)
 ]
 class StatefulFunctionalVector extends Frame {
-  diff(data, next){
+  render(data, next){
     return StatelessFunctionalVector(data, next);
   }
 }
@@ -71,7 +71,7 @@ class StemCell extends Frame {
         this[h] = hooks[h].bind(this)
     }
   }
-  diff(data, next){
+  render(data, next){
     return (data && data.copy) ? copy(next) : next;
   }
   static h(id, data, next){

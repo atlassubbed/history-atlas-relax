@@ -99,7 +99,7 @@ describe("diff", function(){
           const p = diff({name:"p"}, null, {effs: renderer});
           const result = diff(val, null, p);
           expect(result).to.be.false;
-          expect(renderer.render({name:"p"})).to.deep.equal(renderer.tree);
+          expect(renderer.renderStatic({name:"p"})).to.deep.equal(renderer.tree);
           const { a, r, u, n, s } = renderer.counts;
           expect(a).to.equal(n).to.equal(1);
           expect(r).to.equal(u).to.equal(s).to.equal(0)
@@ -112,7 +112,7 @@ describe("diff", function(){
           const p = diff({name: "p"}, null, {effs: renderer});
           const result = diff({name:"c"}, f, p);
           expect(result).to.be.an.instanceOf(Frame);
-          expect(renderer.render({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
+          expect(renderer.renderStatic({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
           const { a, r, u, n, s } = renderer.counts;
           expect(a).to.equal(n).to.equal(2);
           expect(r).to.equal(u).to.equal(s).to.equal(0)
@@ -127,7 +127,7 @@ describe("diff", function(){
           const result = diff({name: "c2"}, f, p);
           expect(result).to.be.an.instanceOf(Frame);
           const tree = {name:"p", next: [{name: "c2"}, {name: "c"}]};
-          expect(renderer.render(tree)).to.deep.equal(renderer.tree);
+          expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
           const { a, r, u, n, s } = renderer.counts;
           expect(a).to.equal(n).to.equal(3);
           expect(r).to.equal(u).to.equal(s).to.equal(0);
@@ -140,7 +140,7 @@ describe("diff", function(){
           const p = diff({name: "p"}, null, {effs: renderer});
           const result = diff([{name:"c"}, {name: "d"}], f, p);
           expect(result).to.be.false
-          expect(renderer.render({name:"p"})).to.deep.equal(renderer.tree);
+          expect(renderer.renderStatic({name:"p"})).to.deep.equal(renderer.tree);
           const { a, r, u, n, s } = renderer.counts;
           expect(a).to.equal(n).to.equal(1);
           expect(r).to.equal(u).to.equal(s).to.equal(0)
@@ -152,7 +152,7 @@ describe("diff", function(){
         const c = diff({name:"c"}, null, p);
         const result = diff(null, "not a frame", p);
         expect(result).to.be.false;
-        expect(renderer.render({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(2);
         expect(r).to.equal(u).to.equal(s).to.equal(0)
@@ -163,7 +163,7 @@ describe("diff", function(){
         const c = p.next[0];
         const result = diff(null, c, p);
         expect(result).to.be.false;
-        expect(renderer.render({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(2);
         expect(r).to.equal(u).to.equal(s).to.equal(0)
@@ -175,7 +175,7 @@ describe("diff", function(){
         const c2 = diff({name:"c2"}, null, p, c);
         const result = diff(null, c, p);
         expect(result).to.be.true;
-        expect(renderer.render({name:"p", next: {name: "c2"}})).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic({name:"p", next: {name: "c2"}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(3);
         expect(n).to.equal(2);
@@ -188,7 +188,7 @@ describe("diff", function(){
         const c = diff({name:"c"}, null, p);
         const result = diff({name: "d"}, c, p);
         expect(result).to.be.false;
-        expect(renderer.render({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(2);
         expect(r).to.equal(u).to.equal(s).to.equal(0)
@@ -199,7 +199,7 @@ describe("diff", function(){
         const c = diff({name:"c"}, null, p);
         const result = diff([{name: "d"}, {name: "e"}], c, p);
         expect(result).to.be.false;
-        expect(renderer.render({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(2);
         expect(r).to.equal(u).to.equal(s).to.equal(0)
@@ -210,7 +210,7 @@ describe("diff", function(){
         const c = diff({name:"c"}, null, p);
         const result = diff(c.temp, c, p);
         expect(result).to.be.false;
-        expect(renderer.render({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(2);
         expect(r).to.equal(u).to.equal(s).to.equal(0)
@@ -221,7 +221,7 @@ describe("diff", function(){
         const c = diff({name:"c"}, null, p);
         const result = diff({name: "c", data:{n:1}}, c, p);
         expect(result).to.equal(c);
-        expect(renderer.render({name:"p", next: {name: "c", data:{n:1}}})).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic({name:"p", next: {name: "c", data:{n:1}}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(2);
         expect(u).to.equal(1);
@@ -233,7 +233,7 @@ describe("diff", function(){
         const c = diff({name:"c"}, null, p);
         const result = diff({name: "c", data:{n:1}}, c);
         expect(result).to.equal(c);
-        expect(renderer.render({name:"p", next: {name: "c", data: {n:1}}})).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic({name:"p", next: {name: "c", data: {n:1}}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(2);
         expect(u).to.equal(1);
@@ -250,7 +250,7 @@ describe("diff", function(){
           expect(c).to.be.an.instanceOf(Frame);
           const result = diff(val, null, p, c);
           expect(result).to.be.false;
-          expect(renderer.render({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
+          expect(renderer.renderStatic({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
           const { a, r, u, n, s } = renderer.counts;
           expect(a).to.equal(n).to.equal(2);
           expect(r).to.equal(u).to.equal(s).to.equal(0)
@@ -265,7 +265,7 @@ describe("diff", function(){
           const result = diff({name: "c2"}, f, p, c);
           expect(result).to.be.an.instanceOf(Frame);
           const tree = {name:"p", next: [{name: "c"}, {name: "c2"}]};
-          expect(renderer.render(tree)).to.deep.equal(renderer.tree);
+          expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
           const { a, r, u, n, s } = renderer.counts;
           expect(a).to.equal(n).to.equal(3);
           expect(r).to.equal(u).to.equal(s).to.equal(0)
@@ -280,7 +280,7 @@ describe("diff", function(){
           const result = diff([{name: "c2"},{name:"d"}], f, p, c);
           expect(result).to.be.false
           const tree = {name:"p", next: {name: "c"}};
-          expect(renderer.render(tree)).to.deep.equal(renderer.tree);
+          expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
           const { a, r, u, n, s } = renderer.counts;
           expect(a).to.equal(n).to.equal(2);
           expect(r).to.equal(u).to.equal(s).to.equal(0)
@@ -294,7 +294,7 @@ describe("diff", function(){
         const result = diff(null, "not a frame", p, c);
         expect(result).to.be.false;
         const tree = {name: "p", next: [{name:"c2"}, {name:"c"}]};
-        expect(renderer.render(tree)).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(3);
         expect(r).to.equal(u).to.equal(s).to.equal(0)
@@ -306,7 +306,7 @@ describe("diff", function(){
         const result = diff(null, c2, p, c);
         expect(result).to.be.false;
         const tree = {name: "p", next: [{name:"c"}, {name:"c2"}]};
-        expect(renderer.render(tree)).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(3);
         expect(r).to.equal(u).to.equal(s).to.equal(0)
@@ -320,7 +320,7 @@ describe("diff", function(){
         const result = diff(null, c2, p, c);
         expect(result).to.be.true;
         const tree = {name: "p", next: [{name: "c"}, {name: "c3"}]}
-        expect(renderer.render(tree)).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(4);
         expect(n).to.equal(3);
@@ -335,7 +335,7 @@ describe("diff", function(){
         const result = diff({name: "e"}, c, p, d);
         expect(result).to.be.false;
         const tree = {name:"p", next: [{name: "d"}, {name: "c"}]}
-        expect(renderer.render(tree)).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(3);
         expect(r).to.equal(u).to.equal(s).to.equal(0)
@@ -348,7 +348,7 @@ describe("diff", function(){
         const result = diff([{name: "e"}, {name:"f"}], c, p, d);
         expect(result).to.be.false;
         const tree = {name:"p", next: [{name: "d"}, {name: "c"}]}
-        expect(renderer.render(tree)).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(3);
         expect(r).to.equal(u).to.equal(s).to.equal(0)
@@ -361,7 +361,7 @@ describe("diff", function(){
         const result = diff(d.temp, d, p, c);
         expect(result).to.equal(d);
         const tree = {name:"p", next: [{name: "c"}, {name: "d"}]}
-        expect(renderer.render(tree)).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(3);
         expect(s).to.equal(1);
@@ -376,7 +376,7 @@ describe("diff", function(){
         const result = diff(d.temp, d, p, c, e);
         expect(result).to.equal(d);
         const tree = {name:"p", next: [{name: "e"}, {name: "c"}, {name: "d"}]}
-        expect(renderer.render(tree)).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(4);
         expect(s).to.equal(1);
@@ -390,7 +390,7 @@ describe("diff", function(){
         const result = diff({name:"d",data:{n:1}}, d, p, c);
         expect(result).to.equal(d);
         const tree = {name:"p", next: [{name: "c"}, {name: "d", data:{n:1}}]}
-        expect(renderer.render(tree)).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(3);
         expect(u).to.equal(s).to.equal(1)
@@ -405,7 +405,7 @@ describe("diff", function(){
         const result = diff({name: "d", data:{n:1}}, d, p, e, e);
         expect(result).to.equal(d);
         const tree = {name:"p", next: [{name: "e"}, {name: "d", data:{n:1}}, {name: "c"}]}
-        expect(renderer.render(tree)).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(4);
         expect(u).to.equal(1)
@@ -422,7 +422,7 @@ describe("diff", function(){
             const data = {v: 0, id};
             const result = diff(get(data), null, {effs: renderer});
             expect(result).to.be.an.instanceOf(Frame);
-            expect(renderer.tree).to.deep.equal(renderer.render(get(data)))
+            expect(renderer.tree).to.deep.equal(renderer.renderStatic(get(data)))
             const { a, r, u, n } = renderer.counts;
             expect(n).to.equal(a)
             expect(u).to.equal(r).to.equal(0)
@@ -449,7 +449,7 @@ describe("diff", function(){
             const frame = diff(get(data), null, {effs: renderer});
             const result = diff(get(newData), frame, {effs: renderer});
             expect(result).to.be.an.instanceOf(Frame).to.equal(frame)
-            expect(renderer.tree).to.deep.equal(renderer.render(get(newData)));
+            expect(renderer.tree).to.deep.equal(renderer.renderStatic(get(newData)));
             const { a, r, u, n } = renderer.counts;
             expect(n).to.equal(a).to.equal(u)
             expect(r).to.equal(0)
@@ -475,7 +475,7 @@ describe("diff", function(){
                 const data = {v: 0, id}
                 const result = diff(inject(get(data), nextGet(data)), null, {effs: renderer});
                 expect(result).to.be.an.instanceOf(Frame);
-                const rendered = renderer.render(inject(get(data), nextGet(data)))
+                const rendered = renderer.renderStatic(inject(get(data), nextGet(data)))
                 expect(renderer.tree).to.deep.equal(rendered)
                 const { a, r, u, n } = renderer.counts;
                 expect(a).to.equal(n)
@@ -500,7 +500,7 @@ describe("diff", function(){
                 const data = {v: 0, id}, cache = [], c = new Cache(cache);
                 const frame = diff(inject(get(data), nextGet(data)), null, {effs: [renderer, c]});
                 const result = diff(get(data), frame, {effs: [renderer, c]})
-                const rendered = renderer.render(get(data));
+                const rendered = renderer.renderStatic(get(data));
                 expect(result).to.be.an.instanceOf(Frame).to.equal(frame);
                 expect(renderer.tree).to.deep.equal(rendered);
                 const { a, r, u, n } = renderer.counts;
@@ -515,7 +515,7 @@ describe("diff", function(){
                 const frame = diff(inject(get(data), nextGet(data)), null, {effs: renderer});
                 const result = diff(inject(get(newData), nextGet(data)), frame, {effs: renderer});
                 expect(result).to.be.an.instanceOf(Frame).to.equal(frame)
-                const rendered = renderer.render(inject(get(newData), nextGet(data)));
+                const rendered = renderer.renderStatic(inject(get(newData), nextGet(data)));
                 expect(renderer.tree).to.deep.equal(rendered);
                 const { a, r, u, n } = renderer.counts;
                 expect(n).to.equal(a).to.equal(u)
@@ -528,7 +528,7 @@ describe("diff", function(){
                 const frame = diff(inject(get(data), nextGet(data)), null, {effs: renderer});
                 const result = diff(inject(get(data), nextGet(newData)), frame, {effs: renderer});
                 expect(result).to.be.an.instanceOf(Frame).to.equal(frame)
-                const rendered = renderer.render(inject(get(data), nextGet(newData)));
+                const rendered = renderer.renderStatic(inject(get(data), nextGet(newData)));
                 expect(renderer.tree).to.deep.equal(rendered);
                 const { a, r, u, n } = renderer.counts;
                 expect(n).to.equal(a).to.equal(u)
@@ -541,7 +541,7 @@ describe("diff", function(){
                 const frame = diff(inject(get(data), nextGet(data)), null, {effs: renderer});
                 const result = diff(inject(get(newData), nextGet(newData)), frame, {effs: renderer});
                 expect(result).to.be.an.instanceOf(Frame).to.equal(frame)
-                const rendered = renderer.render(inject(get(newData), nextGet(newData)));
+                const rendered = renderer.renderStatic(inject(get(newData), nextGet(newData)));
                 expect(renderer.tree).to.deep.equal(rendered);
                 const { a, r, u, n } = renderer.counts;
                 expect(n).to.equal(a).to.equal(u)
@@ -561,7 +561,7 @@ describe("diff", function(){
                   const oldAddedCount = renderer.counts.a;
                   const newFrame = diff(newTemplate, frame, {effs: [renderer, c]});
                   expect(newFrame).to.be.an.instanceOf(Frame).to.equal(frame);
-                  const rendered = renderer.render(inject(get(data), replaceGet(data)));
+                  const rendered = renderer.renderStatic(inject(get(data), replaceGet(data)));
                   expect(renderer.tree).to.deep.equal(rendered)
                   const { a, r, u, n } = renderer.counts;
                   expect(a).to.equal(cache.length).to.equal(n + r);

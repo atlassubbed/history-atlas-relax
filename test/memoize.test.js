@@ -82,7 +82,7 @@ describe("memoization and immutability support", function(){
     })
     it("should remove child's influence if it only depends on parent", function(){
       const { nodes, events } = treeCase.get();
-      nodes[0].diff = function(data, next){
+      nodes[0].render = function(data, next){
         return this.next.temp;
       }
       nodes[0].setState();
@@ -93,7 +93,7 @@ describe("memoization and immutability support", function(){
     })
     it("should remove child's influence if it's entangled to nodes not in path", function(){
       const { nodes, events } = treeCase.get();
-      nodes[0].diff = function(data, next){
+      nodes[0].render = function(data, next){
         return this.next.temp
       }
       const disjointRoot = diff(m(9), null, {effs: new Tracker(events)});
@@ -107,7 +107,7 @@ describe("memoization and immutability support", function(){
     })
     it("should prevent child's receipt of new template, but keep its influence if it's entangled to nodes in path", function(){
       const { nodes, events } = treeCase.get();
-      nodes[1].diff = function(data, next){
+      nodes[1].render = function(data, next){
         next[0] = this.next.temp;
         return next;
       }

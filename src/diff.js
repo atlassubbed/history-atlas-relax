@@ -32,7 +32,7 @@ const emit = (type, f, p, s, i, ef) => {
 //   * ix is an optional KeyIndex
 const render = (f, ix) => {
   let next = [], t = f.temp
-  aux1.push(f.diff(t.data, t.next, f))
+  aux1.push(f.render(t.data, t.next, f))
   while(aux1.length) if (t = norm(aux1.pop()))
     if (isArr(t)) for (let i of t) aux1.push(i);
     else next.push(t), ix && ix.push(t);

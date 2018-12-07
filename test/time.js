@@ -5,7 +5,7 @@ const T = 3000
 const CHECK = T*1.3; // at least T
 const ALLOW = T*1.6; // at least CHECK
 const ASYNC_ERROR = t => t ? t*.10 : 100 // Promise setTimeout(0) given leeway
-const SYNC_ERROR = 10 // sync updates given less leeway
+const SYNC_ERROR = 25 // sync updates given less leeway
 const taus = [-1, 0, T];
 
 const projectTime = event => {

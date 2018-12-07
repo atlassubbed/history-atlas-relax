@@ -1,7 +1,7 @@
 const { isFn } = require("./util");
 const { relax } = require("./field");
 
-const isFrame = f => !!f && isFn(f.diff);
+const isFrame = f => !!f && isFn(f.render);
 
 // not to be instantiated by caller
 const Frame = function(temp, effs){
@@ -12,7 +12,7 @@ const Frame = function(temp, effs){
   this._affN = this.step = 0;
   this.inPath = true, this.isOrig = false;
 }
-Frame.prototype.diff = function(data, next){ return next }
+Frame.prototype.render = function(data, next){ return next }
 // typical code will make sparing use of en/detangle
 //   * we'll use sets for brevity, and also for sub-linearity in add/remove
 //   * note that en/detangle are idempotent
@@ -34,7 +34,7 @@ const node = (t, p) => {
   else {
     const Sub = t.name;
     if (isFrame(Sub.prototype)) t = new Sub(t, effs);
-    else t = new Frame(t, effs), t.diff = Sub;
+    else t = new Frame(t, effs), t.render = Sub;
   }
   return t;
 }

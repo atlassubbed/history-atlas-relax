@@ -21,11 +21,11 @@ module.exports = class Renderer {
     const { name, data, next } = temp;
     if (!isFn(name)) return next;
     const p = name.prototype;
-    if (p && isFn(p.diff))
-      return (new name(temp)).diff(data, next);
+    if (p && isFn(p.render))
+      return (new name(temp)).render(data, next);
     return name(data, next);
   }
-  render(temp){
+  renderStatic(temp){
     if (isVoid(temp)) return null;
     this.counts.n++;
     if (!isObj(temp)) 
@@ -38,7 +38,7 @@ module.exports = class Renderer {
     while(next.length){
       let el = next.pop(), renderedChild;
       if (isArr(el)) next.push(...el);
-      else if (renderedChild = this.render(el)){
+      else if (renderedChild = this.renderStatic(el)){
         nextRendered.push(renderedChild);
       }
     }
