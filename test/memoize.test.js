@@ -59,7 +59,7 @@ describe("memoization and immutability support", function(){
       const m1 = m(1), m2 = m(2);
       const f1 = diff(m(0, null, [m1, m2]), null, {effs: [tracker, new Passthrough]});
       events.length = 0;
-      f1.next.sib.setState({id: 2}, 0)
+      f1.next.sib.diff({id: 2}, 0)
       const result = diff(m(0, null, [m1, m2]), f1)
       expect(result).to.be.an.instanceOf(Frame);
       expect(events).to.deep.equal([
@@ -77,15 +77,15 @@ describe("memoization and immutability support", function(){
       const t = m(0, {hooks: {didUpdate}}, [m(1), m(2)])
       const f1 = diff(t, null, {effs: [tracker, new Passthrough]});
       events.length = 0;
-      f1.next.sib.setState({}, 0)
-      f1.setState({}, 0);
+      f1.next.sib.diff({}, 0)
+      f1.diff({}, 0);
     })
     it("should remove child's influence if it only depends on parent", function(){
       const { nodes, events } = treeCase.get();
       nodes[0].render = function(data, next){
         return this.next.temp;
       }
-      nodes[0].setState();
+      nodes[0].diff();
       expect(events).to.deep.equal([
         {wU: 0}, {wU: 2}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},
         {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3}, {dU: 2}, {dU: 0}
@@ -99,7 +99,7 @@ describe("memoization and immutability support", function(){
       const disjointRoot = diff(m(9), null, {effs: new Tracker(events)});
       events.length = 0;
       nodes[1].entangle(disjointRoot)
-      nodes[0].setState();
+      nodes[0].diff();
       expect(events).to.deep.equal([
         {wU: 0}, {wU: 2}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},
         {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3}, {dU: 2}, {dU: 0}
@@ -111,7 +111,7 @@ describe("memoization and immutability support", function(){
         next[0] = this.next.temp;
         return next;
       }
-      nodes[0].setState();
+      nodes[0].diff();
       expect(events).to.deep.equal([ 
         {wU: 0}, {wR: 1}, {wU: 1}, /* {wR: 2}, */ {wR: 3},
         {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},

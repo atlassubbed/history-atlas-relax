@@ -98,19 +98,19 @@ for (let c in cases){
         run("entangle one to many", () => f2[0].entangle(f2[++i])), i = -1;
         run("update entangled", () => diff(t20, f2[++i])), i = -1;
         run("detangle one to many", () => f2[0].detangle(f2[++i])), i = -1;
-        run("update first sync", () => f3[++i].setState(state4)), i = -1;
-        run("update first sync (fn)", () => f3[++i].setState(upd1)), i = -1;
-        run("update sync", () => f3[0].setState(++i%2 ? state3 : state4)), i = -1;
-        run("update sync (fn)", () => f3[0].setState(++i%2 ? upd1 : upd2)), i = SAMPLES-1;
-        run("schedule polycolor", () => f3[0].setState(state3, --i));
-        run("schedule monocolor", () => f3[0].setState(state4, ++i === SAMPLES ? -1 : 1)), i = -1;
-        run("schedule immediate", () => f3[0].setState(state3, ++i === SAMPLES ? -1 : 0)), i = -1;
+        run("update first sync", () => f3[++i].diff(state4)), i = -1;
+        run("update first sync (fn)", () => f3[++i].diff(upd1)), i = -1;
+        run("update sync", () => f3[0].diff(++i%2 ? state3 : state4)), i = -1;
+        run("update sync (fn)", () => f3[0].diff(++i%2 ? upd1 : upd2)), i = SAMPLES-1;
+        run("schedule polycolor", () => f3[0].diff(state3, --i));
+        run("schedule monocolor", () => f3[0].diff(state4, ++i === SAMPLES ? -1 : 1)), i = -1;
+        run("schedule immediate", () => f3[0].diff(state3, ++i === SAMPLES ? -1 : 0)), i = -1;
         runAsync("update first async", done => {
           f3[++i].done = done;
-          f3[i].setState(state4, 0)
+          f3[i].diff(state4, 0)
         }, () => runAsync("update async", done => {
           f3[0].done = done;
-          f3[0].setState(++i%2 ? state3 : state5, 0)
+          f3[0].diff(++i%2 ? state3 : state5, 0)
         }, () => taskDone()))
       })
     }

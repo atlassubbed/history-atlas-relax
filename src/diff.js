@@ -85,7 +85,7 @@ const sidediff = f => {
 // might even move this into sidediff directly if we can properly implement well-defined mounts/unmounts
 let on = false;
 const rediff = tau => () => on = !!sidediff(fill(!(on = true), tau));
-Frame.prototype.setState = function(part, tau=-1, next){
+Frame.prototype.diff = function(part, tau=-1, next){
   const p = this.inPath, store = p ? "state" : "nextState";
   if (next = this.nextState || this[store]) isFn(part) ? part(next) : merge(next, part);
   else isFn(part) ? part(merge(this[store] = {}, this.state)) : (this[store] = part || {});

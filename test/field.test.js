@@ -94,33 +94,33 @@ const getSystemDescription = state => {
 }
 
 // given two live nodes, oscillate them and perturb them with update photons
-// this is not very DRY, but we may as well test each supported signature for setState.
+// this is not very DRY, but we may as well test each supported signature for frame.diff.
 const oscillate = (nodes, state) => {
   const { tau_p, tau_c, tau_gp, tau_gc } = state;
   // are p and/or c already oscillating?
-  if (tau_p > -1) nodes.p.setState({n: 0}, tau_p);
-  if (tau_c > -1) nodes.c.setState({n: 0}, tau_c);
+  if (tau_p > -1) nodes.p.diff({n: 0}, tau_p);
+  if (tau_c > -1) nodes.c.diff({n: 0}, tau_c);
   // are update photons hitting p and/or c?
-  if (tau_gp != null) nodes.p.setState({n: 1}, tau_gp);
-  if (tau_gc != null) nodes.c.setState({n: 1}, tau_gc);
+  if (tau_gp != null) nodes.p.diff({n: 1}, tau_gp);
+  if (tau_gc != null) nodes.c.diff({n: 1}, tau_gc);
 }
 const upsertInt = n => nextState => nextState.n = n;
 const upsert0 = upsertInt(0), upsert1 = upsertInt(1);
 const oscillateFn = (nodes, state) => {
   const { tau_p, tau_c, tau_gp, tau_gc } = state;
-  if (tau_p > -1) nodes.p.setState(upsert0, tau_p);
-  if (tau_c > -1) nodes.c.setState(upsert0, tau_c);
-  if (tau_gp != null) nodes.p.setState(upsert1, tau_gp);
-  if (tau_gc != null) nodes.c.setState(upsert1, tau_gc);
+  if (tau_p > -1) nodes.p.diff(upsert0, tau_p);
+  if (tau_c > -1) nodes.c.diff(upsert0, tau_c);
+  if (tau_gp != null) nodes.p.diff(upsert1, tau_gp);
+  if (tau_gc != null) nodes.c.diff(upsert1, tau_gc);
 }
 const oscillateDef = (nodes, state) => {
   const { tau_p, tau_c, tau_gp, tau_gc } = state;
   // are p and/or c already oscillating?
-  if (tau_p > -1) nodes.p.setState({n: 0}, tau_p);
-  if (tau_c > -1) nodes.c.setState({n: 0}, tau_c);
+  if (tau_p > -1) nodes.p.diff({n: 0}, tau_p);
+  if (tau_c > -1) nodes.c.diff({n: 0}, tau_c);
   // are update photons hitting p and/or c?
-  if (tau_gp != null) nodes.p.setState({n: 1}, tau_gp < 0 ? undefined : tau_gp);
-  if (tau_gc != null) nodes.c.setState({n: 1}, tau_gc < 0 ? undefined : tau_gc);
+  if (tau_gp != null) nodes.p.diff({n: 1}, tau_gp < 0 ? undefined : tau_gp);
+  if (tau_gc != null) nodes.c.diff({n: 1}, tau_gc < 0 ? undefined : tau_gc);
 }
 
 // XXX could add another param to control whether or not tau_gc hits before tau_gp

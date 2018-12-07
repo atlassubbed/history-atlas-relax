@@ -20,7 +20,7 @@ const unmark = (f, c=stack.push(f)) => {
     while(c = next(f)) stack.push(c); f.step = 0, f._affs = null;
   }
 }
-// XXX we could mark nodes as originators in setState, however:
+// XXX we could mark nodes as originators in frame.diff, however:
 //   * step-leader state would bleed outside of the diff cycle's context
 //   * i.e. if a parent updates and memoizes a child with pending state, the child will update early
 //   * such "premature" updates would be considered unexpected behavior

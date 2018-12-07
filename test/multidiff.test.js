@@ -35,13 +35,13 @@ describe("multidiff", function(){
 function buildMochaScaffold(){
   const scaffold = new DeferredTests;
   preAdd.forEach(hook => {
-    scaffold.describe(`calling setState during ${hook}`, () => {
+    scaffold.describe(`calling frame.diff during ${hook}`, () => {
       taus.forEach(tau => {
         const rel = tau < 0 ? "<" : tau > 0 ? ">" : "===", id = 0;
         scaffold.push({
           desc: `should immediately reflect new state without triggering a new update for tau ${rel} 0 nodes`,
           task: effs => {
-            diff(h(id, hooks(hook, f => f.setState({n: 0}, tau))), null, {effs})
+            diff(h(id, hooks(hook, f => f.diff({n: 0}, tau))), null, {effs})
           },
           result: [
             {wA: id, dt: -1, state: {n: 0}}, {dA: id, dt: -1, state: {n: 0}}
@@ -50,7 +50,7 @@ function buildMochaScaffold(){
         scaffold.push({
           desc: `should immediately coalesce all new state updates without triggering a new update for tau ${rel} 0 nodes`,
           task: effs => {
-            const job = f => {f.setState({n: 0}, tau), f.setState({n: 1}, tau)}
+            const job = f => {f.diff({n: 0}, tau), f.diff({n: 1}, tau)}
             diff(h(id, hooks(hook, job)), null, {effs})
           },
           result: [
@@ -60,13 +60,13 @@ function buildMochaScaffold(){
       })
     })
   })
-  scaffold.describe(`calling setState during diff`, () => {
+  scaffold.describe(`calling frame.diff during diff`, () => {
     taus.forEach(tau => {
       const rel = tau < 0 ? "<" : tau > 0 ? ">" : "===", id = 0;
       scaffold.push({
         desc: `should immediately reflect new state in postorder events without triggering a new update for tau ${rel} 0 nodes`,
         task: effs => {
-          diff(h(id, hooks("render", f => f.setState({n: 0}, tau))), null, {effs})
+          diff(h(id, hooks("render", f => f.diff({n: 0}, tau))), null, {effs})
         },
         result: [
           {wA: id, dt: -1, state: null}, {dA: id, dt: -1, state: {n: 0}}
@@ -75,7 +75,7 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should immediately coalesce all new state updates in postorder events without triggering a new update for tau ${rel} 0 nodes`,
         task: effs => {
-          const job = f => {f.setState({n: 0}, tau), f.setState({n: 1}, tau)}
+          const job = f => {f.diff({n: 0}, tau), f.diff({n: 1}, tau)}
           diff(h(id, hooks("render", job)), null, {effs})
         },
         result: [
@@ -84,13 +84,13 @@ function buildMochaScaffold(){
       })
     })
   })
-  scaffold.describe(`calling setState during willReceive`, () => {
+  scaffold.describe(`calling frame.diff during willReceive`, () => {
     taus.forEach(tau => {
       const rel = tau < 0 ? "<" : tau > 0 ? ">" : "===", id = 0;
       scaffold.push({
         desc: `should immediately reflect new state without triggering a new update for tau ${rel} 0 nodes`,
         task: effs => {
-          const f = diff(h(id, hooks("willReceive", f => f.setState({n: 0}, tau))), null, {effs});
+          const f = diff(h(id, hooks("willReceive", f => f.diff({n: 0}, tau))), null, {effs});
           diff(h(id), f);
         },
         result: [
@@ -102,7 +102,7 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should immediately coalesce all new state updates without triggering a new update for tau ${rel} 0 nodes`,
         task: effs => {
-          const job = f => {f.setState({n: 0}, tau), f.setState({n: 1}, tau)}
+          const job = f => {f.diff({n: 0}, tau), f.diff({n: 1}, tau)}
           const f = diff(h(id, hooks("willReceive", job)), null, {effs});
           diff(h(id), f);
         },
@@ -114,13 +114,13 @@ function buildMochaScaffold(){
       })
     })
   })
-  scaffold.describe(`calling setState during willUpdate`, () => {
+  scaffold.describe(`calling frame.diff during willUpdate`, () => {
     taus.forEach(tau => {
       const rel = tau < 0 ? "<" : tau > 0 ? ">" : "===", id = 0;
       scaffold.push({
         desc: `should immediately reflect new state without triggering a new update for tau ${rel} 0 nodes`,
         task: effs => {
-          const f = diff(h(id, hooks("willUpdate", f => f.setState({n: 0}, tau))), null, {effs});
+          const f = diff(h(id, hooks("willUpdate", f => f.diff({n: 0}, tau))), null, {effs});
           diff(h(id), f);
         },
         result: [
@@ -132,7 +132,7 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should immediately coalesce all new state updates without triggering a new update for tau ${rel} 0 nodes`,
         task: effs => {
-          const job = f => {f.setState({n: 0}, tau), f.setState({n: 1}, tau)}
+          const job = f => {f.diff({n: 0}, tau), f.diff({n: 1}, tau)}
           const f = diff(h(id, hooks("willUpdate", job)), null, {effs});
           diff(h(id), f);
         },
@@ -144,13 +144,13 @@ function buildMochaScaffold(){
       })
     })
   })
-  scaffold.describe(`calling setState during didAdd`, () => {
+  scaffold.describe(`calling frame.diff during didAdd`, () => {
     taus.forEach(tau => {
       const rel = tau < 0 ? "<" : tau > 0 ? ">" : "===", id = 0;
       scaffold.push({
         desc: `should update the node in a future diff cycle for tau ${rel} 0 nodes`,
         task: effs => {
-          diff(h(id, hooks("didAdd", f => f.setState({n:0}, tau))), null, {effs});
+          diff(h(id, hooks("didAdd", f => f.diff({n:0}, tau))), null, {effs});
         },
         result: [
           {wA: id, dt: -1, state: null}, {dA: id, dt: -1, state: null},
@@ -160,8 +160,8 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should coalesce all state updates into a future diff cycle for tau ${rel} 0 nodes`,
         task: effs => {
-          const job1 = f => {f.setState({n: 0}, tau), f.setState({n: 1}, tau)}
-          const t1 = h(1, hooks("didAdd", job1)), t2 = h(2, hooks("didAdd", f => f.setState({n: 2}, tau)));
+          const job1 = f => {f.diff({n: 0}, tau), f.diff({n: 1}, tau)}
+          const t1 = h(1, hooks("didAdd", job1)), t2 = h(2, hooks("didAdd", f => f.diff({n: 2}, tau)));
           diff(h(id, null, [t1, t2]), null, {effs})
         },
         result: [
@@ -181,8 +181,8 @@ function buildMochaScaffold(){
     scaffold.push({
       desc: `should coalesce state updates into the same future diff cycle for tau < 0 and tau === 0 nodes`,
       task: effs => {
-        const d1 = {hooks: hooks("didAdd", f => {f.setState({n: 0}, 0), f.setState({n: 1}, 0)})};
-        const d2 = {hooks: hooks("didAdd", f => f.setState({n:2}, -1))};
+        const d1 = {hooks: hooks("didAdd", f => {f.diff({n: 0}, 0), f.diff({n: 1}, 0)})};
+        const d2 = {hooks: hooks("didAdd", f => f.diff({n:2}, -1))};
         diff(h(0, null, [p(1, d1), p(2, d2)]), null, {effs})
       },
       result: [
@@ -201,8 +201,8 @@ function buildMochaScaffold(){
     scaffold.push({
       desc: `should separate state updates into different future diff cycles for different frequency nodes`,
       task: effs => {
-        const d1 = {hooks: hooks("didAdd", f => {f.setState({n: 0}, T), f.setState({n: 1}, T)})};
-        const d2 = {hooks: hooks("didAdd", f => f.setState({n:2}, -1))};
+        const d1 = {hooks: hooks("didAdd", f => {f.diff({n: 0}, T), f.diff({n: 1}, T)})};
+        const d2 = {hooks: hooks("didAdd", f => f.diff({n:2}, -1))};
         diff(h(0, null, [p(1, d1), p(2, d2)]), null, {effs})
       },
       result: [
@@ -219,13 +219,13 @@ function buildMochaScaffold(){
       ]
     })
   })
-  scaffold.describe(`calling setState during didUpdate`, () => {
+  scaffold.describe(`calling frame.diff during didUpdate`, () => {
     taus.forEach(tau => {
       const rel = tau < 0 ? "<" : tau > 0 ? ">" : "===", id = 0;
       scaffold.push({
         desc: `should update the node in a future diff cycle for tau ${rel} 0 nodes`,
         task: effs => {
-          const f = diff(h(id, hooks("didUpdate", f => f.state || f.setState({n:0}, tau))), null, {effs});
+          const f = diff(h(id, hooks("didUpdate", f => f.state || f.diff({n:0}, tau))), null, {effs});
           diff(h(id), f)
         },
         result: [
@@ -238,8 +238,8 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should coalesce all state updates into a future diff cycle for tau ${rel} 0 nodes`,
         task: effs => {
-          const job1 = f => {if (!f.state) f.setState({n: 0}, tau), f.setState({n: 1}, tau);}
-          const t1 = h(1, hooks("didUpdate", job1)), t2 = h(2, hooks("didUpdate", f => f.state || f.setState({n: 2}, tau)));
+          const job1 = f => {if (!f.state) f.diff({n: 0}, tau), f.diff({n: 1}, tau);}
+          const t1 = h(1, hooks("didUpdate", job1)), t2 = h(2, hooks("didUpdate", f => f.state || f.diff({n: 2}, tau)));
           const f = diff(h(id, null, [t1, t2]), null, {effs});
           diff(h(id, null, [h(1), h(2)]), f)
         },
@@ -269,8 +269,8 @@ function buildMochaScaffold(){
     scaffold.push({
       desc: `should coalesce state updates into the same future diff cycle for tau < 0 and tau === 0 nodes`,
       task: effs => {
-        const d1 = {hooks: hooks("didUpdate", f => {if (!f.state) f.setState({n: 0}, 0), f.setState({n: 1}, 0);})};
-        const d2 = {hooks: hooks("didUpdate", f => f.state || f.setState({n:2}, -1))};
+        const d1 = {hooks: hooks("didUpdate", f => {if (!f.state) f.diff({n: 0}, 0), f.diff({n: 1}, 0);})};
+        const d2 = {hooks: hooks("didUpdate", f => f.state || f.diff({n:2}, -1))};
         const f = diff(h(0, null, [p(1, d1), p(2, d2)]), null, {effs})
         diff(h(0, null, [p(1, d1), p(2, d2)]), f)
       },
@@ -299,8 +299,8 @@ function buildMochaScaffold(){
     scaffold.push({
       desc: `should separate state updates into different future diff cycles for different frequency nodes`,
       task: effs => {
-        const d1 = {hooks: hooks("didUpdate", f => {if (!f.state) f.setState({n: 0}, T), f.setState({n: 1}, T);})};
-        const d2 = {hooks: hooks("didUpdate", f => f.state || f.setState({n:2}, -1))};
+        const d1 = {hooks: hooks("didUpdate", f => {if (!f.state) f.diff({n: 0}, T), f.diff({n: 1}, T);})};
+        const d2 = {hooks: hooks("didUpdate", f => f.state || f.diff({n:2}, -1))};
         const f = diff(h(0, null, [p(1, d1), p(2, d2)]), null, {effs})
         diff(h(0, null, [p(1, d1), p(2, d2)]), f)
       },

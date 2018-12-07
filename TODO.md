@@ -10,7 +10,7 @@ Considerations:
    * diff caller can provide a queueing function (e.g. rIC/rAF)
 7. Allow diff(...) to allow the template arg to be a function
    * diff(fn) treated as: diff({name: func}) for simple shorthand
-8. Test non-happy cases for setState, etc. (e.g. is calling setState("string") defined?) 
+8. Test non-happy cases for frame.diff, etc. (e.g. is calling frame.diff("string") defined?) 
 
 Minor considerations:
 
@@ -23,8 +23,8 @@ Minor considerations:
      * downside: affects must be an array (O(n) en/detangle) or a set (no random access for fill/mark)
 2. Either use the "it" field to link the path instead of using a stack, or use Kahn's algorithm
 3. Rename entangle/detangle to sub/unsub, rename diff to render, rename setState to diff, effects to plugins
-4. Calling setState, entangle, detangle on a removed frame will short-circuit or error
-   * currently, you can call setState({}, tau) on a null frame, and it will continue to schedule it.
+4. Calling frame.diff, entangle, detangle on a removed frame will short-circuit or error
+   * currently, you can call frame.diff({}, tau) on a null frame, and it will continue to schedule it.
 5. Use a base class of "Particle" and a subclass of "Oscillator"
    * Particle class doesn't implement state or entanglement, used for irreducible "dumb" nodes
    * Components and functions will be constructed as Oscillators (w/ entanglement and state)
