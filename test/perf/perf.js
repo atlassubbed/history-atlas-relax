@@ -1,7 +1,6 @@
 const { Timer } = require("atlas-basic-timer");
 const serial = require("atlas-serial");
 const { TemplateFactory, count, printHeap, printTitle, doWork } = require("./helpers");
-const { Passthrough } = require("../effects");
 const { diff, Frame } = require("../../src/index");
 const { expect } = require("chai");
 const { copy, isArr } = require("../util")
@@ -13,7 +12,6 @@ const DEC = 1;
 const PAD_AMT = 25;
 const timer = Timer({dec: DEC});
 const tasks = [];
-const opts = {effs: new Passthrough};
 
 // don't wanna doWork during initialization
 let init = true;
@@ -24,7 +22,7 @@ class Subframe extends Frame {
     init || doWork(RENDER_WORK)
     return s && s.next || next;
   }
-  didUpdate(){
+  rendered(){
     if (this.done) this.done();
   }
 }
@@ -65,7 +63,7 @@ for (let c in cases){
     for (let i = SAMPLES; i--;) {
       f1.push(diff(factory1[c](s)))
       f2.push(diff(factory2[c](s)))
-      f3.push(diff(factory3[c](s), null, opts))
+      f3.push(diff(factory3[c](s)))
     }
   }
 }

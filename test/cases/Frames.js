@@ -71,8 +71,17 @@ class StemCell extends Frame {
         this[h] = hooks[h].bind(this)
     }
   }
-  render(data, next){
-    return (data && data.copy) ? copy(next) : next;
+  cleanup(f){
+    for (let eff of toArr(this.effs)) if (eff && eff.log) eff.log("wP", f)
+  }
+  rendered(f, isFirst){
+    for (let eff of toArr(this.effs)) if (eff && eff.log) eff.log(isFirst ? "dA" : "dU", f);
+    isFirst ? f.didAdd && f.didAdd(f) : f.didUpdate && f.didUpdate(f);
+  }
+  render(data, next, f, isFirst){
+    isFirst ? f.willAdd && f.willAdd(f) : f.willUpdate && f.willUpdate(f);
+    for (let eff of toArr(this.effs)) if (eff && eff.log) eff.log(isFirst ? "wA" : "wU", f);
+    return f.getNext ? f.getNext(data, next, f, isFirst) : (data && data.copy) ? copy(next) : next;
   }
   static h(id, data, next){
     data = data || {}, data.id = id, data.copy = true;

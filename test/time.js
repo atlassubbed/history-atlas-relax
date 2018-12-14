@@ -4,7 +4,7 @@ const { pretty } = require("./util");
 const T = 3000
 const CHECK = T*1.3; // at least T
 const ALLOW = T*1.6; // at least CHECK
-const ASYNC_ERROR = t => t ? t*.10 : 100 // Promise setTimeout(0) given leeway
+const ASYNC_ERROR = t => t ? t*.15 : 120 // Promise setTimeout(0) given leeway
 const SYNC_ERROR = 25 // sync updates given less leeway
 const taus = [-1, 0, T];
 
@@ -19,7 +19,7 @@ const verify = (events, expected) => {
   expect(n).to.equal(expected.length, pretty(events));
   for (let i = 0; i < n; i++){
     const actual = projectTime(events[i]), exp = projectTime(expected[i]);
-    expect(actual.event).to.deep.equal(exp.event);
+    expect(actual.event).to.deep.equal(exp.event, pretty(events));
     if (exp.time < 0) expect(actual.time).to.be.closeTo(0, SYNC_ERROR);
     else expect(actual.time).to.be.closeTo(exp.time, ASYNC_ERROR(exp.time));
   }

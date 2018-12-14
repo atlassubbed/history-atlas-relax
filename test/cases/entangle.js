@@ -1,5 +1,5 @@
 const { Frame, diff } = require("../../src/index");
-const { Tracker, Cache, Passthrough } = require("../effects");
+const { Tracker, Cache } = require("../effects");
 const { toArr } = require("../util");
 const { StemCell, StemCell2 } = require("./Frames");
 
@@ -8,7 +8,7 @@ const p = (id, hooks, next) => StemCell.h(id, {hooks}, next);
 const a = (id, hooks, next) => StemCell2.h(id, {hooks}, next);
 
 const getEffs = (events, nodes) => ({effs: [
-  new Tracker(events), new Cache(nodes), new Passthrough
+  new Tracker(events), new Cache(nodes)
 ]})
 
 // curry is useful

@@ -1,6 +1,6 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
-const { LCRSRenderer, Passthrough } = require("./effects");
+const { LCRSRenderer } = require("./effects");
 const { StemCell } = require("./cases/Frames");
 const { diff } = require("../src/index");
 const { bruteForceCases, matchingCases } = require("./cases/subdiff");
@@ -55,16 +55,16 @@ describe("subdiff", function(){
           let didR1 = 0, didR2 = 0, didU1 = 0, didU2 = 0;
           const t1 = m(1), t2 = m(2);
           const pt1 = m(1, {
-            willReceive: (f, t) => {
+            willUpdate: f => {
               didR1++
-              expect(t).to.equal(t1)
+              expect(f.temp).to.equal(t1)
             },
             didUpdate: () => didU1++
           })
           const pt2 = m(2, {
-            willReceive: (f, t) => {
+            willUpdate: f => {
               didR2++
-              expect(t).to.equal(t2)
+              expect(f.temp).to.equal(t2)
             },
             didUpdate: () => didU2++
           })
@@ -72,7 +72,7 @@ describe("subdiff", function(){
           insert(next, n2, t2)
           insert(prev, p1, pt1)
           insert(prev, p2, pt2)
-          diff(h(next), diff(h(prev), null, {effs: new Passthrough}))
+          diff(h(next), diff(h(prev), null))
           expect(didR1).to.equal(didR2).to.equal(didU1).to.equal(didU2).to.equal(1);
         })
       })
@@ -99,16 +99,16 @@ describe("subdiff", function(){
           let didR1 = 0, didR2 = 0, didU1 = 0, didU2 = 0;
           const t1 = m(1), t2 = m(2);
           const pt1 = m(1, {
-            willReceive: (f, t) => {
+            willUpdate: f => {
               didR1++
-              expect(t).to.equal(t1)
+              expect(f.temp).to.equal(t1)
             },
             didUpdate: () => didU1++
           })
           const pt2 = m(2, {
-            willReceive: (f, t) => {
+            willUpdate: f => {
               didR2++
-              expect(t).to.equal(t2)
+              expect(f.temp).to.equal(t2)
             },
             didUpdate: () => didU2++
           })
@@ -117,7 +117,7 @@ describe("subdiff", function(){
           insert(next, n2, t2)
           insert(prev, p1, pt1)
           insert(prev, p2, pt2)
-          diff(h(next), diff(h(prev), null, {effs: new Passthrough}))
+          diff(h(next), diff(h(prev), null))
           expect(didR1).to.equal(didR2).to.equal(didU1).to.equal(didU2).to.equal(1);
         })
       })

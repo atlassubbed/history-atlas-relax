@@ -1,6 +1,6 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
-const { Tracker, Passthrough } = require("./effects");
+const { Tracker } = require("./effects");
 const { Frame, diff } = require("../src/index");
 const { StemCell: { m } } = require("./cases/Frames");
 const { treeCase } = require("./cases/entangle");
@@ -57,7 +57,7 @@ describe("memoization and immutability support", function(){
     it("should not update children which receive old templates even if the child owns a future diff cycle", function(){
       const events = [], tracker = new Tracker(events);
       const m1 = m(1), m2 = m(2);
-      const f1 = diff(m(0, null, [m1, m2]), null, {effs: [tracker, new Passthrough]});
+      const f1 = diff(m(0, null, [m1, m2]), null, {effs: tracker});
       events.length = 0;
       f1.next.sib.diff({id: 2}, 0)
       const result = diff(m(0, null, [m1, m2]), f1)
@@ -75,14 +75,14 @@ describe("memoization and immutability support", function(){
         done();
       }
       const t = m(0, {hooks: {didUpdate}}, [m(1), m(2)])
-      const f1 = diff(t, null, {effs: [tracker, new Passthrough]});
+      const f1 = diff(t, null, {effs: tracker});
       events.length = 0;
       f1.next.sib.diff({}, 0)
       f1.diff({}, 0);
     })
     it("should remove child's influence if it only depends on parent", function(){
       const { nodes, events } = treeCase.get();
-      nodes[0].render = function(data, next){
+      nodes[0].getNext = function(data, next){
         return this.next.temp;
       }
       nodes[0].diff();
@@ -93,7 +93,7 @@ describe("memoization and immutability support", function(){
     })
     it("should remove child's influence if it's entangled to nodes not in path", function(){
       const { nodes, events } = treeCase.get();
-      nodes[0].render = function(data, next){
+      nodes[0].getNext = function(data, next){
         return this.next.temp
       }
       const disjointRoot = diff(m(9), null, {effs: new Tracker(events)});
@@ -107,7 +107,7 @@ describe("memoization and immutability support", function(){
     })
     it("should prevent child's receipt of new template, but keep its influence if it's entangled to nodes in path", function(){
       const { nodes, events } = treeCase.get();
-      nodes[1].render = function(data, next){
+      nodes[1].getNext = function(data, next){
         next[0] = this.next.temp;
         return next;
       }

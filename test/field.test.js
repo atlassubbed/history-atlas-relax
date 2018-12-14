@@ -33,18 +33,21 @@ const getEffs = events => ({effs: new Timer(events)})
 
 const mountTree = events => {
   const frame = diff(h(0, null, h(1)), null, getEffs(events));
+  events.length = 0;
   return {p: frame, c: frame.next};
 }
 
 const mountRoots = events => {
   const root0 = diff(h(0), null, getEffs(events));
   const root1 = diff(h(1), null, getEffs(events));
+  events.length = 0;
   return {p: root0, c: root1};
 }
 
 const mountEntangledRoots = events => {
   const roots = mountRoots(events);
   roots.c.sub(roots.p);
+  events.length = 0;
   return roots;
 }
 

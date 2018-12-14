@@ -8,12 +8,9 @@
      * If they can't do this, then we must change the internal code until they can. */
 
 // f === current node, p === parent node, s === previous sibling, and i === next index
-const { Timer, FullTimer } = require("./Timer");
 module.exports = {
   Tracker: require("./Tracker"),
-  Timer,
-  FullTimer,
+  Timer: require("./Timer"),
   Cache: require("./Cache"),
-  Passthrough: require("./Passthrough"),
   LCRSRenderer: require("./LCRSRenderer")
 }

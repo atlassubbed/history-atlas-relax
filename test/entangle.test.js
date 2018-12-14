@@ -1,14 +1,16 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
-const { Tracker, Passthrough } = require("./effects");
+const { Tracker } = require("./effects");
 const { diff: rawDiff } = require("../src/index");
 const { rootCase, treeCase, p, a } = require("./cases/entangle");
 const { has } = require("./util");
 
-const pass = new Passthrough;
-const diff = (t, f, eff) => rawDiff(t, f, {effs: eff ? [eff, pass] : null});
+const diff = (t, f, eff) => rawDiff(t, f, {effs: eff});
 
-const updateHooks = ["willReceive", "willUpdate", "didUpdate"];
+// willAdd is the first render, willUpdate is every other render
+// didAdd is the first rendered, didUpdate is every other rendered
+// only render and rendered are canonical
+const updateHooks = ["willUpdate", "didUpdate"];
 const addHooks = ["willAdd", "didAdd"];
 const allHooks = [...addHooks, ...updateHooks];
 
@@ -34,7 +36,7 @@ describe("entanglement", function(){
     allHooks.forEach(hook => {
       it(`should throw before the next diff runs if cycles are introduced in ${hook}`, function(){
         const events = [], t1 = new Tracker(events), t2 = new Tracker(events);
-        const r1 = diff(p(0), null, t1); 
+        const r1 = diff(p(0), null, t1);
         const r2 = diff(p(1, {[hook]: f => r1.sub(f)}), null, t2);
         r2.sub(r1), events.length = 0;
         const update = () => diff(p(1), r2);
@@ -126,16 +128,6 @@ describe("entanglement", function(){
           ])
         })
       })
-      it.skip("should properly destroy nodes removed during willReceive", function(){
-        const { nodes, events } = rootCase.get({
-          0: {willReceive: f => diff(null, nodes[3])}
-        })
-        diff(p(0), nodes[0]);
-        expect(events).to.deep.equal([
-          {wR: 0}, {wP: 3}, {wU: 0}, {wU: 1}, {wU: 2},
-          {dU: 2}, {dU: 1}, {dU: 0}
-        ])
-      })
       it.skip("should properly destroy nodes removed during willUpdate", function(){
         const { nodes, events } = rootCase.get({
           0: {willUpdate: f => diff(null, nodes[3])}
@@ -146,7 +138,7 @@ describe("entanglement", function(){
           {dU: 2}, {dU: 1}, {dU: 0}
         ])
       })
-      it("should update, then destroy nodes removed during didUpdate", function(){
+      it.skip("should update, then destroy nodes removed during didUpdate", function(){
         const { nodes, events } = rootCase.get({
           0: {didUpdate: f => diff(null, nodes[3])}
         })
@@ -176,16 +168,15 @@ describe("entanglement", function(){
       expect(r.affs).to.be.null
     })
     allHooks.forEach(hook => {
-      if (hook === "willAdd") return;
       it(`should throw before the next diff runs if cycles are introduced in ${hook}`, function(){
         const events = [], t = new Tracker(events);
+        let parent;
         const hooks = {
-          willAdd: (f, p) => {f.parent = p},
           [hook]: f => {
-            f.sub(f.parent.next)
+            f.sub(parent.next)
           }
         }
-        const r = diff(p(0, null, [p(1), p(2, hooks)]), null, t);
+        const r = diff(p(0, {willAdd: f => parent = f}, [p(1), p(2, hooks)]), null, t);
         r.next.sub(r.next.sib)
         events.length = 0;
         const update = () => diff(p(0, null, [p(1), p(2)]), r)
@@ -215,7 +206,7 @@ describe("entanglement", function(){
         const {nodes, events} = treeCase.get();
         diff(null, nodes[0])
         expect(events).to.deep.equal([ 
-          {wP: 0}, {wP: 1}, {wP: 3}, {wP: 2},
+          {wP: 0}, {wP: 1}, {wP: 2}, {wP: 3},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
           {wU: 6}, {wU: 8}, {wU: 7},
           {dU: 7}, {dU: 8}, {dU: 6}, {dU: 5}, {dU: 4}
@@ -235,8 +226,8 @@ describe("entanglement", function(){
         const {nodes, events} = treeCase.get();
         diff(null, nodes[4])
         expect(events).to.deep.equal([ 
-          {wP: 4}, {wP: 8}, {wP: 5},
-          {wP: 7}, {wP: 6},
+          {wP: 4}, {wP: 5}, {wP: 6},
+          {wP: 7}, {wP: 8},
           {wU: 3}, {dU: 3} 
         ])
       })
@@ -284,7 +275,7 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           2: {
             willUpdate: f => {f.nextChildren = [p(9, null, p(10)), p(11)]},
-            render(data, next){
+            getNext(data, next){
               return this.nextChildren
             }
           }
@@ -292,7 +283,7 @@ describe("entanglement", function(){
         const result = [ 
           {wR: 0}, {wU: 0}, {wR: 1}, {wU: 1}, {wR: 2}, {wR: 3},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7}, 
-          {wU: 2}, {wA: 9}, {wA: 11}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7}, 
+          {wU: 2}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7}, {wA: 11}, {wA: 9},
           {wA: 10}, {dA: 10}, {dA: 9}, {dA: 11},
           {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3}, {dU: 2}, {dU: 5}, {dU: 4}, {dU: 1}, {dU: 0} 
         ]
@@ -303,7 +294,7 @@ describe("entanglement", function(){
         const { nodes, events } = treeCase.get({
           2: {
             willUpdate: f => {f.nextChildren = [p(9, null, p(10)), p(11)]},
-            render(data, next){
+            getNext(data, next){
               return this.nextChildren
             }
           }
@@ -324,7 +315,7 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.nextChildren = [p(9, {ctor: f => f.sub(nodes[7])}, p(10)), p(11)]
             },
-            render(data, next){
+            getNext(data, next){
               return this.nextChildren
             }
           }
@@ -332,7 +323,7 @@ describe("entanglement", function(){
         const result = [ 
           {wR: 0}, {wU: 0}, {wR: 1}, {wU: 1}, {wR: 2}, {wR: 3},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
-          {wU: 2}, {wA: 9}, {wA: 11}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},
+          {wU: 2}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7}, {wA: 11}, {wA: 9},
           {wA: 10}, {dA: 10}, {dA: 9}, {dA: 11},
           {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3}, {dU: 2}, {dU: 5}, {dU: 4}, {dU: 1}, {dU: 0} 
         ]
@@ -345,7 +336,7 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.nextChildren = [p(9, {ctor: f => f.sub(nodes[7])}, p(10)), p(11)]
             },
-            render(data, next){
+            getNext(data, next){
               return this.nextChildren
             }
           }
@@ -369,7 +360,7 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.nextChildren = [p(9, {ctor: f => nodes[4].sub(f)}, p(10)), p(11)]
             },
-            render(data, next){
+            getNext(data, next){
               return this.nextChildren
             }
           }
@@ -377,7 +368,7 @@ describe("entanglement", function(){
         const result = [ 
           {wR: 0}, {wU: 0}, {wR: 1}, {wU: 1}, {wR: 2}, {wR: 3},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7}, 
-          {wU: 2}, {wA: 9}, {wA: 11}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7}, 
+          {wU: 2}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7}, {wA: 11}, {wA: 9},
           {wA: 10}, {dA: 10}, {dA: 9}, {dA: 11},
           {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3}, {dU: 2}, {dU: 5}, {dU: 4}, {dU: 1}, {dU: 0} 
         ]
@@ -390,7 +381,7 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.nextChildren = [p(9, {ctor: f => nodes[4].sub(f)}, p(10)), p(11)]
             },
-            render(data, next){
+            getNext(data, next){
               return this.nextChildren
             }
           }
@@ -413,13 +404,13 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.kill = true;
             },
-            render(data, next){
+            getNext(data, next){
               return this.kill ? null : next;
             }
           }
         })
         const result = [
-          {wR: 0}, {wU: 0}, {wP: 1}, {wP: 3}, {wP: 2},
+          {wR: 0}, {wU: 0}, {wP: 1}, {wP: 2}, {wP: 3},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
           {wU: 6}, {wU: 8}, {wU: 7},
           {dU: 7}, {dU: 8}, {dU: 6}, {dU: 5}, {dU: 4}, {dU: 0}
@@ -435,15 +426,15 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.nextChildren = a(9);
             },
-            render(data, next){
+            getNext(data, next){
               return this.nextChildren || next;
             }
           }
         })
         const result = [
-          {wR: 0}, {wU: 0}, {wP: 1}, {wP: 3}, {wP: 2}, {wA: 9},
+          {wR: 0}, {wU: 0}, {wP: 1}, {wP: 2}, {wP: 3},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
-          {wU: 6}, {wU: 8}, {wU: 7}, {dA: 9},
+          {wU: 6}, {wU: 8}, {wU: 7}, {wA: 9}, {dA: 9},
           {dU: 7}, {dU: 8}, {dU: 6}, {dU: 5}, {dU: 4}, {dU: 0} 
         ]
         diff(treeCase.tag0(), nodes[0]);
@@ -455,15 +446,15 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.nextChildren = a(9, {ctor: f => f.sub(nodes[4])});
             },
-            render(data, next){
+            getNext(data, next){
               return this.nextChildren || next;
             }
           }
         })
         const result = [
-          {wR: 0}, {wU: 0}, {wP: 1}, {wP: 3}, {wP: 2}, {wA: 9},
+          {wR: 0}, {wU: 0}, {wP: 1}, {wP: 2}, {wP: 3},
           {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
-          {wU: 6}, {wU: 8}, {wU: 7}, {dA: 9},
+          {wU: 6}, {wU: 8}, {wU: 7}, {wA: 9}, {dA: 9},
           {dU: 7}, {dU: 8}, {dU: 6}, {dU: 5}, {dU: 4}, {dU: 0} 
         ]
         diff(treeCase.tag0(), nodes[0]);
@@ -475,7 +466,7 @@ describe("entanglement", function(){
             willUpdate: f => {
               f.nextChildren = a(9, {ctor: f => f.sub(nodes[4])});
             },
-            render(data, next){
+            getNext(data, next){
               return this.nextChildren || next;
             }
           }

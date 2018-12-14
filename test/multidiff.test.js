@@ -1,12 +1,12 @@
 const { describe, it, before } = require("mocha")
 const { expect } = require("chai")
-const { FullTimer, Passthrough } = require("./effects");
+const { Timer } = require("./effects");
 const { diff } = require("../src/index");
 const { StemCell } = require("./cases/Frames");
 const DeferredTests = require("./DeferredTests")
 const { ALLOW, CHECK, T, taus, verify } = require("./time");
 
-const preAdd = ["ctor", "willAdd"];
+const initialHooks = ["ctor", "willAdd"];
 const p = StemCell.h
 const h = (id, hooks, next) => p(id, {hooks}, next);
 const hooks = (hook, job) => ({[hook]: function(){job(this)}})
@@ -18,7 +18,7 @@ describe("multidiff", function(){
     tests.forEach(testCase => {
       const { task } = testCase;
       let events = testCase.events = [];
-      testCase.task([new Passthrough, new FullTimer(events)]);
+      testCase.task(new Timer(events));
     })
     setTimeout(() => {
       done();
@@ -34,7 +34,7 @@ describe("multidiff", function(){
 // XXX Can refactor these repetitive tests later. Let's just get them working for now.
 function buildMochaScaffold(){
   const scaffold = new DeferredTests;
-  preAdd.forEach(hook => {
+  initialHooks.forEach(hook => {
     scaffold.describe(`calling frame.diff during ${hook}`, () => {
       taus.forEach(tau => {
         const rel = tau < 0 ? "<" : tau > 0 ? ">" : "===", id = 0;
@@ -57,60 +57,6 @@ function buildMochaScaffold(){
             {wA: id, dt: -1, state: {n: 1}}, {dA: id, dt: -1, state: {n: 1}}
           ]
         })
-      })
-    })
-  })
-  scaffold.describe(`calling frame.diff during diff`, () => {
-    taus.forEach(tau => {
-      const rel = tau < 0 ? "<" : tau > 0 ? ">" : "===", id = 0;
-      scaffold.push({
-        desc: `should immediately reflect new state in postorder events without triggering a new update for tau ${rel} 0 nodes`,
-        task: effs => {
-          diff(h(id, hooks("render", f => f.diff({n: 0}, tau))), null, {effs})
-        },
-        result: [
-          {wA: id, dt: -1, state: null}, {dA: id, dt: -1, state: {n: 0}}
-        ]
-      })
-      scaffold.push({
-        desc: `should immediately coalesce all new state updates in postorder events without triggering a new update for tau ${rel} 0 nodes`,
-        task: effs => {
-          const job = f => {f.diff({n: 0}, tau), f.diff({n: 1}, tau)}
-          diff(h(id, hooks("render", job)), null, {effs})
-        },
-        result: [
-          {wA: id, dt: -1, state: null}, {dA: id, dt: -1, state: {n: 1}}
-        ]
-      })
-    })
-  })
-  scaffold.describe(`calling frame.diff during willReceive`, () => {
-    taus.forEach(tau => {
-      const rel = tau < 0 ? "<" : tau > 0 ? ">" : "===", id = 0;
-      scaffold.push({
-        desc: `should immediately reflect new state without triggering a new update for tau ${rel} 0 nodes`,
-        task: effs => {
-          const f = diff(h(id, hooks("willReceive", f => f.diff({n: 0}, tau))), null, {effs});
-          diff(h(id), f);
-        },
-        result: [
-          {wA: id, dt: -1, state: null}, {dA: id, dt: -1, state: null},
-          {wR: id, dt: -1, state: {n: 0}},
-          {wU: id, dt: -1, state: {n: 0}}, {dU: id, dt: -1, state: {n: 0}}
-        ]
-      })
-      scaffold.push({
-        desc: `should immediately coalesce all new state updates without triggering a new update for tau ${rel} 0 nodes`,
-        task: effs => {
-          const job = f => {f.diff({n: 0}, tau), f.diff({n: 1}, tau)}
-          const f = diff(h(id, hooks("willReceive", job)), null, {effs});
-          diff(h(id), f);
-        },
-        result: [
-          {wA: id, dt: -1, state: null}, {dA: id, dt: -1, state: null},
-          {wR: id, dt: -1, state: {n: 1}},
-          {wU: id, dt: -1, state: {n: 1}}, {dU: id, dt: -1, state: {n: 1}}
-        ]
       })
     })
   })
@@ -166,8 +112,8 @@ function buildMochaScaffold(){
         },
         result: [
           {wA: id, dt: -1, state: null},
-          {wA: 1, dt: -1, state: null},
           {wA: 2, dt: -1, state: null},
+          {wA: 1, dt: -1, state: null},
           {dA: 1, dt: -1, state: null},
           {dA: 2, dt: -1, state: null},
           {dA: id, dt: -1, state: null},
@@ -187,8 +133,8 @@ function buildMochaScaffold(){
       },
       result: [
         {wA: 0, dt: -1, state: null},
-        {wA: 1, dt: -1, state: null},
         {wA: 2, dt: -1, state: null},
+        {wA: 1, dt: -1, state: null},
         {dA: 1, dt: -1, state: null},
         {dA: 2, dt: -1, state: null},
         {dA: 0, dt: -1, state: null},
@@ -207,8 +153,8 @@ function buildMochaScaffold(){
       },
       result: [
         {wA: 0, dt: -1, state: null},
-        {wA: 1, dt: -1, state: null},
         {wA: 2, dt: -1, state: null},
+        {wA: 1, dt: -1, state: null},
         {dA: 1, dt: -1, state: null},
         {dA: 2, dt: -1, state: null},
         {dA: 0, dt: -1, state: null},
@@ -245,8 +191,8 @@ function buildMochaScaffold(){
         },
         result: [
           {wA: id, dt: -1, state: null},
-          {wA: 1, dt: -1, state: null},
           {wA: 2, dt: -1, state: null},
+          {wA: 1, dt: -1, state: null},
           {dA: 1, dt: -1, state: null},
           {dA: 2, dt: -1, state: null},
           {dA: id, dt: -1, state: null},
@@ -276,8 +222,8 @@ function buildMochaScaffold(){
       },
       result: [
         {wA: 0, dt: -1, state: null},
-        {wA: 1, dt: -1, state: null},
         {wA: 2, dt: -1, state: null},
+        {wA: 1, dt: -1, state: null},
         {dA: 1, dt: -1, state: null},
         {dA: 2, dt: -1, state: null},
         {dA: 0, dt: -1, state: null},
@@ -306,8 +252,8 @@ function buildMochaScaffold(){
       },
       result: [
         {wA: 0, dt: -1, state: null},
-        {wA: 1, dt: -1, state: null},
         {wA: 2, dt: -1, state: null},
+        {wA: 1, dt: -1, state: null},
         {dA: 1, dt: -1, state: null},
         {dA: 2, dt: -1, state: null},
         {dA: 0, dt: -1, state: null},

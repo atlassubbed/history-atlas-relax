@@ -1,6 +1,36 @@
+Steps to achieve well-defined diff (without rebasing, yet):
+  1. Implement the flush model, where all events are queued and flushed at the end of the cycle.
+  2. Modify diff so that it:
+     * willAdd, but doesn't mount, adds to lags
+     * adds new temp, but doesn't fill path, adds to originators
+     * calculates originators, willRemove, doesn't unmount, adds to removes
+  3. Implement the subcycle model (sidediff).
+     * while we have queued originators or lags or unmounts:
+       * fill path with queued originators
+       * perform all queued unmounts
+       * subdiff off the path until path is empty
+       * mount off lags until lags is empty
+       * flush events
+  4. Modify setState so that (we may need to upgrade node.inPath to an integer):
+     * if not in path
+       * if tau < 0, queue update as above, instead of upgrading to tau = 0.
+         * if we're not in a diff, initiate a sidediff
+       * else merge state into next and async schedule update as usual
+     * else
+       * if tau < 0, merge state directly onto node, upgrade to originator
+       * else, merge state into next and async schedule update as usual
+  5. Modify fill to applyState on all originators before marking, guaranteeing that nextState is null
+
+
+2. Consider queueing up emitted events (except receives), run all events after emptying path/lags:
+   * all removes, all moves & adds, all didUpdates
+   * this way, all removes for an affected region are done before any adds
+   * allows better resource recylcing
+3.
+
 Considerations:
 
-1. well-defined diffs, isFirst argument to diff(...)
+1. well-defined diffs
 2. error boundaries
 3. async diffs, streaming api, effects api
 4. Online updates of path instead of fill/mark before every diff cycle (rebasing the path)
@@ -8,8 +38,6 @@ Considerations:
    * can be used to vastly limit timer usage
    * provide a basis for implementing online diffs (e.g. prioritized diff cycles, rebasing)
    * diff caller can provide a queueing function (e.g. rIC/rAF)
-7. Allow diff(...) to allow the template arg to be a function
-   * diff(fn) treated as: diff({name: func}) for simple shorthand
 8. Test non-happy cases for frame.diff, etc. (e.g. is calling frame.diff("string") defined?) 
 
 Minor considerations:
