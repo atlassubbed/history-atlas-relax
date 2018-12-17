@@ -1,3 +1,5 @@
+Implement post-order events for effects
+
 Steps to achieve well-defined diff (without rebasing, yet):
   1. Implement the flush model, where all events are queued and flushed at the end of the cycle.
   2. Modify diff so that it:
@@ -21,13 +23,6 @@ Steps to achieve well-defined diff (without rebasing, yet):
        * else, merge state into next and async schedule update as usual
   5. Modify fill to applyState on all originators before marking, guaranteeing that nextState is null
 
-
-2. Consider queueing up emitted events (except receives), run all events after emptying path/lags:
-   * all removes, all moves & adds, all didUpdates
-   * this way, all removes for an affected region are done before any adds
-   * allows better resource recylcing
-3.
-
 Considerations:
 
 1. well-defined diffs
@@ -43,6 +38,9 @@ Considerations:
 Minor considerations:
 
 1. Minor performance boosts, at the expense of increased code complexity:
+   * get rid of refill(...) since we queue up removed nodes anyway, might as well use the entire path
+     * queue up recieves, cache move/add/remove event info directly on node, then iterate over path
+   * don't queue up events if there are no effs for the node?
    * don't add implicit nodes to path
    * don't increase aff count for parent-child edges
    * don't increase step count for parent-child stepping

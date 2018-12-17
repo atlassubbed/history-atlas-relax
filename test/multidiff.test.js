@@ -71,8 +71,7 @@ function buildMochaScaffold(){
         },
         result: [
           {wA: id, dt: -1, state: null}, {dA: id, dt: -1, state: null},
-          {wR: id, dt: -1, state: null},
-          {wU: id, dt: -1, state: {n: 0}}, {dU: id, dt: -1, state: {n: 0}}
+          {wU: id, dt: -1, state: {n: 0}},  {wR: id, dt: -1, state: {n: 0}}, {dU: id, dt: -1, state: {n: 0}}
         ]
       })
       scaffold.push({
@@ -84,8 +83,7 @@ function buildMochaScaffold(){
         },
         result: [
           {wA: id, dt: -1, state: null}, {dA: id, dt: -1, state: null},
-          {wR: id, dt: -1, state: null},
-          {wU: id, dt: -1, state: {n: 1}}, {dU: id, dt: -1, state: {n: 1}}
+          {wU: id, dt: -1, state: {n: 1}}, {wR: id, dt: -1, state: {n: 1}}, {dU: id, dt: -1, state: {n: 1}}
         ]
       })
     })
@@ -112,15 +110,15 @@ function buildMochaScaffold(){
         },
         result: [
           {wA: id, dt: -1, state: null},
-          {wA: 2, dt: -1, state: null},
           {wA: 1, dt: -1, state: null},
-          {dA: 1, dt: -1, state: null},
+          {wA: 2, dt: -1, state: null},
           {dA: 2, dt: -1, state: null},
+          {dA: 1, dt: -1, state: null},
           {dA: id, dt: -1, state: null},
-          {wU: 2, dt: tau, state: {n: 2}},
           {wU: 1, dt: tau, state: {n: 1}},
+          {wU: 2, dt: tau, state: {n: 2}},
+          {dU: 2, dt: tau, state: {n: 2}},
           {dU: 1, dt: tau, state: {n: 1}},
-          {dU: 2, dt: tau, state: {n: 2}}
         ]
       })
     })
@@ -133,15 +131,15 @@ function buildMochaScaffold(){
       },
       result: [
         {wA: 0, dt: -1, state: null},
-        {wA: 2, dt: -1, state: null},
         {wA: 1, dt: -1, state: null},
-        {dA: 1, dt: -1, state: null},
+        {wA: 2, dt: -1, state: null},
         {dA: 2, dt: -1, state: null},
+        {dA: 1, dt: -1, state: null},
         {dA: 0, dt: -1, state: null},
-        {wU: 2, dt: 0, state: {n: 2}},
         {wU: 1, dt: 0, state: {n: 1}},
+        {wU: 2, dt: 0, state: {n: 2}},
+        {dU: 2, dt: 0, state: {n: 2}},
         {dU: 1, dt: 0, state: {n: 1}},
-        {dU: 2, dt: 0, state: {n: 2}}
       ]
     })
     scaffold.push({
@@ -153,10 +151,10 @@ function buildMochaScaffold(){
       },
       result: [
         {wA: 0, dt: -1, state: null},
-        {wA: 2, dt: -1, state: null},
         {wA: 1, dt: -1, state: null},
-        {dA: 1, dt: -1, state: null},
+        {wA: 2, dt: -1, state: null},
         {dA: 2, dt: -1, state: null},
+        {dA: 1, dt: -1, state: null},
         {dA: 0, dt: -1, state: null},
         {wU: 2, dt: 0, state: {n: 2}},
         {dU: 2, dt: 0, state: {n: 2}},
@@ -176,8 +174,7 @@ function buildMochaScaffold(){
         },
         result: [
           {wA: id, dt: -1, state: null}, {dA: id, dt: -1, state: null},
-          {wR: id, dt: -1, state: null},
-          {wU: id, dt: -1, state: null}, {dU: id, dt: -1, state: null},
+          {wU: id, dt: -1, state: null}, {wR: id, dt: -1, state: null}, {dU: id, dt: -1, state: null},
           {wU: id, dt: tau, state: {n: 0}}, {dU: id, dt: tau, state: {n: 0}}
         ]
       })
@@ -191,17 +188,17 @@ function buildMochaScaffold(){
         },
         result: [
           {wA: id, dt: -1, state: null},
-          {wA: 2, dt: -1, state: null},
           {wA: 1, dt: -1, state: null},
-          {dA: 1, dt: -1, state: null},
+          {wA: 2, dt: -1, state: null},
           {dA: 2, dt: -1, state: null},
+          {dA: 1, dt: -1, state: null},
           {dA: id, dt: -1, state: null},
-          {wR: id, dt: -1, state: null},
           {wU: id, dt: -1, state: null},
-          {wR: 1, dt: -1, state: null},
-          {wR: 2, dt: -1, state: null},
           {wU: 2, dt: -1, state: null},
           {wU: 1, dt: -1, state: null},
+          {wR: id, dt: -1, state: null},
+          {wR: 1, dt: -1, state: null},
+          {wR: 2, dt: -1, state: null},
           {dU: 1, dt: -1, state: null},
           {dU: 2, dt: -1, state: null},
           {dU: id, dt: -1, state: null},
@@ -222,17 +219,17 @@ function buildMochaScaffold(){
       },
       result: [
         {wA: 0, dt: -1, state: null},
-        {wA: 2, dt: -1, state: null},
         {wA: 1, dt: -1, state: null},
-        {dA: 1, dt: -1, state: null},
+        {wA: 2, dt: -1, state: null},
         {dA: 2, dt: -1, state: null},
+        {dA: 1, dt: -1, state: null},
         {dA: 0, dt: -1, state: null},
-        {wR: 0, dt: -1, state: null},
         {wU: 0, dt: -1, state: null},
-        {wR: 1, dt: -1, state: null},
-        {wR: 2, dt: -1, state: null},
         {wU: 2, dt: -1, state: null},
         {wU: 1, dt: -1, state: null},
+        {wR: 0, dt: -1, state: null},
+        {wR: 1, dt: -1, state: null},
+        {wR: 2, dt: -1, state: null},
         {dU: 1, dt: -1, state: null},
         {dU: 2, dt: -1, state: null},
         {dU: 0, dt: -1, state: null},
@@ -252,17 +249,17 @@ function buildMochaScaffold(){
       },
       result: [
         {wA: 0, dt: -1, state: null},
-        {wA: 2, dt: -1, state: null},
         {wA: 1, dt: -1, state: null},
-        {dA: 1, dt: -1, state: null},
+        {wA: 2, dt: -1, state: null},
         {dA: 2, dt: -1, state: null},
+        {dA: 1, dt: -1, state: null},
         {dA: 0, dt: -1, state: null},
-        {wR: 0, dt: -1, state: null},
         {wU: 0, dt: -1, state: null},
-        {wR: 1, dt: -1, state: null},
-        {wR: 2, dt: -1, state: null},
         {wU: 2, dt: -1, state: null},
         {wU: 1, dt: -1, state: null},
+        {wR: 0, dt: -1, state: null},
+        {wR: 1, dt: -1, state: null},
+        {wR: 2, dt: -1, state: null},
         {dU: 1, dt: -1, state: null},
         {dU: 2, dt: -1, state: null},
         {dU: 0, dt: -1, state: null},

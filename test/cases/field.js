@@ -152,8 +152,8 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
       events.push({wU: 0, dt: tau_gp, state: finalState});
       if (isChild || isEntangled){
         msg += " and c"
-        isChild && events.push({wR: 1, dt: tau_gp, state: null});
         events.push({wU: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
+        isChild && events.push({wR: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
         events.push({dU: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
       }
       events.push({dU: 0, dt: tau_gp, state: finalState});
@@ -166,8 +166,8 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
       events.push({wU: 0, dt: tau_gp, state: finalState});
       if (isChild || isEntangled){
         msg += " and c"
-        isChild && events.push({wR: 1, dt: tau_gp, state: null});
         events.push({wU: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
+        isChild && events.push({wR: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
         events.push({dU: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
       }
       events.push({dU: 0, dt: tau_gp, state: finalState});
@@ -183,8 +183,8 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
       events.push({wU: 0, dt: tau_gp, state: finalState});
       if (isChild || isEntangled){
         msg += " and c"
-        isChild && events.push({wR: 1, dt: tau_gp, state: finalState});
         events.push({wU: 1, dt: tau_gp, state: finalState});
+        isChild && events.push({wR: 1, dt: tau_gp, state: finalState});
         events.push({dU: 1, dt: tau_gp, state: finalState});
       }
       events.push({dU: 0, dt: tau_gp, state: finalState});
@@ -200,8 +200,8 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
         } else {
           let msg = `wait tau_gp then update p and c`;
           events.push({wU: 0, dt: tau_gp, state: finalState});
-          isChild && events.push({wR: 1, dt: tau_gp, state: null});
           events.push({wU: 1, dt: tau_gp, state: finalState});
+          isChild && events.push({wR: 1, dt: tau_gp, state: finalState});
           events.push({dU: 1, dt: tau_gp, state: finalState});
           events.push({dU: 0, dt: tau_gp, state: finalState});
           desc.push(msg)
@@ -214,8 +214,8 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
         events.push({wU: 0, dt: tau_gp, state: finalState});
         if (isChild || isEntangled){
           msg += " and c"
-          isChild && events.push({wR: 1, dt: tau_gp, state: finalState});
           events.push({wU: 1, dt: tau_gp, state: finalState});
+          isChild && events.push({wR: 1, dt: tau_gp, state: finalState});
           events.push({dU: 1, dt: tau_gp, state: finalState});
         }
         events.push({dU: 0, dt: tau_gp, state: finalState});
@@ -225,8 +225,8 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
         events.push({wU: 0, dt: tau_gp, state: finalState});
         if (isChild || isEntangled){
           msg += " and c"
-          isChild && events.push({wR: 1, dt: tau_gp, state: null});
           events.push({wU: 1, dt: tau_gp, state: finalState});
+          isChild && events.push({wR: 1, dt: tau_gp, state: finalState});
           events.push({dU: 1, dt: tau_gp, state: finalState});
         }
         events.push({dU: 0, dt: tau_gp, state: finalState});
@@ -244,8 +244,8 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
       events.push({wU: 0, dt: tau_gp, state: finalState});
       if (isChild || isEntangled){
         msg += " and c"
-        isChild && events.push({wR: 1, dt: tau_gp, state: null});
         events.push({wU: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
+        isChild && events.push({wR: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
         events.push({dU: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
       }
       events.push({dU: 0, dt: tau_gp, state: finalState});
@@ -261,8 +261,8 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
         events.push({wU: 0, dt: tau_gp, state: finalState});
         if (isChild || isEntangled){
           msg += " and c"
-          isChild && events.push({wR: 1, dt: tau_gp, state: null});
           events.push({wU: 1, dt: tau_gp, state: null});
+          isChild && events.push({wR: 1, dt: tau_gp, state: null});
           events.push({dU: 1, dt: tau_gp, state: null});
         }
         events.push({dU: 0, dt: tau_gp, state: finalState});
@@ -275,8 +275,8 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
         events.push({wU: 0, dt: tau_gp, state: finalState});
         if (isChild || isEntangled){
           msg += " and c"
-          isChild && events.push({wR: 1, dt: tau_gp, state: initialState});
           events.push({wU: 1, dt: tau_gp, state: initialState});
+          isChild && events.push({wR: 1, dt: tau_gp, state: initialState});
           events.push({dU: 1, dt: tau_gp, state: initialState});
         }
         events.push({dU: 0, dt: tau_gp, state: finalState});
@@ -284,8 +284,8 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
       } else if (tau_c === tau_gp){ // parent and child are coherent
         desc.push("wait tau_c then update p and c");
         events.push({wU: 0, dt: tau_c, state: finalState});
-        isChild && events.push({wR: 1, dt: tau_c, state: null});
         events.push({wU: 1, dt: tau_c, state: initialState});
+        isChild && events.push({wR: 1, dt: tau_c, state: initialState});
         events.push({dU: 1, dt: tau_c, state: initialState});
         events.push({dU: 0, dt: tau_c, state: finalState});
       } else { // parent relaxes faster
@@ -293,8 +293,8 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
         events.push({wU: 0, dt: tau_gp, state: finalState});
         if (isChild || isEntangled){
           msg += " and c"
-          isChild && events.push({wR: 1, dt: tau_gp, state: null});
           events.push({wU: 1, dt: tau_gp, state: initialState});
+          isChild && events.push({wR: 1, dt: tau_gp, state: initialState});
           events.push({dU: 1, dt: tau_gp, state: initialState});
         }
         events.push({dU: 0, dt: tau_gp, state: finalState});
@@ -316,8 +316,8 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
         events.push({wU: 0, dt: tau_p, state: initialState});
         if (isChild || isEntangled){
           msg += " and c"
-          isChild && events.push({wR: 1, dt: tau_p, state: finalState});
           events.push({wU: 1, dt: tau_p, state: finalState});
+          isChild && events.push({wR: 1, dt: tau_p, state: finalState});
           events.push({dU: 1, dt: tau_p, state: finalState});
         }
         events.push({dU: 0, dt: tau_p, state: initialState});
@@ -333,8 +333,8 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
         events.push({wU: 0, dt: tau_p, state: initialState});
         if (isChild || isEntangled){
           msg += " and c"
-          isChild && events.push({wR: 1, dt: tau_p, state: null});
           events.push({wU: 1, dt: tau_p, state: finalState});
+          isChild && events.push({wR: 1, dt: tau_p, state: finalState});
           events.push({dU: 1, dt: tau_p, state: finalState});
         }
         events.push({dU: 0, dt: tau_p, state: initialState});
@@ -354,8 +354,8 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
         } else {
           let msg = `wait tau_p then update p and c`;
           events.push({wU: 0, dt: tau_p, state: initialState});
-          isChild && events.push({wR: 1, dt: tau_p, state: null});
           events.push({wU: 1, dt: tau_p, state: finalState});
+          isChild && events.push({wR: 1, dt: tau_p, state: finalState});
           events.push({dU: 1, dt: tau_p, state: finalState});
           events.push({dU: 0, dt: tau_p, state: initialState});
           desc.push(msg)
@@ -368,8 +368,8 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
         events.push({wU: 0, dt: tau_p, state: initialState});
         if (isChild || isEntangled){
           msg += " and c"
-          isChild && events.push({wR: 1, dt: tau_p, state: finalState});
           events.push({wU: 1, dt: tau_p, state: finalState});
+          isChild && events.push({wR: 1, dt: tau_p, state: finalState});
           events.push({dU: 1, dt: tau_p, state: finalState});
         }
         events.push({dU: 0, dt: tau_p, state: initialState});

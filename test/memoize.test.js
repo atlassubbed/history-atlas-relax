@@ -41,7 +41,7 @@ describe("memoization and immutability support", function(){
       const result = diff(m(0, null, [m1, m2]), f1);
       expect(result).to.be.an.instanceOf(Frame);
       expect(events).to.deep.equal([
-        {wR: 0}, {wU: 0}, {dU: 0}
+        {wU: 0}, {mWR: 0}, {dU: 0}
       ]);
     })
     it("should update children if they receive new templates", function(){
@@ -51,7 +51,7 @@ describe("memoization and immutability support", function(){
       const result = diff(m(0,null,[m1, m(2)]), f1);
       expect(result).to.be.an.instanceOf(Frame);
       expect(events).to.deep.equal([
-        {wR: 0}, {wU: 0}, {wR: 2}, {wU: 2}, {dU: 2}, {dU: 0}
+       {wU: 0}, {wU: 2}, {mWR: 0}, {mWR: 2}, {dU: 2}, {dU: 0}
       ]);
     })
     it("should not update children which receive old templates even if the child owns a future diff cycle", function(){
@@ -63,7 +63,7 @@ describe("memoization and immutability support", function(){
       const result = diff(m(0, null, [m1, m2]), f1)
       expect(result).to.be.an.instanceOf(Frame);
       expect(events).to.deep.equal([
-        {wR: 0}, {wU: 0}, {dU: 0}
+        {wU: 0}, {mWR: 0}, {dU: 0}
       ])
     })
     it("should update children which receive old templates as long as the child owns the current diff cycle", function(done){
@@ -113,10 +113,8 @@ describe("memoization and immutability support", function(){
       }
       nodes[0].diff();
       expect(events).to.deep.equal([ 
-        {wU: 0}, {wR: 1}, {wU: 1}, /* {wR: 2}, */ {wR: 3},
-        {wU: 4}, {wR: 5}, {wR: 8}, {wU: 5}, {wR: 6}, {wR: 7},
-        {wU: 2}, {wU: 3},
-        {wU: 6}, {wU: 8}, {wU: 7},
+        {wU: 0}, {wU: 1}, {wU: 4}, {wU: 5}, {wU: 2}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},
+        {mWR: 1}, /* {mWR: 2}, */ {mWR: 3}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},
         {dU: 7}, {dU: 8}, {dU: 6}, {dU: 3}, {dU: 2}, {dU: 5}, {dU: 4}, {dU: 1}, {dU: 0} 
       ])
     })

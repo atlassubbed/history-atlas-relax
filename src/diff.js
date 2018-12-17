@@ -5,10 +5,13 @@ const KeyIndex = require("./KeyIndex")
 const { relax, excite } = require("./field")
 
 // auxiliary stacks
-//   * htap & lags are needed for the whole diff
-//   * aux1 & aux2 are safe to use between subdiffs
-const lags = [], aux1 = [], aux2 = [], htap = [];
-
+//   * htap: "reverse path", accumulation of post-order rendered nodes
+//   * lags: "laggards", accumulation of to-be-mounted nodes after the path exhausts
+//   * orph: "orphans", emphemral stack used for unmounting nodes immediately
+//   * stx:  "stack", all-purpose auxiliary stack used for re-ordering
+//   * rems: "removals", accumulation of in-order removal mutation events
+//   * evts: "events", accumulation of all other in-order mutation events
+const lags = [], orph = [], stx = [], htap = [], rems = [], evts = [];
 // detach node f from linked list p after sibling s
 const unlink = (f, p, s, next) => {
   (next = f.sib) && (next.prev = s)
@@ -19,68 +22,67 @@ const link = (f, p, s, next) => {
   (next = f.sib = (f.prev = s) ? s.sib : p.next) && (next.prev = f);
   s ? (s.sib = f) : (p.next = f)
 }
+
 // emit an event
 const emit = (type, f, p, s, i, ef) => {
   if (ef = f.effs){
-    if (!isArr(ef)) ef[type] && ef[type](f, p, s, i);
-    else for (let e of ef) e[type] && e[type](f, p, s, i);
+    if (isArr(ef)) for (let e of ef) e[type] && e[type](f, p, s, i);
+    else ef[type] && ef[type](f, p, s, i);
   }
-  return f;
 }
 // render a frame's next children
 //   * flattens and returns the output of frame's diff function
 //   * ix is an optional KeyIndex
-const render = (f, ix) => {
-  let next = [], t = f.temp;
-  aux1.push(f.render(t.data, t.next, f, !f._affN && !f.isOrig)), htap.push(f);
-  while(aux1.length) if (t = norm(aux1.pop()))
-    if (isArr(t)) for (let i of t) aux1.push(i);
+const render = (f, ix, next=[], t=f.temp) => {
+  stx.push(f.render(t.data, t.next, f, !f._affN && !f.isOrig)), htap.push(f);
+  while(stx.length) if (t = norm(stx.pop()))
+    if (isArr(t)) for (let i of t) stx.push(i);
     else next.push(t), ix && ix.push(t);
   return f.inPath = false, next;
 }
 
 // mutation methods for subdiffs and rootdiffs (R)
-const add = (t, p, s) => (t && lags.push(emit("willAdd", t = node(t, p), p, s)) && link(t, p, s), t);
-const addR = (t, p, s) => lags.push(emit("willAdd", t = node(t, p), isFrame(p) && p, s)) && t;
-const rem = (f, p, s=f.prev) => aux1.push(emit("willRemove", f, p, s)) && unlink(f, p, s);
-const remR = (f, p, s) => aux1.push(emit("willRemove", f, isFrame(p) && p, s))
-const move = (f, p, s, ps=f.prev) => (emit("willMove", f, p, ps, s), unlink(f, p, ps), link(f, p, s));
-const moveR = (f, p, s, ps) => isFrame(p) && emit("willMove", f, p, ps, s);
-const receive = (f, t) => emit("willReceive", f, t).temp = t
+// we re-point sib to p for perf
+const rem = (f, p, s=f.prev) => {unlink(f, p, s), f.sib = p, rems.push(f), orph.push(f)}
+const remR = (f, p, s) => {isFrame(p) && (f.sib = p), s && (f.prev = s), rems.push(f), orph.push(f)}
+const add = (t, p, s) => t && (link(t = node(t,p), p, s), stx.push(t), evts.push(["willAdd", t, p, s]), t);
+const addR = (t, p, s) => (lags.push(t = node(t, p)), evts.push(["willAdd", t, isFrame(p) && p, s]), t)
+const move = (f, p, s, ps=f.prev) => {unlink(f, p, ps), link(f, p, s), evts.push(["willMove", f, p, ps, s])}
+const moveR = (f, p, s, ps) => isFrame(p) && evts.push(["willMove", f, p, ps, s])
+const receive = (f, t) => evts.push(["willReceive", f, f.temp = t])
 
-// mounts several laggards, who are mounted _after_ sidediffing (very important)
-// const mount = (f, p, next) => {
-//   while(f = lags.pop()) if ((next = render(f)).length)
-//     while(p = add(next.pop(), f, p));
-// }
 // queues up removals in reverse (avoiding a lastChild pointer per node)
 const rev = (c, p) => {while(c.sib) c = c.sib; while(c) rem(c, p, c = c.prev)}
 // unmount several queued nodes
 const unmount = f => {
-  while(f = aux1.pop()) f.cleanup && f.cleanup(f), del(f), f.next && rev(f.next, f)
+  while(f = orph.pop()) f.cleanup && f.cleanup(f), del(f), f.next && rev(f.next, f)
 }
 
 // diff "downwards" from a parent, p, short circuit if next or prev have zero elements
+//   * we used to have a separate mount(...) function, but it's more concise this way
 const subdiff = (p, c=p.next, i=c && new KeyIndex, next, n) => {
   if (p.nextState) p.nextState = !(p.state = merge(p.state || {}, p.nextState)), relax(p);
   next = render(p, i), n = next.length;
   if (!n && c) unmount(rev(c, p));
-  else if (n) if (!c) while(c = add(next.pop(), p, c));
-  else {
-    do (n = i.pop(c.temp)) ? n === (n.p = c).temp ? unmark(c) : receive(c, n) : aux2.push(c); while(c = c.sib);
-    while(i = aux2.pop()) unmount(rem(i, p));
-    for(i = p.next; i && (n = next.pop());) (c = n.p) ? (i === c ?
-      (i = i.sib) : move(c, p, i.prev), n.p = null) : add(n, p, i.prev);
+  else if (n) {
+    if (c) {
+      do (n = i.pop(c.temp)) ? n === (n.p = c).temp ? unmark(c) : receive(c, n) : stx.push(c); while(c = c.sib);
+      while(i = stx.pop()) unmount(rem(i, p));
+      for(i = p.next; i && (n = next.pop());) (c = n.p) ? (i === c ?
+        (i = i.sib) : move(c, p, i.prev), n.p = null) : add(n, p, i.prev);
+    }
     while(c = add(next.pop(), p, c));
+    while(c = stx.pop()) lags.push(c)
   }
 }
 // diff "sideways" along the calculated path
 //   * initially used call stack; led to overflows for lateral updates
 //   * htap is "path" in reverse, we don't need it to avoid .reverse(), but we avoid .length = 0
-const sidediff = f => {
+const sidediff = (f, i=0) => {
   while(f = path.pop()) if (f.temp && f.inPath) subdiff(f);
   while(f = lags.pop()) subdiff(f);
-  // mount()
+  while(f = rems[i++]) emit("willRemove", f, f.sib, f.prev), f.effs = f.sib = f.prev = null;
+  rems.length = i = 0; while(f = evts[i++]) emit(...f); evts.length = 0;
   while(f = htap.pop()) {
     f.rendered && f.rendered(f, !f._affN && !f.isOrig);
     f._affN =+ (f._affs = null, f.isOrig = false);
