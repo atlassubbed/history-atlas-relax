@@ -205,7 +205,7 @@ describe("entanglement", function(){
         const {nodes, events} = treeCase.get();
         diff(null, nodes[0])
         expect(events).to.deep.equal([ 
-          {wP: 0}, {wP: 1}, {wP: 2}, {wP: 3},
+          {wP: 0}, {wP: 1}, {wP: 3}, {wP: 2},
           {wU: 4}, {wU: 5}, {wU: 6}, {wU: 8},
           {wU: 7}, {mWP: 0}, {mWP: 1}, {mWP: 3}, {mWP: 2},
           {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},
@@ -225,8 +225,8 @@ describe("entanglement", function(){
         const {nodes, events} = treeCase.get();
         diff(null, nodes[4])
         expect(events).to.deep.equal([ 
-          {wP: 4}, {wP: 5}, {wP: 6},
-          {wP: 7}, {wP: 8}, {wU: 3},
+          {wP: 4}, {wP: 8}, {wP: 5}, {wP: 7},
+          {wP: 6}, {wU: 3},
           {mWP: 4}, {mWP: 8}, {mWP: 5},
           {mWP: 7}, {mWP: 6},
           {dU: 3} 
@@ -408,7 +408,7 @@ describe("entanglement", function(){
           }
         })
         const result = [
-          {wU: 0}, {wP: 1}, {wP: 2}, {wP: 3},
+          {wU: 0}, {wP: 1}, {wP: 3}, {wP: 2},
           {wU: 4}, {wU: 5}, {wU: 6}, {wU: 8}, {wU: 7},
           {mWP: 1}, {mWP: 3}, {mWP: 2},
           {mWR: 0}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},
@@ -431,7 +431,7 @@ describe("entanglement", function(){
           }
         })
         const result = [
-          {wU: 0}, {wP: 1}, {wP: 2}, {wP: 3},
+          {wU: 0}, {wP: 1}, {wP: 3}, {wP: 2},
           {wU: 4}, {wU: 5}, {wU: 6}, {wU: 8}, {wU: 7}, {wA: 9},
           {mWP: 1}, {mWP: 3}, {mWP: 2},
           {mWR: 0}, {mWA: 9}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},
@@ -452,7 +452,7 @@ describe("entanglement", function(){
           }
         })
         const result = [
-          {wU: 0}, {wP: 1}, {wP: 2}, {wP: 3}, {wU: 4}, {wU: 5},
+          {wU: 0}, {wP: 1}, {wP: 3}, {wP: 2}, {wU: 4}, {wU: 5},
           {wU: 6}, {wU: 8}, {wU: 7}, {wA: 9},
           {mWP: 1}, {mWP: 3}, {mWP: 2},
           {mWR: 0}, {mWA: 9}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},

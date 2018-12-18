@@ -4,8 +4,9 @@ const { isArr, name } = require("./util")
 //   * use a map to avoid stringifying function names
 //   * use a map to support non-string keys
 //   * use a memoized toLowercase to support arbitrary irreducible name casing
-//   * using nested map structures may have perf implications
-//   * supporting duplicate keys also has perf implications
+//   Cons:
+//     * using nested map structures may have perf implications
+//     * supporting duplicate keys also has perf implications
 
 // indexes explicit and implicit keys in LIFO order
 // handles dupe keys gracefully; dupe keys across names work properly

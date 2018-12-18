@@ -1,5 +1,4 @@
 const { isFn } = require("./util");
-const { relax } = require("./field");
 
 const isFrame = f => !!f && isFn(f.render);
 
@@ -26,7 +25,6 @@ Frame.prototype.unsub = function(f, a){
 }
 Frame.isFrame = isFrame
 
-const del = f => relax(f, f.state = f.nextState = f.temp = f.affs = f._affs = null);
 // temp is already normalized
 const node = (t, p) => {
   let effs = p && p.effs;
@@ -39,4 +37,4 @@ const node = (t, p) => {
   return t;
 }
 
-module.exports = { Frame, node, del }
+module.exports = { Frame, node }

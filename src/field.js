@@ -10,27 +10,22 @@ let asap = typeof Promise === "function" ? Promise.resolve() : false;
 asap = asap && asap.then.bind(asap);
 const reject = e => setTimeout(() => {throw e}); // i don't like this
 
-// XXX ideally we would have three separate relax functions:
+// XXX ideally we would have two separate relax functions:
 //   * relax(f) for normal relaxation
 //   * prelax(f, tau) when relaxing right before excitation
-//   * relaxAll(tau) when relaxing all oscillators for tau
 // but we'll keep the internal API and file size small by overloading relax
+
+// remove a node from an oscillator
 const relax = (f, tau, t) => {
   if (t = f.top){
     if (t.bot = f.bot) f.bot.top = t;
     else if (t === field[t.tau] && t.tau !== tau)
       field[t.tau] = t.timer && clearTimeout(t.timer);
-    return f.top = f.bot = null, f;
+    f.top = f.bot = null;
   }
-  // XXX this allows us to get rid of "pop"
-  // if (t = f ? f.top : field[tau]){
-  //   if (!f) f = t.bot, tau = null; // code smell
-  //   if (t.bot = f.bot) f.bot.top = t;
-  //   else if (t === field[t.tau] && t.tau !== tau) 
-  //     field[t.tau] = t.timer && clearTimeout(t.timer);
-  //   return f.top = f.bot = null, f;
-  // }
 }
+
+// add/move a node to an oscillator
 const excite = (f, tau, cb, t) => {
   relax(f, tau), t = field[tau] = field[tau] || 
     {tau, timer: tau || !asap ? setTimeout(cb(tau), tau) : !asap(cb(tau)).catch(reject)};
@@ -38,8 +33,10 @@ const excite = (f, tau, cb, t) => {
   (f.top = t).bot = f;
 }
 
-// XXX this results in an unecessary clearTimeout during fill path.
-// not a huge deal, since timer has already gone off at this point.
-const pop = tau => field[tau] && relax(field[tau].bot)
+// pop a triggered oscillator off the field
+const pop = (tau, cb, f=field[tau]) => {
+  if (f) while(f=f.bot) cb(f);
+  field[tau] = null;
+}
 
 module.exports = { relax, excite, pop }

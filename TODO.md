@@ -1,4 +1,15 @@
-Implement post-order events for effects
+1. EITHER: Implement post-order events for effects
+   OR: Keep an array of effects to notify about the end of the diff
+       if (!eff.inArr) notify.push(eff), eff.inArr = true;
+       At the end of the diff, go through each eff and call eff.didDiff();
+       Can optionally provide a callback to make it async:
+         parallel([...done => eff.didDiff(done)])
+         This would allow us to implement async diffs.
+       didDiff would give effects a chance to apply accumulated mutations (e.g. mount trees)
+    Another idea, we could make all mutation events async, and queue them in parallel.
+
+2. Fix flushed event ordering
+4. Queue receive events in rems (just queue the node)
 
 Steps to achieve well-defined diff (without rebasing, yet):
   1. Implement the flush model, where all events are queued and flushed at the end of the cycle.

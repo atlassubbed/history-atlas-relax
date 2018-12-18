@@ -1,5 +1,6 @@
 const isFn = f => typeof f === "function";
 
+// XXX you think WeakMaps are pointless? Well, this crap is why we should be using WeakMaps.
 const name = t => isFn(t=t.name) ? t.name : t;
 
 // XXX should nameless nodes be sterile? i.e. t.next -> null
