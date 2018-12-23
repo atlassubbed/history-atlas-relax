@@ -62,6 +62,8 @@ const count = tree => {
   return n;
 }
 
+const asap = Promise.resolve().then.bind(Promise.resolve())
+
 const printHeap = () => {
   const mb = process.memoryUsage().heapUsed/1e6;
   console.log(`\n${Math.floor(mb)} MB being used`)
@@ -80,4 +82,4 @@ const doWork = n => {
   }
 }
 
-module.exports = { TemplateFactory, count, printHeap, printTitle, doWork }
+module.exports = { TemplateFactory, count, printHeap, printTitle, doWork, asap }

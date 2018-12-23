@@ -5,19 +5,19 @@ const { relax, excite, pop } = require("./field")
 const KeyIndex = require("./KeyIndex")
 
 // auxiliary stacks
-//   * htap: "reverse path", accumulation of post-order rendered nodes
 //   * lags: "laggards", accumulation of to-be-mounted nodes after the path exhausts
 //   * orph: "orphans", emphemral stack used for unmounting nodes immediately
 //   * stx:  "stack", all-purpose auxiliary stack used for re-ordering
 //   * rems: "removals", accumulation of in-order removal mutation events
 //   * evts: "events", accumulation of all other in-order mutation events
-const lags = [], orph = [], stx = [], htap = [], rems = [], evts = [];
+const lags = [], orph = [], stx = [], rems = [], evts = [];
 
 // render a frame's next children
 //   * flattens and returns the output of frame's diff function
 //   * ix is an optional KeyIndex
-const render = (f, ix, next=[], t=f.temp) => {
-  stx.push(f.render(t.data, t.next, f, !f._affN && !f.isOrig)), htap.push(f);
+const render = (f, ix, next=[], t=f.temp, isUpd=f._affN||f.isOrig) => {
+  if (isUpd) f._affN =+ (f._affs = null, f.isOrig = false);
+  stx.push(f.render(t.data, t.next, f, !isUpd));
   while(stx.length) if (t = norm(stx.pop()))
     if (isArr(t)) for (let i of t) stx.push(i);
     else next.push(t), ix && ix.push(t);
@@ -56,8 +56,7 @@ const receive = (f, t) => evts.push(["willReceive", f, f.temp = t])
 const unmount = (f, isRoot, c, ch) => {
   while(f = orph.pop()) {
     if (isRoot && (ch = f.affs)) for (c of ch) c.temp && push(c);
-    f.cleanup && f.cleanup(f); rems.push(f);
-    unlink(f, f.it, f.prev), relax(f);
+    unlink(f, f.it, f.prev), relax(f), rems.push(f);
     f.state = f.nextState = f.temp = f.affs = f._affs = null;
     if (c = f.next) while(c) rem(c, f, c = c.sib)
   }
@@ -81,20 +80,17 @@ const subdiff = (p, c=p.next, i=c && new KeyIndex, next, n) => {
 }
 // diff "sideways" along the calculated path
 //   * initially used call stack; led to overflows for lateral updates
-//   * htap is "path" in reverse, we don't need it to avoid .reverse(), but we avoid .length = 0
 const sidediff = (f, i=0, path=fill()) => {
   while(f = path.pop()) if (f.temp && f.inPath) subdiff(f);
   while(f = lags.pop()) subdiff(f);
   while(f = rems[i++]) emit("willRemove", f, f.it, f.prev), f.effs = f.sib = f.it = f.prev = null;
   rems.length = i = 0; while(f = evts[i++]) emit(...f); evts.length = 0;
-  while(f = htap.pop()) {
-    f.rendered && f.rendered(f, !f._affN && !f.isOrig);
-    f._affN =+ (f._affs = null, f.isOrig = false);
-  }
 }
 // might even move setting "on" into sidediff directly if we can properly implement well-defined mounts/unmounts
 let on = false;
 const rediff = tau => () => on = !!sidediff(on = !pop(tau, push));
+// XXX should we get rid of nextState and just merge into current state?
+//   * well, then there'd be inconsistency between current rendered state and current state
 Frame.prototype.diff = function(part, tau=-1, next){
   const p = this.inPath, store = p ? "state" : "nextState";
   if (next = this.nextState || this[store]) isFn(part) ? part(next) : merge(next, part);

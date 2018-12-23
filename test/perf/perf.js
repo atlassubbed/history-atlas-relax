@@ -1,6 +1,6 @@
 const { Timer } = require("atlas-basic-timer");
 const serial = require("atlas-serial");
-const { TemplateFactory, count, printHeap, printTitle, doWork } = require("./helpers");
+const { TemplateFactory, count, printHeap, printTitle, doWork, asap } = require("./helpers");
 const { diff, Frame } = require("../../src/index");
 const { expect } = require("chai");
 const { copy, isArr } = require("../util")
@@ -104,11 +104,11 @@ for (let c in cases){
         run("schedule monocolor", () => f3[0].diff(state4, ++i === SAMPLES ? -1 : 1)), i = -1;
         run("schedule immediate", () => f3[0].diff(state3, ++i === SAMPLES ? -1 : 0)), i = -1;
         runAsync("update first async", done => {
-          f3[++i].done = done;
-          f3[i].diff(state4, 0)
+          f3[++i].diff(state4, 0)
+          asap(done);
         }, () => runAsync("update async", done => {
-          f3[0].done = done;
           f3[0].diff(++i%2 ? state3 : state5, 0)
+          asap(done)
         }, () => taskDone()))
       })
     }

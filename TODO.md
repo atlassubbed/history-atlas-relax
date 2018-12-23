@@ -10,6 +10,11 @@
 
 2. Fix flushed event ordering
 4. Queue receive events in rems (just queue the node)
+5. Make render only take (node, isFirst) arguments.
+6. Make Frame constructor default inPath to true (for upgrading render to be out of path)
+   * thus during render, isFirst is equal to inPath
+   * any code in constructor can still manually mutate/change the state (as in render)
+
 
 Steps to achieve well-defined diff (without rebasing, yet):
   1. Implement the flush model, where all events are queued and flushed at the end of the cycle.

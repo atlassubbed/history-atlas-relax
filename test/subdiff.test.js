@@ -58,22 +58,20 @@ describe("subdiff", function(){
             willUpdate: f => {
               didR1++
               expect(f.temp).to.equal(t1)
-            },
-            didUpdate: () => didU1++
+            }
           })
           const pt2 = m(2, {
             willUpdate: f => {
               didR2++
               expect(f.temp).to.equal(t2)
-            },
-            didUpdate: () => didU2++
+            }
           })
           insert(next, n1, t1)
           insert(next, n2, t2)
           insert(prev, p1, pt1)
           insert(prev, p2, pt2)
           diff(h(next), diff(h(prev), null))
-          expect(didR1).to.equal(didR2).to.equal(didU1).to.equal(didU2).to.equal(1);
+          expect(didR1).to.equal(didR2).to.equal(1);
         })
       })
     })
@@ -102,15 +100,13 @@ describe("subdiff", function(){
             willUpdate: f => {
               didR1++
               expect(f.temp).to.equal(t1)
-            },
-            didUpdate: () => didU1++
+            }
           })
           const pt2 = m(2, {
             willUpdate: f => {
               didR2++
               expect(f.temp).to.equal(t2)
-            },
-            didUpdate: () => didU2++
+            }
           })
           t1.key = t2.key = pt1.key = pt2.key = "k1";
           insert(next, n1, t1)
@@ -118,7 +114,7 @@ describe("subdiff", function(){
           insert(prev, p1, pt1)
           insert(prev, p2, pt2)
           diff(h(next), diff(h(prev), null))
-          expect(didR1).to.equal(didR2).to.equal(didU1).to.equal(didU2).to.equal(1);
+          expect(didR1).to.equal(didR2).to.equal(1);
         })
       })
     })

@@ -154,13 +154,10 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
         msg += " and c"
         events.push({wU: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
         isChild && events.push({wR: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
-        events.push({dU: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
       }
-      events.push({dU: 0, dt: tau_gp, state: finalState});
       desc.push(msg)
       desc.push("immediately update c");
       events.push({wU: 1, dt: tau_gc, state: finalState});
-      events.push({dU: 1, dt: tau_gc, state: finalState})
     } else if (tau_gp < 0){ // parent sync
       let msg = "immediately update p"
       events.push({wU: 0, dt: tau_gp, state: finalState});
@@ -168,26 +165,20 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
         msg += " and c"
         events.push({wU: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
         isChild && events.push({wR: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
-        events.push({dU: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
       }
-      events.push({dU: 0, dt: tau_gp, state: finalState});
       desc.push(msg)
       desc.push("wait tau_gc then update c");
       events.push({wU: 1, dt: tau_gc, state: finalState});
-      events.push({dU: 1, dt: tau_gc, state: finalState})
     } else if (tau_gc < 0){ // child sync
       desc.push("immediately update c");
       events.push({wU: 1, dt: tau_gc, state: finalState});
-      events.push({dU: 1, dt: tau_gc, state: finalState});
       let msg = "wait tau_gp then update p"
       events.push({wU: 0, dt: tau_gp, state: finalState});
       if (isChild || isEntangled){
         msg += " and c"
         events.push({wU: 1, dt: tau_gp, state: finalState});
         isChild && events.push({wR: 1, dt: tau_gp, state: finalState});
-        events.push({dU: 1, dt: tau_gp, state: finalState});
       }
-      events.push({dU: 0, dt: tau_gp, state: finalState});
       desc.push(msg)
     } else { // both async
       if (tau_gc === tau_gp){ // parent and child are coherent
@@ -195,30 +186,23 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
           desc.push("wait tau_gc then update c and p");
           events.push({wU: 1, dt: tau_gc, state: finalState});
           events.push({wU: 0, dt: tau_gc, state: finalState});
-          events.push({dU: 0, dt: tau_gc, state: finalState});
-          events.push({dU: 1, dt: tau_gc, state: finalState})
         } else {
           let msg = `wait tau_gp then update p and c`;
           events.push({wU: 0, dt: tau_gp, state: finalState});
           events.push({wU: 1, dt: tau_gp, state: finalState});
           isChild && events.push({wR: 1, dt: tau_gp, state: finalState});
-          events.push({dU: 1, dt: tau_gp, state: finalState});
-          events.push({dU: 0, dt: tau_gp, state: finalState});
           desc.push(msg)
         }
       } else if (tau_gc < tau_gp){ // child relaxes faster
         desc.push("wait tau_gc then update c");
         events.push({wU: 1, dt: tau_gc, state: finalState});
-        events.push({dU: 1, dt: tau_gc, state: finalState});
         let msg = "wait the remainder of tau_gp-tau_gc then update p"
         events.push({wU: 0, dt: tau_gp, state: finalState});
         if (isChild || isEntangled){
           msg += " and c"
           events.push({wU: 1, dt: tau_gp, state: finalState});
           isChild && events.push({wR: 1, dt: tau_gp, state: finalState});
-          events.push({dU: 1, dt: tau_gp, state: finalState});
         }
-        events.push({dU: 0, dt: tau_gp, state: finalState});
         desc.push(msg)
       } else { // parent relaxes faster
         let msg = "wait tau_gp then update p"
@@ -227,14 +211,11 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
           msg += " and c"
           events.push({wU: 1, dt: tau_gp, state: finalState});
           isChild && events.push({wR: 1, dt: tau_gp, state: finalState});
-          events.push({dU: 1, dt: tau_gp, state: finalState});
         }
-        events.push({dU: 0, dt: tau_gp, state: finalState});
         desc.push(msg)
         if (!isChild && !isEntangled){
           desc.push("wait the remainder of tau_gc-tau_gp then update c");
           events.push({wU: 1, dt: tau_gc, state: finalState});
-          events.push({dU: 1, dt: tau_gc, state: finalState});
         }
       }
     }
@@ -246,14 +227,11 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
         msg += " and c"
         events.push({wU: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
         isChild && events.push({wR: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
-        events.push({dU: 1, dt: tau_gp, state: tau_c < 0 ? null : initialState});
       }
-      events.push({dU: 0, dt: tau_gp, state: finalState});
       desc.push(msg)
       if (tau_c >= 0 && !isChild && !isEntangled){ // child was oscillating and is not downstream
         desc.push("wait tau_c then update c");
         events.push({wU: 1, dt: tau_c, state: initialState});
-        events.push({dU: 1, dt: tau_c, state: initialState})
       }
     } else { // async
       if (tau_c < 0){ // child wasn't oscillating
@@ -263,31 +241,24 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
           msg += " and c"
           events.push({wU: 1, dt: tau_gp, state: null});
           isChild && events.push({wR: 1, dt: tau_gp, state: null});
-          events.push({dU: 1, dt: tau_gp, state: null});
         }
-        events.push({dU: 0, dt: tau_gp, state: finalState});
         desc.push(msg)
       } else if (tau_c < tau_gp){ // child relaxes faster
         desc.push("wait tau_c then update c");
         events.push({wU: 1, dt: tau_c, state: initialState});
-        events.push({dU: 1, dt: tau_c, state: initialState});
         let msg = "wait the remainder of tau_gp-tau_c then update p"
         events.push({wU: 0, dt: tau_gp, state: finalState});
         if (isChild || isEntangled){
           msg += " and c"
           events.push({wU: 1, dt: tau_gp, state: initialState});
           isChild && events.push({wR: 1, dt: tau_gp, state: initialState});
-          events.push({dU: 1, dt: tau_gp, state: initialState});
         }
-        events.push({dU: 0, dt: tau_gp, state: finalState});
         desc.push(msg)
       } else if (tau_c === tau_gp){ // parent and child are coherent
         desc.push("wait tau_c then update p and c");
         events.push({wU: 0, dt: tau_c, state: finalState});
         events.push({wU: 1, dt: tau_c, state: initialState});
         isChild && events.push({wR: 1, dt: tau_c, state: initialState});
-        events.push({dU: 1, dt: tau_c, state: initialState});
-        events.push({dU: 0, dt: tau_c, state: finalState});
       } else { // parent relaxes faster
         let msg = "wait tau_gp then update p"
         events.push({wU: 0, dt: tau_gp, state: finalState});
@@ -295,14 +266,11 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
           msg += " and c"
           events.push({wU: 1, dt: tau_gp, state: initialState});
           isChild && events.push({wR: 1, dt: tau_gp, state: initialState});
-          events.push({dU: 1, dt: tau_gp, state: initialState});
         }
-        events.push({dU: 0, dt: tau_gp, state: finalState});
         desc.push(msg)
         if (!isChild && !isEntangled){
           desc.push("wait the remainder of tau_gp-tau_c then update c");
           events.push({wU: 1, dt: tau_c, state: initialState});
-          events.push({dU: 1, dt: tau_c, state: initialState})
         }
       }
     }
@@ -310,7 +278,6 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
     if (tau_gc < 0) { // sync
       desc.push("immediately update c")
       events.push({wU: 1, dt: tau_gc, state: finalState});
-      events.push({dU: 1, dt: tau_gc, state: finalState});
       if (tau_p >= 0) { // parent was oscillating
         let msg = "wait tau_p then update p";
         events.push({wU: 0, dt: tau_p, state: initialState});
@@ -318,16 +285,13 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
           msg += " and c"
           events.push({wU: 1, dt: tau_p, state: finalState});
           isChild && events.push({wR: 1, dt: tau_p, state: finalState});
-          events.push({dU: 1, dt: tau_p, state: finalState});
         }
-        events.push({dU: 0, dt: tau_p, state: initialState});
         desc.push(msg)
       }
     } else { // async
       if (tau_p < 0){ // paren't wasnt oscillating
         desc.push("wait tau_gc then update c");
         events.push({wU: 1, dt: tau_gc, state: finalState});
-        events.push({dU: 1, dt: tau_gc, state: finalState});
       } else if (tau_p < tau_gc){ // parent relaxes faster
         let msg = `wait tau_p then update p`;
         events.push({wU: 0, dt: tau_p, state: initialState});
@@ -335,44 +299,34 @@ const getExpectedResult = ({ tau_gp, tau_gc, tau_p, tau_c }, { isChild, isEntang
           msg += " and c"
           events.push({wU: 1, dt: tau_p, state: finalState});
           isChild && events.push({wR: 1, dt: tau_p, state: finalState});
-          events.push({dU: 1, dt: tau_p, state: finalState});
         }
-        events.push({dU: 0, dt: tau_p, state: initialState});
         desc.push(msg)
         if (!isChild && !isEntangled){
           desc.push("wait the remainder of tau_gc-tau_p then update c");
           events.push({wU: 1, dt: tau_gc, state: finalState});
-          events.push({dU: 1, dt: tau_gc, state: finalState})
         }
       } else if (tau_p === tau_gc) { // parent and child are coherent
         if (!isChild && !isEntangled){
           desc.push("wait tau_p then update c and p");
           events.push({wU: 1, dt: tau_p, state: finalState});
           events.push({wU: 0, dt: tau_p, state: initialState});
-          events.push({dU: 0, dt: tau_p, state: initialState});
-          events.push({dU: 1, dt: tau_p, state: finalState})
         } else {
           let msg = `wait tau_p then update p and c`;
           events.push({wU: 0, dt: tau_p, state: initialState});
           events.push({wU: 1, dt: tau_p, state: finalState});
           isChild && events.push({wR: 1, dt: tau_p, state: finalState});
-          events.push({dU: 1, dt: tau_p, state: finalState});
-          events.push({dU: 0, dt: tau_p, state: initialState});
           desc.push(msg)
         }
       } else { // child relaxes faster
         desc.push("wait tau_gc then update c");
         events.push({wU: 1, dt: tau_gc, state: finalState});
-        events.push({dU: 1, dt: tau_gc, state: finalState});
         let msg = `wait the remainder of tau_p-tau_gc then update p`;
         events.push({wU: 0, dt: tau_p, state: initialState});
         if (isChild || isEntangled){
           msg += " and c"
           events.push({wU: 1, dt: tau_p, state: finalState});
           isChild && events.push({wR: 1, dt: tau_p, state: finalState});
-          events.push({dU: 1, dt: tau_p, state: finalState});
         }
-        events.push({dU: 0, dt: tau_p, state: initialState});
         desc.push(msg)
       }
     }
