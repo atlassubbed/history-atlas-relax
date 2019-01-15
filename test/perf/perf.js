@@ -5,6 +5,9 @@ const { diff, Frame } = require("../../src/index");
 const { expect } = require("chai");
 const { copy, isArr } = require("../util")
 
+// TODO: add rebasing tests, particularly for updates
+//   theoretically, should be faster since no path is filled and no subdiff is done
+
 const SCALES = [50];
 const SAMPLES = 5e3;
 const RENDER_WORK = 0; // set to zero to compare just the implementation
@@ -94,6 +97,7 @@ for (let c in cases){
         run("mount", () => diff(t10)), i = -1;
         run("unmount", () => diff(null, f1[++i])), i = -1;
         run("entangle one to many", () => f2[0].sub(f2[++i])), i = -1;
+        // TODO change this to test a fully entangled tree with no direct edges
         run("update entangled", () => diff(t20, f2[++i])), i = -1;
         run("detangle one to many", () => f2[0].unsub(f2[++i])), i = -1;
         run("update first sync", () => f3[++i].diff(state4)), i = -1;

@@ -1,4 +1,5 @@
 // Timer is used to record update times.
+// TODO: log didDiff events in timer, also
 module.exports = class Timer {
   constructor(events){
     this.events = events;

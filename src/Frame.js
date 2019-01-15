@@ -3,13 +3,13 @@ const { isFn } = require("./util");
 const isFrame = f => !!f && isFn(f.render);
 
 // not to be instantiated by caller
-const Frame = function(temp, effs){
+const Frame = module.exports = function(temp, effs){
   if (!temp) return;
   this.effs = effs, this.temp = temp;
   this.affs = this.next = this._affs = this.nextState = this.state =
   this.it = this.sib = this.prev = this.top = this.bot = null;
   this._affN = this.step = 0;
-  this.inPath = true, this.isOrig = false;
+  this.path = 1;
 }
 Frame.prototype.render = function(data, next){ return next }
 // typical code will make sparing use of (un)sub
@@ -24,17 +24,3 @@ Frame.prototype.unsub = function(f, a){
     (a=f.affs) && a.delete(this) && a.size || (f.affs = null)
 }
 Frame.isFrame = isFrame
-
-// temp is already normalized
-const node = (t, p) => {
-  let effs = p && p.effs;
-  if (!isFn(t.name)) t = new Frame(t, effs);
-  else {
-    const Sub = t.name;
-    if (isFrame(Sub.prototype)) t = new Sub(t, effs);
-    else t = new Frame(t, effs), t.render = Sub;
-  }
-  return t;
-}
-
-module.exports = { Frame, node }

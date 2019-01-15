@@ -20,10 +20,8 @@ module.exports = class Renderer {
   diff(temp){
     const { name, data, next } = temp;
     if (!isFn(name)) return next;
-    const p = name.prototype;
-    if (p && isFn(p.render))
-      return (new name(temp)).render(data, next);
-    return name(data, next);
+    const p = name.prototype, args = [data, next, {}, true];
+    return p && isFn(p.render) ? p.render.apply(args[2], args) : name(...args);
   }
   renderStatic(temp){
     if (isVoid(temp)) return null;

@@ -6,6 +6,7 @@ const field = {};
 //   * nodes of the same frequency "oscillate coherently"
 //   * during a diff cycle, affected nodes "relax"
 
+// TODO: remove this check for Promise, since we can just rely on babel?
 let asap = typeof Promise === "function" ? Promise.resolve() : false;
 asap = asap && asap.then.bind(asap);
 const reject = e => setTimeout(() => {throw e}); // i don't like this

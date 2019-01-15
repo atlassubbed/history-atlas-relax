@@ -1,3 +1,6 @@
+Managed diffs: keep track of prev/next automatically in prev/next fields?
+  * then use some field to indicate that this is a managed parent
+
 1. EITHER: Implement post-order events for effects
    OR: Keep an array of effects to notify about the end of the diff
        if (!eff.inArr) notify.push(eff), eff.inArr = true;
@@ -8,13 +11,17 @@
        didDiff would give effects a chance to apply accumulated mutations (e.g. mount trees)
     Another idea, we could make all mutation events async, and queue them in parallel.
 
-2. Fix flushed event ordering
+2. Fix flushed event ordering (iterate over children backwards when filling path)
 4. Queue receive events in rems (just queue the node)
 5. Make render only take (node, isFirst) arguments.
 6. Make Frame constructor default inPath to true (for upgrading render to be out of path)
    * thus during render, isFirst is equal to inPath
    * any code in constructor can still manually mutate/change the state (as in render)
-
+7. Make path a linked list using left/right pointers instead of inPath/step/it
+   * might have to get rid of _affs and use entanglement change buffer map
+   * could remove and insert elements O(1) into the path during a diff cycle
+8. Consider bringing back parent pointers to avoid using stack memory during tree traversals
+   * and helps us avoid doing the "f.it = p" hack for event flushing.
 
 Steps to achieve well-defined diff (without rebasing, yet):
   1. Implement the flush model, where all events are queued and flushed at the end of the cycle.
@@ -53,6 +60,10 @@ Considerations:
 
 Minor considerations:
 
+0. Instead of using so many pointers on Frames, use an external DoublyLinkedLists class everywhere.
+   * e.g. for children, schedule, etc.
+   * Advantage: less pointers on frames
+   * Disadvantage: garbage memory
 1. Minor performance boosts, at the expense of increased code complexity:
    * get rid of refill(...) since we queue up removed nodes anyway, might as well use the entire path
      * queue up recieves, cache move/add/remove event info directly on node, then iterate over path
@@ -92,3 +103,5 @@ Application-level considerations (things that can be built without changing the 
    * reactiveDict could let you .get multiple fields at once, or specify a projection, could even support nesting
 9. Implement "short" or "memo" function which seamlessly integrates into template/JSX syntax
 10. Implement "jsx" template literal operator/function which makes it easy to not use JSX.
+11. Implement state/nextState beyond the engine level, e.g. at the application level.
+    * The engine shouldn't care about what constitutes state.

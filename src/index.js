@@ -1,1 +1,1 @@
-module.exports = { Frame: require("./Frame").Frame, diff: require("./diff") }
+module.exports = { Frame: require("./Frame"), diff: require("./diff") }

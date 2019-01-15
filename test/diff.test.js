@@ -19,6 +19,12 @@ const ignoreMetaTemp = node => deepIgnore(node, n => {
   delete n.temp.p;
 })
 
+const getNullFrame = () => {
+  const f = diff({});
+  diff(null, f);
+  return f;
+}
+
 // XXX needs to be a factory, this is a legacy factory which used to support ArrayRenderers
 const renderers = () => [new LCRSRenderer];
 
@@ -37,7 +43,7 @@ describe("diff", function(){
       })
     })
     it("should add a new frame if diffing on top of a null frame", function(){
-      let nullFrame = new Frame();
+      const nullFrame = getNullFrame();
       const result = diff({name: "div"}, nullFrame);
       expect(result).to.not.be.false;
       expect(result).to.not.equal(nullFrame);
@@ -106,7 +112,7 @@ describe("diff", function(){
         })
       })
       it("should mount a new frame as the first virtual child if diffing on top of a null frame", function(){
-        const nullFrames = [null, false, 0, undefined, new Frame, ""];
+        const nullFrames = [null, false, 0, undefined, getNullFrame(), ""];
         nullFrames.forEach(f => {
           const renderer = new LCRSRenderer;
           const p = diff({name: "p"}, null, {effs: renderer});
@@ -119,7 +125,7 @@ describe("diff", function(){
         })
       })
       it("should mount a new frame as the first virtual child if the parent already has virtual children", function(){
-        const nullFrames = [null, false, 0, undefined, new Frame, ""];
+        const nullFrames = [null, false, 0, undefined, getNullFrame(), ""];
         nullFrames.forEach(f => {
           const renderer = new LCRSRenderer;
           const p = diff({name: "p"}, null, {effs: renderer});
@@ -134,7 +140,7 @@ describe("diff", function(){
         })
       })
       it("should not be able to mount multiple frames at once", function(){
-        const nullFrames = [null, false, 0, undefined, new Frame, ""];
+        const nullFrames = [null, false, 0, undefined, getNullFrame(), ""];
         nullFrames.forEach(f => {
           const renderer = new LCRSRenderer;
           const p = diff({name: "p"}, null, {effs: renderer});
@@ -257,7 +263,7 @@ describe("diff", function(){
         })
       })
       it("should mount a new frame after the specified virtual sibling if diffing on top of a null frame", function(){
-        const nullFrames = [null, false, 0, undefined, new Frame, ""];
+        const nullFrames = [null, false, 0, undefined, getNullFrame(), ""];
         nullFrames.forEach(f => {
           const renderer = new LCRSRenderer;
           const p = diff({name: "p"}, null, {effs: renderer});
@@ -272,7 +278,7 @@ describe("diff", function(){
         })
       })
       it("should not be able to mount multiple frames at once", function(){
-        const nullFrames = [null, false, 0, undefined, new Frame, ""];
+        const nullFrames = [null, false, 0, undefined, getNullFrame(), ""];
         nullFrames.forEach(f => {
           const renderer = new LCRSRenderer;
           const p = diff({name: "p"}, null, {effs: renderer});

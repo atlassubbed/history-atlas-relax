@@ -122,15 +122,6 @@ describe("entanglement", function(){
           ])
         })
       })
-      it.skip("should properly destroy nodes removed during willUpdate", function(){
-        const { nodes, events } = rootCase.get({
-          0: {willUpdate: f => diff(null, nodes[3])}
-        })
-        diff(p(0), nodes[0]);
-        expect(events).to.deep.equal([
-          {wU: 0}, {wU: 1}, {wU: 2}, {mWP: 3}, {mWR: 0},
-        ])
-      })
     })
   })
   describe("amongst subframes", function(){
@@ -372,8 +363,8 @@ describe("entanglement", function(){
         })
         const result = [
           {wU: 0}, {wU: 4}, {wU: 5}, {wU: 6}, {wU: 8}, {wU: 7},
-          {mWP: 1}, {mWP: 3}, {mWP: 2},
-          {mWR: 0}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},
+          {mWR: 0}, {mWP: 1}, {mWP: 3}, {mWP: 2},
+          {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},
         ]
         diff(treeCase.tag0(), nodes[0]);
         expect(events).to.deep.equal(result);
@@ -393,8 +384,8 @@ describe("entanglement", function(){
         })
         const result = [
           {wU: 0}, {wU: 4}, {wU: 5}, {wU: 6}, {wU: 8}, {wU: 7}, {wA: 9},
-          {mWP: 1}, {mWP: 3}, {mWP: 2},
-          {mWR: 0}, {mWA: 9}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},
+          {mWR: 0}, {mWP: 1}, {mWP: 3}, {mWP: 2},
+          {mWA: 9}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},
         ]
         diff(treeCase.tag0(), nodes[0]);
         expect(events).to.deep.equal(result);
@@ -412,8 +403,8 @@ describe("entanglement", function(){
         })
         const result = [
           {wU: 0}, {wU: 4}, {wU: 5}, {wU: 6}, {wU: 8}, {wU: 7}, {wA: 9},
-          {mWP: 1}, {mWP: 3}, {mWP: 2},
-          {mWR: 0}, {mWA: 9}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},
+          {mWR: 0}, {mWP: 1}, {mWP: 3}, {mWP: 2},
+          {mWA: 9}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},
         ]
         diff(treeCase.tag0(), nodes[0]);
         expect(events).to.deep.equal(result);
