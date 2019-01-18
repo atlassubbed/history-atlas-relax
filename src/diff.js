@@ -1,4 +1,4 @@
-const { isArr, norm, merge, isFn } = require("./util")
+const { isArr, norm, isFn } = require("./util")
 const Frame = require("./Frame"), { isFrame } = Frame;
 const { unfill, fill, push } = require("./step-leader");
 const { relax, excite, pop } = require("./field")
@@ -67,8 +67,7 @@ const unmount = (f, isRoot, c, ch) => {
 // diff "downwards" from a parent, p, short circuit if next or prev have zero elements
 //   * we used to have a separate mount(...) function, but it's more concise this way
 const subdiff = (p, c=p.next, i=c && new KeyIndex, next, n) => {
-  if (p.nextState) p.state = merge(p.state || {}, p.nextState), relax(p, p.nextState = null);
-  next = render(p, i), n = next.length; // XXX use aux stack for all diff mounts called during render so that managed diff mounts happen in order?
+  relax(p), next = render(p, i), n = next.length; // XXX use aux stack for all diff mounts called during render so that managed diff mounts happen in order?
   if (!n && c) {while(c) rem(c, p, c = c.sib); unmount()}
   else if (n) {
     if (c) {
@@ -136,7 +135,7 @@ const sidediff = (f, i=0, path=fill(on = 1)) => {
   on = 2; while(f = evts[i++]) {
     if (isArr(f)) emit(...f)
     else emit("willRemove", f, f.it, f.prev),
-      relax(f, f.state = f.nextState = f.temp = f.affs = f._affs = f.sib = f.it = f.prev = f.effs = null);
+      relax(f, f.temp = f.affs = f._affs = f.sib = f.it = f.prev = f.effs = null);
   }
   on = evts.length = 0;
 }
@@ -151,18 +150,17 @@ const node = (t, p) => {
   }
   return on = 1, t;
 }
-
+// TODO for inner and outer diffs:
+//   use errors instead of returning false for unallowed operations
+//   requires rock-solid error handling
 const rediff = tau => () => sidediff(pop(tau, push))
-// XXX should we get rid of nextState and just merge into current state?
-//   * well, then there'd be inconsistency between current rendered state and current state
-//   * or, we could remove state tracking responsibility from the engine and only schedule
-Frame.prototype.diff = function(part, tau=-1){
-  if (on > 1) return false;
-  if (isFn(part)) part(this.nextState || merge(this.nextState = {}, this.state));
-  else this.nextState = this.nextState ? merge(this.nextState, part) : part || {};
-  this.path || (tau < 0 ? (on ? fill : sidediff)(push(this)) : excite(this, tau, rediff))
+// instance (inner) diff (schedule updates for frames)
+Frame.prototype.diff = function(tau=-1){
+  if (on > 1 || this.path > 1 || (this.path && !this._affN)) return false;
+  tau < 0 ? (on ? fill : sidediff)(push(this)) : excite(this, tau, rediff);
+  return true;
 }
-// public diff (mount, unmount and update frames)
+// public (outer) diff (mount, unmount and update frames)
 //   * diff root node, supports virtual/managed diffs for imperative backdooring
 module.exports = (t, f, p, s, ps) => {
   let r = false, inDiff = on;

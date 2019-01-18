@@ -76,10 +76,8 @@ const printTitle = (name, padding) => {
 }
 
 const doWork = n => {
-  if (n){
-    const result = [];
-    while(n--) result.push({name: "div"});
-  }
+  const result = [];
+  while(n--) result.push({name: "div"});
 }
 
 module.exports = { TemplateFactory, count, printHeap, printTitle, doWork, asap }

@@ -1783,26 +1783,42 @@ describe("rebasing (merging a new diff into current diff)", function(){
       const events = [], tracker = new Tracker(events);
       const r = diff(h(0), null, {effs: tracker});
       diff(h(1, hooks("ctor", f => {
-        expect(r.diff({n: 0})).to.be.false;
+        expect(r.setState({n: 0})).to.be.false;
         called++
       })))
       expect(called).to.equal(1);
-      expect(r.state).to.be.null;
-      expect(r.nextState).to.be.null;
       expect(events).to.eql([{wA: 0}, {mWA: 0}])
+    })
+    it("should not update nodes that have been unmounted", function(){
+      const events = [], tracker = new Tracker(events);
+      const r = diff(h(0), null, {effs: tracker});
+      expect(diff(null, r)).to.be.true;
+      events.length = 0;
+      expect(r.setState({n: 0})).to.be.false;
+      expect(events).to.be.empty;
+    })
+    it("should not update nodes that are being unmounted", function(){
+      let called = 0;
+      const events = [], tracker = new Tracker(events);
+      const r = diff(h(0), null, {effs: tracker});
+      diff(h(1, hooks("willAdd", f => {
+        expect(diff(null, r)).to.be.true;
+        expect(r.setState({n: 0})).to.be.false;
+        called++
+      })), null, {effs: tracker})
+      expect(called).to.equal(1);
+      expect(events).to.eql([{wA: 0}, {mWA: 0}, {wA: 1}, {mWA: 1}, {mWP: 0}])
     })
     it("should not update nodes during willAdd mutation event", function(){
       let called = 0;
       const events = [], tracker = new Tracker(events);
       const r = diff(h(0), null, {effs: [tracker]});
       diff(h(1), null, {effs: [{willAdd: f => {
-        const res = r.diff({n: 0})
+        const res = r.setState({n: 0})
         expect(res).to.be.false;
         called++
       }}]})
       expect(called).to.equal(1);
-      expect(r.state).to.be.null;
-      expect(r.nextState).to.be.null;
       expect(events).to.eql([{wA: 0}, {mWA: 0}])
     })
     it("should not update nodes during willRemove mutation event", function(){
@@ -1810,14 +1826,12 @@ describe("rebasing (merging a new diff into current diff)", function(){
       const events = [], tracker = new Tracker(events);
       const r = diff(h(0), null, {effs: [tracker]});
       const f = diff(h(1), null, {effs: [{willRemove: f => {
-        const res = r.diff({n: 0})
+        const res = r.setState({n: 0})
         expect(res).to.be.false;
         called++
       }}]})
       diff(null, f);
       expect(called).to.equal(1);
-      expect(r.state).to.be.null;
-      expect(r.nextState).to.be.null;
       expect(events).to.eql([{wA: 0}, {mWA: 0}])
     })
     it("should not update nodes during willReceive mutation event", function(){
@@ -1825,14 +1839,12 @@ describe("rebasing (merging a new diff into current diff)", function(){
       const events = [], tracker = new Tracker(events);
       const r = diff(h(0), null, {effs: [tracker]});
       const f = diff(h(1), null, {effs: [{willReceive: f => {
-        const res = r.diff({n: 0})
+        const res = r.setState({n: 0})
         expect(res).to.be.false;
         called++
       }}]})
       diff(h(1), f)
       expect(called).to.equal(1);
-      expect(r.state).to.be.null;
-      expect(r.nextState).to.be.null;
       expect(events).to.eql([{wA: 0}, {mWA: 0}])
     })
     it("should not update nodes during willMove mutation event", function(){
@@ -1841,15 +1853,13 @@ describe("rebasing (merging a new diff into current diff)", function(){
       const r = diff(h(0), null, {effs: [tracker]});
       const f = diff(h(1, null, [k(2), k(3)]), null, {effs: [{willMove: f => {
         if (f.temp.data.id === 3){
-          const res = r.diff({n: 0})
+          const res = r.setState({n: 0})
           expect(res).to.be.false;
           called++
         }
       }}]})
       diff(h(1, null, [k(3), k(2)]), f);
       expect(called).to.equal(1);
-      expect(r.state).to.be.null;
-      expect(r.nextState).to.be.null;
       expect(events).to.eql([{wA: 0}, {mWA: 0}])
     })
     it("should rebase itself onto the path when updating itself during willAdd", function(){
@@ -1857,7 +1867,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
       const events = [], tracker = new Tracker(events);
       const hooks = {
         willAdd: f => {
-          expect(f.diff({n: 0})).to.not.be.false;
+          expect(f.setState({n: 0})).to.be.true;
           calledAdd++;
         },
         willUpdate: f => {
@@ -1881,7 +1891,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         }
       }
       diff(h(0, parentHooks, h(1, hooks("willAdd", f => {
-        expect(parent.diff({n: 0})).to.not.be.false;
+        expect(parent.setState({n: 0})).to.be.true;
         calledAdd++;
       }))), null, {effs: tracker});
       expect(calledAdd).to.equal(1);
@@ -1900,7 +1910,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
       })), null, {effs: tracker});
       diff(h(1, hooks("willAdd", f => {
         f.sub(a);
-        expect(a.diff({n: 0})).to.not.be.false;
+        expect(a.setState({n: 0})).to.be.true;
         calledAdd++;
       })), null, {effs: tracker})
       expect(calledAdd).to.equal(1);
@@ -1919,7 +1929,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
           calledAdd2++;
         })), null, {effs: tracker});
         calledAdd++;
-        expect(r.diff({n: 0})).to.not.be.false;
+        expect(r.setState({n: 0})).to.be.false;
       }))
       diff(temp, null, {effs: tracker})
       expect(calledAdd).to.equal(1);
@@ -1934,7 +1944,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         calledUpd++;
       })), null, {effs: tracker});
       const temp = h(1, hooks("willAdd", f => {
-        expect(r1.diff({n: 0})).to.not.be.false;
+        expect(r1.setState({n: 0})).to.be.true;
         calledAdd++;
       }))
       events.length = 0;
@@ -1951,8 +1961,8 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(f.state).to.eql({n: 1});
       })), null, {effs: tracker});
       const temp = h(0, hooks("willAdd", f => {
-        expect(r.diff({n: 0})).to.not.be.false;
-        expect(r.diff({n: 1})).to.not.be.false;
+        expect(r.setState({n: 0})).to.be.true;
+        expect(r.setState({n: 1})).be.be.true;
         calledAdd++;
       }))
       events.length = 0;
@@ -1966,7 +1976,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
       const events = [], tracker = new Tracker(events);
       const temp = h(0, hooks("willUpdate", f => {
         if (called++) return;
-        expect(f.diff({n: 0})).to.not.be.false;
+        expect(f.setState({n: 0})).to.be.true;
       }))
       const f = diff(temp, null, {effs: tracker});
       events.length = 0;
@@ -1985,7 +1995,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
       }
       const temp = h(0, parentHooks, h(1, hooks("willUpdate", f => {
         if (calledUpd2++) return;
-        expect(parent.diff({n: 0})).to.not.be.false;
+        expect(parent.setState({n: 0})).to.be.true;
       })))
       const f = diff(temp, null, {effs: tracker});
       events.length = 0;
@@ -2005,7 +2015,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
       })), null, {effs: tracker}); // affector
       const affectTemp = h(1, hooks("willUpdate", f => {
         if (calledUpd2++) return;
-        expect(a.diff({n: 0})).to.not.be.false;
+        expect(a.setState({n: 0})).to.be.true;
       }))
       const f = diff(affectTemp, null, {effs: tracker});
       f.sub(a);
@@ -2025,7 +2035,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
           expect(f.state).to.eql({n: 0});
           calledAdd++
         })), null, {effs: tracker});
-        expect(r.diff({n: 0})).to.not.be.false;
+        expect(r.setState({n: 0})).to.be.false;
         calledUpd++
       }))
       const r1 = diff(temp, null, {effs: tracker})
@@ -2043,7 +2053,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         calledUpd++
       })), null, {effs: tracker});
       const temp = h(1, hooks("willUpdate", f => {
-        expect(r1.diff({n: 0})).to.not.be.false;
+        expect(r1.setState({n: 0})).to.be.true;
         calledUpd2++
       }))
       const f = diff(temp, null, {effs: tracker})
@@ -2061,8 +2071,8 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(f.state).to.eql({n: 1});
       })), null, {effs: tracker});
       const temp = h(0, hooks("willUpdate", f => {
-        expect(r.diff({n: 0})).to.not.be.false;
-        expect(r.diff({n: 1})).to.not.be.false;
+        expect(r.setState({n: 0})).to.be.true;
+        expect(r.setState({n: 1})).to.be.true;
         calledUpd2++;
       }))
       const r1 = diff(temp, null, {effs: tracker})
@@ -2081,7 +2091,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(f.state).to.eql(calledUpd++ ? {n: 0} : null)
       })), null, {effs: tracker});
       const temp = h(2, hooks("willUpdate", f => {
-        expect(r2.diff({n: 0})).to.not.be.false;
+        expect(r2.setState({n: 0})).to.be.true;
         calledUpd2++
       }))
       const r3 = diff(temp, null, {effs: tracker})
@@ -2100,7 +2110,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(f.state).to.eql(calledUpd++ ? {n: 0} : null)
       }), h(3)), null, {effs: tracker});
       const temp = h(2, hooks("willUpdate", f => {
-        expect(r2.diff({n: 0})).to.not.be.false;
+        expect(r2.setState({n: 0})).to.be.true;
         calledUpd2++
       }))
       const r3 = diff(temp, null, {effs: tracker})

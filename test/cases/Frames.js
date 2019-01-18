@@ -1,4 +1,4 @@
-const { toArr, copy, isFn } = require("../util");
+const { toArr, copy, isFn, merge } = require("../util");
 const { Frame } = require("../../src/index");
 
 // Frame classification:
@@ -61,17 +61,30 @@ class StatefulFunctionalVector extends Frame {
 // StemCell frames are useful for testing
 //   * they take lifecycle methods as template props
 //   * thus they become "differentiated" upon construction
+//   * they also implement a simple setState function that wraps inner-diff
+//     * the engine doesn't care about how state is stored or changed
+//     * it only cares about scheduling and performing updates.
+//     * state could be as simple as a single primitive field 
+//       or as complex as an object that defines how it is changed
 class StemCell extends Frame {
   constructor(temp, effs){
     let data = temp.data, hooks = data && data.hooks;
     super(temp, effs);
+    this.state = this.nextState = null;
     if (hooks){
       if (hooks.ctor) hooks.ctor.bind(this)(this);
       for (let h in hooks)
         this[h] = hooks[h].bind(this)
     }
   }
+  // always sets state, returns false if didn't result in reschedule/rebase
+  setState(partialState, tau){
+    if (this.nextState) merge(this.nextState, partialState);
+    else this.nextState = partialState || {};
+    return this.diff(tau);
+  }
   render(data, next, f, isFirst){
+    if (f.nextState) f.state = merge(f.state || {}, f.nextState), f.nextState = null;
     isFirst ? f.willAdd && f.willAdd(f) : f.willUpdate && f.willUpdate(f);
     for (let eff of toArr(this.effs)) if (eff && eff.log) eff.log(isFirst ? "wA" : "wU", f);
     if (f.getNext) return f.getNext(data, next, f, isFirst);

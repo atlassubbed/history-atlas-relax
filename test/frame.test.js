@@ -13,11 +13,9 @@ describe("Frame", function(){
       expect(f.affs).to.equal
         (f._affs).to.equal
         (f.next).to.equal
-        (f.state).to.equal
         (f.prev).to.equal
         (f.sib).to.equal
-        (f.it).to.equal
-        (f.nextState).to.be.null
+        (f.it).to.be.null
       expect(f._affN).to.equal(f.step).to.equal(0)
       expect(f.hasOwnProperty("effs")).to.be.true;
       expect(f.effs).to.be.undefined;

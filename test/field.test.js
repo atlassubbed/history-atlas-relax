@@ -101,29 +101,20 @@ const getSystemDescription = state => {
 const oscillate = (nodes, state) => {
   const { tau_p, tau_c, tau_gp, tau_gc } = state;
   // are p and/or c already oscillating?
-  if (tau_p > -1) nodes.p.diff({n: 0}, tau_p);
-  if (tau_c > -1) nodes.c.diff({n: 0}, tau_c);
+  if (tau_p > -1) nodes.p.setState({n: 0}, tau_p);
+  if (tau_c > -1) nodes.c.setState({n: 0}, tau_c);
   // are update photons hitting p and/or c?
-  if (tau_gp != null) nodes.p.diff({n: 1}, tau_gp);
-  if (tau_gc != null) nodes.c.diff({n: 1}, tau_gc);
-}
-const upsertInt = n => nextState => nextState.n = n;
-const upsert0 = upsertInt(0), upsert1 = upsertInt(1);
-const oscillateFn = (nodes, state) => {
-  const { tau_p, tau_c, tau_gp, tau_gc } = state;
-  if (tau_p > -1) nodes.p.diff(upsert0, tau_p);
-  if (tau_c > -1) nodes.c.diff(upsert0, tau_c);
-  if (tau_gp != null) nodes.p.diff(upsert1, tau_gp);
-  if (tau_gc != null) nodes.c.diff(upsert1, tau_gc);
+  if (tau_gp != null) nodes.p.setState({n: 1}, tau_gp);
+  if (tau_gc != null) nodes.c.setState({n: 1}, tau_gc);
 }
 const oscillateDef = (nodes, state) => {
   const { tau_p, tau_c, tau_gp, tau_gc } = state;
   // are p and/or c already oscillating?
-  if (tau_p > -1) nodes.p.diff({n: 0}, tau_p);
-  if (tau_c > -1) nodes.c.diff({n: 0}, tau_c);
+  if (tau_p > -1) nodes.p.setState({n: 0}, tau_p);
+  if (tau_c > -1) nodes.c.setState({n: 0}, tau_c);
   // are update photons hitting p and/or c?
-  if (tau_gp != null) nodes.p.diff({n: 1}, tau_gp < 0 ? undefined : tau_gp);
-  if (tau_gc != null) nodes.c.diff({n: 1}, tau_gc < 0 ? undefined : tau_gc);
+  if (tau_gp != null) nodes.p.setState({n: 1}, tau_gp < 0 ? undefined : tau_gp);
+  if (tau_gc != null) nodes.c.setState({n: 1}, tau_gc < 0 ? undefined : tau_gc);
 }
 
 // XXX could add another param to control whether or not tau_gc hits before tau_gp
@@ -164,9 +155,6 @@ const buildMochaScaffold = () => {
       scaffold.describe(`photon (tau_gp) hits ${s.parent} (tau_p) and not ${s.child} (tau_c)`, () => {
         parentPhotonStates.forEach(state => {
           scaffold.push(makeCase(s.mount, state, oscillate, s));
-          const functionalCase = makeCase(s.mount, state, oscillateFn, s);
-          functionalCase.name += " w/ fn"
-          scaffold.push(functionalCase)
           if (state.tau_gp < 0){
             const defaultCase = makeCase(s.mount, state, oscillateDef, s);
             defaultCase.name += " w/ default tau"
@@ -177,9 +165,6 @@ const buildMochaScaffold = () => {
       scaffold.describe(`photon (tau_gc) hits ${s.child} (tau_c) but not ${s.parent} (tau_p)`, () => {
         childPhotonStates.forEach(state => {
           scaffold.push(makeCase(s.mount, state, oscillate, s));
-          const functionalCase = makeCase(s.mount, state, oscillateFn, s);
-          functionalCase.name += " w/ fn"
-          scaffold.push(functionalCase)
           if (state.tau_gc < 0){
             const defaultCase = makeCase(s.mount, state, oscillateDef, s);
             defaultCase.name += " w/ default tau"
@@ -190,9 +175,6 @@ const buildMochaScaffold = () => {
       scaffold.describe(`photon (tau_gp) hits ${s.parent} (tau_p) then photon (tau_gc) hits ${s.child} (tau_c)`, () => {
         dualPhotonStates.forEach(state => {
           scaffold.push(makeCase(s.mount, state, oscillate, s));
-          const functionalCase = makeCase(s.mount, state, oscillateFn, s);
-          functionalCase.name += " w/ fn"
-          scaffold.push(functionalCase)
           if (state.tau_gp < 0 || state.tau_gc < 0){
             const defaultCase = makeCase(s.mount, state, oscillateDef, s);
             defaultCase.name += " w/ default tau"

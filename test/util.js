@@ -31,6 +31,11 @@ const deepIgnore = (node, txfm) => {
   return node;
 }
 
+const merge = (a, b) => {
+  if (b) for (let k in b) a[k] = b[k];
+  return a;
+}
+
 const pretty = tree => JSON.stringify(tree, null, 2)
 
 // pseudo-deep copy a multi-dimensional array
@@ -38,5 +43,5 @@ const copy = t => t && (isArr(t) ? t.map(copy) : Object.assign({}, t));
 
 module.exports = { 
   isArr, isObj, isFn, isVoid, isScalar,
-  toArr, has, inject, type, pretty, copy, deepIgnore
+  toArr, has, inject, type, pretty, copy, deepIgnore, merge
 }
