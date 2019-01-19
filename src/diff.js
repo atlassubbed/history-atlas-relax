@@ -30,8 +30,8 @@ const render = (f, ix, next=[], t=f.temp, isUpd=f._affN) => {
 
 // detach node f from linked list p after sibling s
 const unlink = (f, p, s, next) => {
-  (next = f.sib) && (next.prev = s)
-  s ? (s.sib = next) : (p.next = next);
+  (next = f.sib) && (next.prev = s);
+  s ? (s.sib = next) : p && (p.next = next);
 }
 // attach node f into linked list p after sibling s
 const link = (f, p, s, next) => {
@@ -48,9 +48,7 @@ const emit = (type, f, p, s, i, ef) => {
 }
 
 // mutation methods for subdiffs and rootdiffs (R)
-// we re-point it to p for perf
-const rem = (f, p) => {f.it = p, orph.push(f)}
-const add = (t, p, s) => t && (link(t = node(t,p), p, s), stx.push(t), evts.push(["willAdd", t, p, s]), t);
+const add = (t, p, s) => t && (link(t = node(t, p), t.parent = p, s), stx.push(t), evts.push(["willAdd", t, p, s]), t);
 const addR = (t, p, s) => (lags.push(t = node(t, p)), evts.push(["willAdd", t, isFrame(p) && p, s]), t)
 const move = (f, p, s, ps=f.prev) => {unlink(f, p, ps), link(f, p, s), evts.push(["willMove", f, p, ps, s])}
 const moveR = (f, p, s, ps) => isFrame(p) && evts.push(["willMove", f, p, ps, s])
@@ -60,18 +58,20 @@ const receive = (f, t) => evts.push(["willReceive", f, f.temp = t])
 const unmount = (f, isRoot, c, ch) => {
   while(f = orph.pop()) {
     if (isRoot && (ch = f.affs)) for (c of ch) c.path < 2 && push(c);
-    unlink(f, f.it, f.prev), evts.push(f), f.path = 2;
-    if (c = f.next) while(c) rem(c, f, c = c.sib)
+    unlink(f, f.parent, f.prev), evts.push(f), f.path = 2;
+    if (c = f.next) do orph.push(c); while(c = c.sib);
   }
 }
 // diff "downwards" from a parent, p, short circuit if next or prev have zero elements
 //   * we used to have a separate mount(...) function, but it's more concise this way
 const subdiff = (p, c=p.next, i=c && new KeyIndex, next, n) => {
-  relax(p), next = render(p, i), n = next.length; // XXX use aux stack for all diff mounts called during render so that managed diff mounts happen in order?
-  if (!n && c) {while(c) rem(c, p, c = c.sib); unmount()}
-  else if (n) {
+   // XXX use aux stack for all diff mounts called during render so that managed diff mounts happen in order?
+  relax(p), next = render(p, i), n = next.length;
+  if (!n && c) {
+    do orph.push(c); while(c = c.sib); unmount()
+  } else if (n) {
     if (c) {
-      do (n = i.pop(c.temp)) ? n === (n.p = c).temp ? unfill(c) : receive(c, n) : rem(c,p);
+      do (n = i.pop(c.temp)) ? n === (n.p = c).temp ? unfill(c) : receive(c, n) : orph.push(c);
       while(c = c.sib); unmount();
       for(i = p.next; i && (n = next.pop());) (c = n.p) ? (i === c ?
         (i = i.sib) : move(c, p, i.prev), n.p = null) : add(n, p, i.prev);
@@ -134,8 +134,8 @@ const sidediff = (f, i=0, path=fill(on = 1)) => {
   while(f = path.pop() || lags.pop()) if (f.path === 1) subdiff(f);
   on = 2; while(f = evts[i++]) {
     if (isArr(f)) emit(...f)
-    else emit("willRemove", f, f.it, f.prev),
-      relax(f, f.temp = f.affs = f._affs = f.sib = f.it = f.prev = f.effs = null);
+    else emit("willRemove", f, f.parent, f.prev),
+      relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.effs = null);
   }
   on = evts.length = 0;
 }
@@ -165,13 +165,20 @@ Frame.prototype.diff = function(tau=-1){
 module.exports = (t, f, p, s, ps) => {
   let r = false, inDiff = on;
   if (inDiff < 2) try {
-    // if updating newly mounted root during diff, don't generate willReceive events
-    // TODO: make this readable.
     if (!isArr(t = norm(t))){
-      if (!isFrame(f) || f.path === 2) t && ((r = addR(t, p, s)).isRoot = true);
-      else if (f.isRoot && (!t || t.name === f.temp.name))
-        t ? (t === f.temp || ((r = f)._affN || !f.path ? receive(f, t, push(f)) : (f.temp = t)), s === ps || moveR(r = f, p, s, ps)) :
-          unmount(rem(f, isFrame(p) && p, s && (f.prev = s)), r = true);
+      if (!isFrame(f) || f.path === 2) t && (r = addR(t, p, s));
+      else if (!f.parent){
+        if (t && t.name === f.temp.name) {
+          // if updating newly mounted root during diff, don't generate willReceive events
+          if (t !== f.temp) (r = f)._affN || !f.path ? receive(f, t, push(f)) : (f.temp = t);
+          s === ps || moveR(r = f, p, s, ps);
+        } else if (!t) {
+          // cache parent and prev sib on orphaned root for performance
+          if (isFrame(p)) f.parent = p;
+          if (s) f.prev = s;
+          unmount(orph.push(f), r = true)
+        }
+      }
       (inDiff ? fill : sidediff)();
     }
   } finally { on = inDiff }

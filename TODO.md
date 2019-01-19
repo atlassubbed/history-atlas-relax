@@ -1,5 +1,59 @@
-Managed diffs: keep track of prev/next automatically in prev/next fields?
-  * then use some field to indicate that this is a managed parent
+Error boundaries:
+  1. We should probably implement parent pointers.
+  2. Once we do, we can simplify code that requires passing parent refs
+  3. We can probably eliminate stx in step-leader
+  4. Implement node.path = 3 state, indicating the node is being removed due to corruption
+  5. Design motivation:
+     * it is never OK to continue down a subtree during any diff stage if we hit an error
+     * broken state (cycles, errors) would leave the app in undefined/unexpected state
+       * it is bad taste to allow the program to continue running 
+       * even if we queue up encountered errors and report them later, it's still up to the dev
+         to figure out how to reconcile the broken state
+     * it's better to destroy offending trees if there is no boundary to catch the error
+     * if there is a boundary, we could either:
+       1. unmount the offending subtree, let error boundary figure out what to do
+       2. keep the offending subtree in its previous state, let error boundary figure out what to do
+    
+    TODO: in appropriate files
+      * make sure sub/unsub throws or returns false on removed nodes (e.g. bad input)
+      * make sure inner/outer diffing during on=2 state throws
+      * make sure we don't throw cyclic errors, but instead do something (e.g. unmount/stop cycle?)
+      * determine if inner/outer diffing should either return false or throw on bad inputs.
+      * 
+    I'm thinking that bad input should just return false, and disallowed behavior should throw.
+    That, or everything should just throw except things that make sense to be noops
+    describe("error handling", function(){
+      describe("errors during fill stage (pre-diff/marking nodes)", function(){
+
+      })
+      describe("errors during subdiff stage (rendering nodes)", function(){
+        // test errors made in ctor and render
+      })
+      describe("errors during flush stage (emitting mutation events)", function(){
+
+      })
+    })
+
+
+Managed diffs: keep track of prev/sib/parent automatically in prev/sib/parent fields?
+  * then use some field to indicate that this is a managed parent (e.g. node.root = 0, 1 or 2)
+  * then we can simplify outer-diff signatures
+    1. diff(t) mounts real t
+    2. diff(t, null, {effs}) mounts real t with effects
+    3. diff(null, f) unmounts real/virtual f 
+    4. diff(t, f) updates real/virtual f
+    5. diff(t, null, p) mounts virtual t under p
+    6. diff(t, f, s) updates virtual f, moves it after s
+  * need to test case where parent simultaneously creates real and virtual children
+    * probably best to disallow this
+    * not sure how it'd work if allowed...
+    * could use magic number node.root in {0: not a root, 1: unknown type, 2: real, 3: virtual}
+  * need to disallow (return false/throw error):
+    1. removing a managed root from a parent that doesn't own it
+    2. updating a managed root under a parent that doesn't own it
+    3. moving a managed root after a node that doesn't share the same parent
+  * the first two of the above checks aren't needed if we do unlink/link for managed roots
+  * instead of this, investigate smarter field nullifying as opposed to doing all in ctor
 
 1. EITHER: Implement post-order events for effects
    OR: Keep an array of effects to notify about the end of the diff
@@ -33,6 +87,7 @@ Considerations:
 
 Minor considerations:
 
+
 0. Instead of using so many pointers on Frames, use an external DoublyLinkedLists class everywhere.
    * e.g. for children, schedule, etc.
    * Advantage: less pointers on frames
@@ -55,9 +110,13 @@ Minor considerations:
    * Advantage is that the vast majority of nodes are irreducible, and have leaner constructors.
    * Disadvantage is that there are now TWO flavors of node - or is this an advantage?
 6. Investigate using weakmaps or symbols, falling back to strings for internal fields
+7. Investigate adding/removing effects (plugins) on the fly.
 
 Application-level considerations (things that can be built without changing the engine):
 
+0. Investigate skip lists, red-black trees, self-balancing binary trees and min heaps:
+   * May allow us to implement sublinear reactive sorted collections.
+   * This means N updates would be under O(N^2).
 1. Degenerate tau: splitting a common tau to achieve segmentation/batching in a diff cycle.
 2. Managed subdiff with many virtual children should perform much better than an automatic subdiff
    * should be able to build an efficient Collection component which supports queries (sort, limit, filter)

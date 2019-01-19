@@ -6,7 +6,7 @@ const isFrame = f => !!f && isFn(f.render);
 const Frame = module.exports = function(temp, effs){
   if (!temp) return;
   this.effs = effs, this.temp = temp;
-  this.affs = this.next = this._affs =
+  this.affs = this.next = this._affs = this.parent =
   this.it = this.sib = this.prev = this.top = this.bot = null;
   this._affN = this.step = 0;
   this.path = 1;

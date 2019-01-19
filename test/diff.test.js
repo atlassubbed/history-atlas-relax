@@ -86,7 +86,7 @@ describe("diff", function(){
     })
     it("should not remove non-root frames", function(){
       renderers().forEach(renderer => {
-        const child = new Frame({});
+        const child = diff({name: "p", next: {name: "p"}}).next;
         const result = diff(null, child, {effs: renderer});
         expect(result).to.be.false;
         expect(renderer.tree).to.be.null;
