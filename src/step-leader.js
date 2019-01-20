@@ -9,9 +9,9 @@ const path = [], stx = [];
 
 // XXX simplify next(...) so that we don't need both step and it.
 // for stack safety, we acquire overhead trying to simulate recursion's post ordering
-const next = (f, i=f.step++) => i ? f.it ?
-  (f.it = f.it.sib) || f._affs && f._affs[(f.step = 1)-1] :
-  f._affs[i] : (f.it = f.next) || f._affs && f._affs[i];
+const next = (f, i=f.step++) => i ?
+  f.it ? (f.it = f.it.sib) || f._affs && f._affs[(f.step = 1)-1] : f._affs[i] :
+  (f.it = f.next) || f._affs && f._affs[i];
 
 // compute a topologically ordered potential path to diff along
 const fill = (f, c, i, ch) => {
