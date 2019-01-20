@@ -25,6 +25,23 @@ const getNullFrame = () => {
   return f;
 }
 
+const assertDeleted = f => {
+  expect(f._node).to.be.null;
+  expect(f.effs).to.be.null;
+  expect(f.temp).to.be.null;
+  expect(f.it).to.be.null;
+  expect(f.next).to.be.null;
+  expect(f._affs).to.be.null;
+  expect(f.parent).to.be.null;
+  expect(f.sib).to.be.null;
+  expect(f.prev).to.be.null;
+  expect(f.top).to.be.null;
+  expect(f.bot).to.be.null;
+  expect(f.path).to.equal(2);
+  expect(f.step).to.equal(0);
+  // expect(f._affN).to.equal(0)
+}
+
 // XXX needs to be a factory, this is a legacy factory which used to support ArrayRenderers
 const renderers = () => [new LCRSRenderer];
 
@@ -445,7 +462,7 @@ describe("diff", function(){
             const { a, r, u } = renderer.counts;
             expect(a).to.equal(cache.length).to.equal(r)
             expect(u).to.equal(0)
-            for (let c of cache) if (!c.temp) expect(c._node).to.be.null;
+            for (let c of cache) assertDeleted(c);
           })
         })
         it("should be updated without getting replaced", function(){
@@ -498,7 +515,7 @@ describe("diff", function(){
                 const { a, r, u } = renderer.counts;
                 expect(a).to.equal(cache.length).to.equal(r)
                 expect(u).to.equal(0)
-                for (let c of cache) if (!c.temp) expect(c._node).to.be.null
+                for (let c of cache) assertDeleted(c);
               })
             })
             it("should remove just the child", function(){
@@ -512,7 +529,7 @@ describe("diff", function(){
                 const { a, r, u, n } = renderer.counts;
                 expect(n).to.equal(u).to.equal(a - r)
                 expect(cache.length).to.equal(a);
-                for (let c of cache) if (!c.temp) expect(c._node).to.be.null
+                for (let c of cache) if (!c.temp) assertDeleted(c);
               })
             })
             it("should update just the root without getting replaced", function(){
@@ -572,7 +589,7 @@ describe("diff", function(){
                   const { a, r, u, n } = renderer.counts;
                   expect(a).to.equal(cache.length).to.equal(n + r);
                   expect(u).to.equal(oldAddedCount - r)
-                  for (let c of cache) if (!c.temp) expect(c._node).to.be.null;
+                  for (let c of cache) if (!c.temp) assertDeleted(c);
                 })
               })
             })

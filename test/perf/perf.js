@@ -1,6 +1,7 @@
 const { Timer } = require("atlas-basic-timer");
 const serial = require("atlas-serial");
-const { TemplateFactory, count, printHeap, printTitle, doWork, asap } = require("./helpers");
+const { TemplateFactory, DoublyLinkedList, 
+  count, printHeap, printTitle, doWork, asap, makeEntangled } = require("./helpers");
 const { diff, Frame } = require("../../src/index");
 const { expect } = require("chai");
 const { copy, isArr } = require("../util")
@@ -10,7 +11,7 @@ const { copy, isArr } = require("../util")
 //      theoretically, should be faster since no path is filled and no subdiff is done
 //   2. fix state-update tests
 const SCALES = [50];
-const SAMPLES = 5e3;
+const SAMPLES = 2e4;
 const RENDER_WORK = 0; // set to zero to compare just the implementation
 const DEC = 1;
 const PAD_AMT = 25;
@@ -30,9 +31,35 @@ class Subframe extends Frame {
   }
 }
 
-const factory1 = new TemplateFactory(class Subframe1 extends Subframe {});
-const factory2 = new TemplateFactory(class Subframe2 extends Subframe {});
-const factory3 = new TemplateFactory(class Subframe3 extends Subframe {});
+const cleanup = (node, cb) => {
+  diff({name: (d, n, self) => {
+    if (node.path > 1) {
+      const c = node.cache;
+      if (isArr(c)) for (let i = c.length; i--;) diff(null, c[i], node);
+      else diff(null, c, node);
+      self.unsub(node), diff(node.cache = null, self)
+    };
+  }}).sub(node)
+}
+
+// updates single root, uses auxiliary frame for cleanup
+class ManagedSubframe extends Frame {
+  render(data, next, node, isFirst){
+    if (RENDER_WORK) init || doWork(RENDER_WORK);
+    if (isFirst) {
+      cleanup(node);
+      if (isArr(next)) {
+        const c = node.cache = [], n = next.length;
+        for (let i = next.length; i--;) c.push(diff(next[i], null, node))
+      } else node.cache = diff(next, null, node)
+    } else {
+      if (isArr(next)) diff(next[next.length-1], node.cache[0], node);
+      else diff(next, node.cache, node)
+    }
+  }
+}
+
+const factory = new TemplateFactory(Subframe);
 
 const cases = {
   star: {},
@@ -57,17 +84,16 @@ const runAsync = (name, job, cb) => {
 for (let c in cases){
   const cache = cases[c];
   for (let s of SCALES){
-    const t1 = [], t2 = [], t3 = [], f1 = [], f2 = [], f3 = [];
-    cache[s] = { t1, t2, t3, f1, f2, f3 };
-    for (let i = 0; i < 3; i++) t3.push(factory3[c](s));
-    t2.push(factory2[c](s))
-    t1.push(factory1[c](s))
-    t1.push(factory1[c](s))
-    for (let i = SAMPLES; i--;) {
-      f1.push(diff(factory1[c](s)))
-      f2.push(diff(factory2[c](s)))
-      f3.push(diff(factory3[c](s)))
+    const temps = [], managedFrames = [], frames = [];
+    cache[s] = { temps, managedFrames, frames };
+    for (let i = 0; i < 8; i++) temps.push(factory[c](s));
+    for (let i = 0; i < 3; i++) {
+      const temp = factory[c](s-1);
+      temp.name = ManagedSubframe;
+      temps.push(temp)
     }
+    cache[s].entRoot = makeEntangled(factory[c](s))
+    cache[s].schedRoot = diff(factory[c](s))
   }
 }
 
@@ -82,34 +108,32 @@ for (let c in cases){
     for (let s of SCALES){
       subtasks.push(taskDone => {
         console.log(`  N = ${s}`);
-        const { t1, t2, t3, f1, f2, f3 } = cases[c][s];
+        const { temps, entRoot, schedRoot, managedFrames, frames } = cases[c][s];
         let i = -1;
-        const m1 = Object.assign({}, f2[0].temp), m2 = Object.assign({}, f2[0].temp);
-        const t10 = t1.pop(), t11 = t1.pop(), t20 = t2.pop();
-        const state3 = t3.pop().next;
-        const state4 = t3.pop().next;
-        const state5 = t3.pop().next;
-        run("update first", () => diff(t10, f1[++i])), i = -1;
-        run("update", () => diff(++i%2 ? t10 : t11, f1[0])), i = -1;
-        run("update memoized", () => diff(++i%2 ? m1 : m2, f2[0])), i = -1;
-        run("mount", () => diff(t10)), i = -1;
-        run("unmount", () => diff(null, f1[++i])), i = -1;
-        run("entangle one to many", () => f2[0].sub(f2[++i])), i = -1;
-        // TODO change this to test a fully entangled tree with no direct edges
-        run("update entangled", () => diff(t20, f2[++i])), i = -1;
-        run("detangle one to many", () => f2[0].unsub(f2[++i])), i = -1;
-        run("update first sync", () => f3[++i].setState(state3)), i = -1;
-        run("update sync", () => f3[0].setState(++i%2 ? state4 : state5));
-        run("schedule polycolor", () => f3[0].setState(state3, --i));
-        run("schedule monocolor", () => f3[0].setState(state4, ++i === SAMPLES ? -1 : 1)), i = -1;
-        run("schedule immediate", () => f3[0].setState(state5, ++i === SAMPLES ? -1 : 0)), i = -1;
-        runAsync("update first async", done => {
-          f3[++i].setState(state4, 0)
-          asap(done);
-        }, () => runAsync("update async", done => {
-          f3[0].setState(++i%2 ? state3 : state5, 0)
+        const manTemp1 = temps.pop(), manTemp2 = temps.pop(), manTemp3 = temps.pop();
+        const temp1 = temps.pop(), temp2 = temps.pop(), temp3 = temps.pop();
+        const entTemp1 = temps.pop(), entTemp2 = temps.pop();
+        entTemp1.next = entTemp2.next = null;
+        const memoTemp1 = Object.assign({}, temp1), memoTemp2 = Object.assign({}, temp1);
+        const state3 = temps.pop().next;
+        const state4 = temps.pop().next;
+        const state5 = temps.pop().next;
+        run("mount managed", () => managedFrames[++i] = diff(manTemp1)), i = -1;
+        run("update 1 managed child", () => diff(++i%2 ? manTemp2 : manTemp3, managedFrames[0])), i = -1;
+        run("unmount managed", () => diff(null, managedFrames[++i])), i = -1;
+        run("mount", () => frames[++i] = diff(temp1)), i = -1;
+        run("update", () => diff(++i%2 ? temp2 : temp3, frames[0])), i = -1;
+        run("update memoized", () => diff(++i%2 ? memoTemp1 : memoTemp2, frames[0])), i = -1;
+        run("unmount", () => diff(null, frames[++i])), i = -1;
+        run("update entangled", () => diff(++i%2 ? entTemp1 : entTemp2, entRoot)), i = -1;
+        run("update sync", () => schedRoot.setState(++i%2 ? state4 : state5));
+        run("schedule polycolor", () => schedRoot.setState(state3, --i));
+        run("schedule monocolor", () => schedRoot.setState(state4, ++i === SAMPLES ? -1 : 1)), i = -1;
+        run("schedule immediate", () => schedRoot.setState(state5, ++i === SAMPLES ? -1 : 0)), i = -1;
+        runAsync("update async", done => {
+          schedRoot.setState(++i%2 ? state4 : state3, 0)
           asap(done)
-        }, () => taskDone()))
+        }, () => taskDone())
       })
     }
     serial(subtasks, errs => {
@@ -126,18 +150,20 @@ serial(tasks, () => {
   // cleanup the cache and ensure that frames are in final state
   for (let c in cases){
     for (let s of SCALES){
-      const { t1, t2, t3, f1, f2, f3 } = cases[c][s];
-      expect(t1).to.be.empty;
-      expect(t2).to.be.empty;
-      expect(t3).to.be.empty;
+      const cur = cases[c][s];
+      const { temps, entRoot, schedRoot, managedFrames, frames } = cur;
+      expect(temps).to.be.empty;
+      expect(count(schedRoot)).to.equal(s);
+      expect(count(entRoot)).to.equal(1);
+      diff(null, schedRoot)
+      diff(null, entRoot);
       for (let i = SAMPLES; i--;) {
-        expect(f1[i].temp).to.be.null
-        expect(count(f1[i])).to.equal(1);
-        expect(count(f2[i])).to.equal(s);
-        expect(count(f3[i])).to.equal(s);
-        expect(f2[i].affs).to.equal(null)
-        f1[i] = f2[i] = f3[i] = null
+        expect(frames[i].temp).to.be.null
+        expect(managedFrames[i].temp).to.be.null
+        expect(count(frames[i])).to.equal(1);
+        expect(count(managedFrames[i])).to.equal(1);
       }
+      managedFrames.length = frames.length = 0;
     }
   }
   gc();

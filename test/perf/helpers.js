@@ -1,6 +1,30 @@
-const { Frame } = require("../../src/index");
+const { Frame, diff } = require("../../src/index");
 const { toArr } = require("../util");
 const { shuffle } = require("atlas-random");
+
+class DoublyLinkedList {
+  constructor(){
+    this.head = null
+  }
+  add(data, prevNode){
+    const node = {data};
+    if (!prevNode) {
+      if (this.head) this.head = (node.sib = this.head).prev = node;
+      else (this.head = node).sib = null;
+      node.prev = null;
+    } else {
+      if (node.sib = prevNode.sib) node.sib.prev = node;
+      (node.prev = prevNode).sib = node;
+    }
+    return node;
+  }
+  rem(node){
+    if (node.prev){
+      if (node.prev.sib = node.sib) node.sib.prev = node.prev
+    } else if (this.head = node.sib) node.sib.prev = null;
+    node.sib = node.prev = null;
+  }
+}
 
 let id = 0;
 // edge cases:
@@ -52,6 +76,19 @@ class TemplateFactory {
   }
 }
 
+const makeEntangled = tree => {
+  const rootNode = diff({name: tree.name, data: tree.data})
+  let node, temp, nodeStack = [rootNode], tempStack = [tree.next];
+  while(node = nodeStack.pop()){
+    if (temp = tempStack.pop()) toArr(temp).forEach(t => {
+      const child = diff({name: t.name, data: t.data});
+      tempStack.push(t.next), nodeStack.push(child);
+      child.sub(node);
+    })
+  }
+  return rootNode;
+}
+
 const count = tree => {
   let stack = [tree], n = 0, next;
   while(next = stack.pop()){
@@ -65,7 +102,7 @@ const count = tree => {
 const asap = Promise.resolve().then.bind(Promise.resolve())
 
 const printHeap = () => {
-  const mb = process.memoryUsage().heapUsed/1e6;
+  const mb = process.memoryUsage().heapUsed/(1024*1024);
   console.log(`\n${Math.floor(mb)} MB being used`)
 }
 
@@ -80,4 +117,8 @@ const doWork = n => {
   while(n--) result.push({name: "div"});
 }
 
-module.exports = { TemplateFactory, count, printHeap, printTitle, doWork, asap }
+module.exports = { 
+  DoublyLinkedList, TemplateFactory, 
+  count, printHeap, printTitle, doWork, asap, makeEntangled
+}
+
