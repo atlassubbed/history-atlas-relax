@@ -20,7 +20,7 @@ let lags = [], orph = [], stx = [], evts = [];
 // XXX only pass f, isFirst to render?
 const render = (f, ix, next=[], t=f.temp, isUpd=f._affN) => {
   if (f.path = 0, isUpd) f._affN =+ (f._affs = null);
-  t = f.render(t.data, t.next, f, !isUpd);
+  t = f.render(t, f, !isUpd);
   if (f.path < 2) stx.push(t);
   while(stx.length) if (t = norm(stx.pop()))
     if (isArr(t)) for (let i of t) stx.push(i);

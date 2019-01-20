@@ -11,7 +11,7 @@ const Frame = module.exports = function(temp, effs){
   this._affN = this.step = 0;
   this.path = 1;
 }
-Frame.prototype.render = function(data, next){ return next }
+Frame.prototype.render = function(temp){ return temp.next }
 // typical code will make sparing use of (un)sub
 //   * we'll use sets for brevity, and also for sub-linearity in add/remove
 //   * note that (un)sub is idempotent

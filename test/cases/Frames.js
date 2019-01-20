@@ -12,29 +12,29 @@ const { Frame } = require("../../src/index");
 
 const IrreducibleFunctional = "div";
 
-const StatelessBlackboxScalar = data => ({
+const StatelessBlackboxScalar = ({data}) => ({
   name: "div", data, next: [
     {name: "p", data},
     {name: "span", data}
   ]
 })
 class StatefulBlackboxScalar extends Frame {
-  render(data){
+  render({data}){
     return StatelessBlackboxScalar(data)
   }
 }
 
-const StatelessBlackboxVector = data => [
+const StatelessBlackboxVector = ({data}) => [
   {name: "div", data},
   {name: "p", data}
 ]
 class StatefulBlackboxVector extends Frame {
-  render(data){
+  render({data}){
     return StatelessBlackboxVector(data)
   }
 }
 
-const StatelessFunctionalScalar = (data, next) => ({
+const StatelessFunctionalScalar = ({data, next}) => ({
   name: "div", data, next: [
     {name: "p", data},
     {name: "span", data},
@@ -42,18 +42,18 @@ const StatelessFunctionalScalar = (data, next) => ({
   ]
 })
 class StatefulFunctionalScalar extends Frame {
-  render(data, next){
+  render({data, next}){
     return StatelessFunctionalScalar(data, next);
   }
 }
 
-const StatelessFunctionalVector = (data, next) => [
+const StatelessFunctionalVector = ({data, next}) => [
   {name: "div", data},
   {name: "p", data},
   ...toArr(next)
 ]
 class StatefulFunctionalVector extends Frame {
-  render(data, next){
+  render({data, next}){
     return StatelessFunctionalVector(data, next);
   }
 }
@@ -83,7 +83,7 @@ class StemCell extends Frame {
     else this.nextState = partialState || {};
     return this.diff(tau);
   }
-  render(data, next, f, isFirst){
+  render({data, next}, f, isFirst){
     if (f.nextState) f.state = merge(f.state || {}, f.nextState), f.nextState = null;
     isFirst ? f.willAdd && f.willAdd(f) : f.willUpdate && f.willUpdate(f);
     for (let eff of toArr(this.effs)) if (eff && eff.log) eff.log(isFirst ? "wA" : "wU", f);

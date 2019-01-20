@@ -22,9 +22,9 @@ const tasks = [];
 let init = true;
 
 class Subframe extends Frame {
-  render(data, next){
+  render(temp){
     if (RENDER_WORK) init || doWork(RENDER_WORK);
-    return this.state || next;
+    return this.state || temp.next;
   }
   setState(next, tau){
     this.state = next, this.diff(tau);
@@ -32,7 +32,7 @@ class Subframe extends Frame {
 }
 
 const cleanup = (node, cb) => {
-  diff({name: (d, n, self) => {
+  diff({name: (t, self) => {
     if (node.path > 1) {
       const c = node.cache;
       if (isArr(c)) for (let i = c.length; i--;) diff(null, c[i], node);
@@ -44,7 +44,7 @@ const cleanup = (node, cb) => {
 
 // updates single root, uses auxiliary frame for cleanup
 class ManagedSubframe extends Frame {
-  render(data, next, node, isFirst){
+  render({next}, node, isFirst){
     if (RENDER_WORK) init || doWork(RENDER_WORK);
     if (isFirst) {
       cleanup(node);
