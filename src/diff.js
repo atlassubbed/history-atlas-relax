@@ -18,14 +18,16 @@ let lags = [], orph = [], stx = [], evts = [];
 //   * flattens and returns the output of frame's diff function
 //   * ix is an optional KeyIndex
 // XXX only pass f, isFirst to render?
-const render = (f, ix, next=[], t=f.temp, isUpd=f._affN) => {
+const render = (f, ix, t=f.temp, isUpd=f._affN) => {
   if (f.path = 0, isUpd) f._affN =+ (f._affs = null);
   t = f.render(t, f, !isUpd);
-  if (f.path < 2) stx.push(t);
-  while(stx.length) if (t = norm(stx.pop()))
-    if (isArr(t)) for (let i of t) stx.push(i);
-    else next.push(t), ix && ix.push(t);
-  return next;
+  if (f.path < 2) {
+    const next = []; stx.push(t);
+    while(stx.length) if (t = norm(stx.pop()))
+      if (isArr(t)) for (let i of t) stx.push(i);
+      else next.push(t), ix && ix.push(t);
+    return next
+  }
 }
 
 // detach node f from linked list p after sibling s
@@ -41,24 +43,21 @@ const link = (f, p, s, next) => {
 
 // emit an event
 const emit = (type, f, p, s, i, ef) => {
-  if (ef = f.effs){
-    if (isArr(ef)) for (let e of ef) e[type] && e[type](f, p, s, i);
-    else ef[type] && ef[type](f, p, s, i);
-  }
+  if (isArr(ef = f.effs)) for (let e of ef) e[type] && e[type](f, p, s, i);
+  else ef[type] && ef[type](f, p, s, i);
 }
-
 // mutation methods for subdiffs and rootdiffs (R)
-const add = (t, p, s) => t && (link(t = node(t, p), t.parent = p, s), stx.push(t), evts.push(["willAdd", t, p, s]), t);
-const addR = (t, p, s) => (lags.push(t = node(t, p)), evts.push(["willAdd", t, isFrame(p) && p, s]), t)
-const move = (f, p, s, ps=f.prev) => {unlink(f, p, ps), link(f, p, s), evts.push(["willMove", f, p, ps, s])}
-const moveR = (f, p, s, ps) => isFrame(p) && evts.push(["willMove", f, p, ps, s])
-const receive = (f, t) => evts.push(["willReceive", f, f.temp = t])
+const add = (t, p, s) => t && (link(t = node(t, p), t.parent = p, s), stx.push(t), t.effs && evts.push(["willAdd", t, p, s]), t);
+const addR = (t, p, s) => (lags.push(t = node(t, p)), t.effs && evts.push(["willAdd", t, isFrame(p) && p, s]), t)
+const move = (f, p, s, ps=f.prev) => {unlink(f, p, ps), link(f, p, s), f.effs && evts.push(["willMove", f, p, ps, s])}
+const moveR = (f, p, s, ps) => isFrame(p) && f.effs && evts.push(["willMove", f, p, ps, s])
+const receive = (f, t) => {f.temp = t, f.effs && evts.push(["willReceive", f, t])}
 
-// unmount several queued nodes
+// unmount several queued,  nodes
 const unmount = (f, isRoot, c, ch) => {
   while(f = orph.pop()) {
-    if (isRoot && (ch = f.affs)) for (c of ch) c.path < 2 && push(c);
-    unlink(f, f.parent, f.prev), evts.push(f), f.path = 2;
+    if (isRoot && (ch = f.affs)) for (c of ch) c.path || push(c);
+    unlink(f, f.parent, f.prev), f.path = 2, f.effs ? evts.push(f) : del(f);
     if (c = f.next) do orph.push(c); while(c = c.sib);
   }
 }
@@ -66,18 +65,19 @@ const unmount = (f, isRoot, c, ch) => {
 //   * we used to have a separate mount(...) function, but it's more concise this way
 const subdiff = (p, c=p.next, i=c && new KeyIndex, next, n) => {
    // XXX use aux stack for all diff mounts called during render so that managed diff mounts happen in order?
-  relax(p), next = render(p, i), n = next.length;
-  if (!n && c) {
-    do orph.push(c); while(c = c.sib); unmount()
-  } else if (n) {
-    if (c) {
-      do (n = i.pop(c.temp)) ? n === (n.p = c).temp ? unfill(c) : receive(c, n) : orph.push(c);
-      while(c = c.sib); unmount();
-      for(i = p.next; i && (n = next.pop());) (c = n.p) ? (i === c ?
-        (i = i.sib) : move(c, p, i.prev), n.p = null) : add(n, p, i.prev);
+  if (next = render(p, i, relax(p))){
+    if (!(n=next.length) && c) {
+      do orph.push(c); while(c = c.sib); unmount()
+    } else if (n) {
+      if (c) {
+        do (n = i.pop(c.temp)) ? n === (n.p = c).temp ? unfill(c) : receive(c, n) : orph.push(c);
+        while(c = c.sib); unmount();
+        for(i = p.next; i && (n = next.pop());) (c = n.p) ? (i === c ?
+          (i = i.sib) : move(c, p, i.prev), n.p = null) : add(n, p, i.prev);
+      }
+      while(c = add(next.pop(), p, c));
+      while(c = stx.pop()) lags.push(c)
     }
-    while(c = add(next.pop(), p, c));
-    while(c = stx.pop()) lags.push(c)
   }
 }
 
@@ -134,8 +134,7 @@ const sidediff = (f, i=0, path=fill(on = 1)) => {
   while(f = path.pop() || lags.pop()) if (f.path === 1) subdiff(f);
   on = 2; while(f = evts[i++]) {
     if (isArr(f)) emit(...f)
-    else emit("willRemove", f, f.parent, f.prev),
-      relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.effs = null);
+    else emit("willRemove", f, f.parent, f.prev), del(f);
   }
   on = evts.length = 0;
 }
@@ -150,6 +149,7 @@ const node = (t, p) => {
   }
   return on = 1, t;
 }
+const del = f => relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.effs = null);
 // TODO for inner and outer diffs:
 //   use errors instead of returning false for unallowed operations
 //   requires rock-solid error handling

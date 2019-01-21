@@ -95,7 +95,6 @@ Minor considerations:
 1. Minor performance boosts, at the expense of increased code complexity:
    * get rid of refill(...) since we queue up removed nodes anyway, might as well use the entire path
      * queue up recieves, cache move/add/remove event info directly on node, then iterate over path
-   * don't queue up events if there are no effs for the node?
    * don't add implicit nodes to path
    * don't increase aff count for parent-child edges
    * don't increase step count for parent-child stepping
