@@ -41,23 +41,29 @@ const link = (f, p, s, next) => {
   s ? (s.sib = f) : (p.next = f)
 }
 
-// emit an event
-const emit = (type, f, p, s, i, ef) => {
-  if (isArr(ef = f.effs)) for (let e of ef) e[type] && e[type](f, p, s, i);
-  else ef[type] && ef[type](f, p, s, i);
+// TODO could further narrow captured events by making sure eff[type] exists beforehand
+// emit events
+const emit = (eff, type, args) => {
+  if (isArr(eff)) for (eff of eff) eff[type] && eff[type](...args)
+  else eff[type] && eff[type](...args)
 }
+
 // mutation methods for subdiffs and rootdiffs (R)
-const add = (t, p, s) => t && (link(t = node(t, p), t.parent = p, s), stx.push(t), t.effs && evts.push(["willAdd", t, p, s]), t);
-const addR = (t, p, s) => (lags.push(t = node(t, p)), t.effs && evts.push(["willAdd", t, isFrame(p) && p, s]), t)
-const move = (f, p, s, ps=f.prev) => {unlink(f, p, ps), link(f, p, s), f.effs && evts.push(["willMove", f, p, ps, s])}
-const moveR = (f, p, s, ps) => isFrame(p) && f.effs && evts.push(["willMove", f, p, ps, s])
-const receive = (f, t) => {f.temp = t, f.effs && evts.push(["willReceive", f, t])}
+const add = (t, p, s) => t && (link(t = node(t, p), t.parent = p, s), stx.push(t), t.effs && evts.push([t, p, s, t.temp, "willAdd", t.effs]), t);
+const addR = (t, p, s) => (lags.push(t = node(t, p)), t.effs && evts.push([t, isFrame(p) && p, s, t.temp, "willAdd", t.effs]), t)
+const move = (f, p, s, ps=f.prev) => {unlink(f, p, ps), link(f, p, s), f.effs && evts.push([f, p, ps, s, "willMove", f.effs])}
+const moveR = (f, p, s, ps) => isFrame(p) && f.effs && evts.push([f, p, ps, s, "willMove", f.effs])
+const receive = (f, t) => {f.temp = t, f.effs && evts.push([f, t, "willReceive", f.effs])}
 
 // unmount several queued,  nodes
 const unmount = (f, isRoot, c, ch) => {
   while(f = orph.pop()) {
     if (isRoot && (ch = f.affs)) for (c of ch) c.path || push(c);
-    unlink(f, f.parent, f.prev), f.path = 2, f.effs ? evts.push(f) : del(f);
+    f.effs && evts.push([f, f.parent, f.prev, f.temp, "willRemove", f.effs]);
+    unlink(f, f.parent, f.prev), f.path = 2;
+    // XXX could queue a cleanup function or render(null, node) in the path
+    //     or we could find a way to automatically clean up resources on unmount
+    relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.effs = null)
     if (c = f.next) do orph.push(c); while(c = c.sib);
   }
 }
@@ -132,10 +138,7 @@ const subdiff = (p, c=p.next, i=c && new KeyIndex, next, n) => {
 let on = 0;
 const sidediff = (f, i=0, path=fill(on = 1)) => {
   while(f = path.pop() || lags.pop()) if (f.path === 1) subdiff(f);
-  on = 2; while(f = evts[i++]) {
-    if (isArr(f)) emit(...f)
-    else emit("willRemove", f, f.parent, f.prev), del(f);
-  }
+  on = 2; while(f = evts[i++]) emit(f.pop(), f.pop(), f)
   on = evts.length = 0;
 }
 // temp is already normalized
@@ -149,7 +152,6 @@ const node = (t, p) => {
   }
   return on = 1, t;
 }
-const del = f => relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.effs = null);
 // TODO for inner and outer diffs:
 //   use errors instead of returning false for unallowed operations
 //   requires rock-solid error handling
@@ -169,8 +171,7 @@ module.exports = (t, f, p, s, ps) => {
       if (!isFrame(f) || f.path === 2) t && (r = addR(t, p, s));
       else if (!f.parent){
         if (t && t.name === f.temp.name) {
-          // if updating newly mounted root during diff, don't generate willReceive events
-          if (t !== f.temp) (r = f)._affN || !f.path ? receive(f, t, push(f)) : (f.temp = t);
+          if (t !== f.temp) receive(r = f, t, (f._affN || !f.path) && push(f));
           s === ps || moveR(r = f, p, s, ps);
         } else if (!t) {
           // cache parent and prev sib on orphaned root for performance

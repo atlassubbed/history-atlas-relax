@@ -33,7 +33,7 @@ class Subframe extends Frame {
 
 const cleanup = (node, cb) => {
   diff({name: (t, self) => {
-    if (node.path > 1) {
+    if (!node.temp) {
       const c = node.cache;
       if (isArr(c)) for (let i = c.length; i--;) diff(null, c[i], node);
       else diff(null, c, node);
@@ -84,8 +84,8 @@ const runAsync = (name, job, cb) => {
 for (let c in cases){
   const cache = cases[c];
   for (let s of SCALES){
-    const temps = [], managedFrames = [], frames = [];
-    cache[s] = { temps, managedFrames, frames };
+    const temps = [], managedFrames = [], frames = [], effects = [];
+    cache[s] = { temps, managedFrames, frames, effects };
     for (let i = 0; i < 8; i++) temps.push(factory[c](s));
     for (let i = 0; i < 3; i++) {
       const temp = factory[c](s-1);
@@ -108,7 +108,7 @@ for (let c in cases){
     for (let s of SCALES){
       subtasks.push(taskDone => {
         console.log(`  N = ${s}`);
-        const { temps, entRoot, schedRoot, managedFrames, frames } = cases[c][s];
+        const { temps, entRoot, schedRoot, managedFrames, frames, effects } = cases[c][s];
         let i = -1;
         const manTemp1 = temps.pop(), manTemp2 = temps.pop(), manTemp3 = temps.pop();
         const temp1 = temps.pop(), temp2 = temps.pop(), temp3 = temps.pop();
@@ -118,9 +118,13 @@ for (let c in cases){
         const state3 = temps.pop().next;
         const state4 = temps.pop().next;
         const state5 = temps.pop().next;
+        const opts = {effs: {willRemove(){}, willAdd(){}, willMove(){}, willReceive(){}}}
         run("mount managed", () => managedFrames[++i] = diff(manTemp1)), i = -1;
         run("update 1 managed child", () => diff(++i%2 ? manTemp2 : manTemp3, managedFrames[0])), i = -1;
         run("unmount managed", () => diff(null, managedFrames[++i])), i = -1;
+        run("mount effects", () => effects[++i] = diff(temp1, null, opts)), i = -1;
+        run("update effects", () => diff(++i%2 ? temp2 : temp3, effects[0])), i = -1;
+        run("unmount effects", () => diff(null, effects[++i])), i = -1;
         run("mount", () => frames[++i] = diff(temp1)), i = -1;
         run("update", () => diff(++i%2 ? temp2 : temp3, frames[0])), i = -1;
         run("update memoized", () => diff(++i%2 ? memoTemp1 : memoTemp2, frames[0])), i = -1;
@@ -151,7 +155,7 @@ serial(tasks, () => {
   for (let c in cases){
     for (let s of SCALES){
       const cur = cases[c][s];
-      const { temps, entRoot, schedRoot, managedFrames, frames } = cur;
+      const { temps, entRoot, schedRoot, managedFrames, frames, effects } = cur;
       expect(temps).to.be.empty;
       expect(count(schedRoot)).to.equal(s);
       expect(count(entRoot)).to.equal(1);
@@ -160,10 +164,12 @@ serial(tasks, () => {
       for (let i = SAMPLES; i--;) {
         expect(frames[i].temp).to.be.null
         expect(managedFrames[i].temp).to.be.null
+        expect(effects[i].temp).to.be.null
         expect(count(frames[i])).to.equal(1);
         expect(count(managedFrames[i])).to.equal(1);
+        expect(count(effects[i])).to.equal(1);
       }
-      managedFrames.length = frames.length = 0;
+      managedFrames.length = effects.length = frames.length = 0;
     }
   }
   gc();

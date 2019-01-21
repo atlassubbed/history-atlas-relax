@@ -18,6 +18,7 @@ const fill = (f, c, i, ch) => {
   while(i = stx.length) if (!((f = stx[i-1]).path && stx.pop())) {
     if (!f.step && f.affs) for (c of (ch = f._affs = [], f.affs)) 
       c.path < 2 ? ch.push(c) : c.unsub(f);
+    // XXX consider setting _affs to null here
     if (!(c = next(f))) stx.pop().path = 1, f.step = 0, path.push(f);
     else if (!c.step) c.path || stx.push(c), c._affN++;
     else throw new Error("cyclic entanglement");
@@ -32,6 +33,7 @@ const fill = (f, c, i, ch) => {
 // TODO: don't use next() here and just go through the lists manually to avoid f.step/f.it
 const unfill = (f, c=stx.push(f)) => {
   while(f = stx.pop()) if (!--f._affN){
+    // XXX we shouldn't have to set step/_affs to init values here
     while(c = next(f)) stx.push(c); f.path = f.step = 0, f._affs = null;
   }
 }

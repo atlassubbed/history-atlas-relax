@@ -83,10 +83,11 @@ class StemCell extends Frame {
     else this.nextState = partialState || {};
     return this.diff(tau);
   }
-  render({data, next}, f, isFirst){
+  render(temp, f, isFirst){
+    const { data, next } = temp;
     if (f.nextState) f.state = merge(f.state || {}, f.nextState), f.nextState = null;
+    for (let eff of toArr(this.effs)) if (eff && eff.log) eff.log(isFirst ? "wA" : "wU", f, temp);
     isFirst ? f.willAdd && f.willAdd(f) : f.willUpdate && f.willUpdate(f);
-    for (let eff of toArr(this.effs)) if (eff && eff.log) eff.log(isFirst ? "wA" : "wU", f);
     if (f.getNext) return f.getNext(data, next, f, isFirst);
     return data && data.copy ? copy(next) : next;
   }

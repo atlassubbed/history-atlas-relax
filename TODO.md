@@ -1,3 +1,29 @@
+Declarative reactive computations:
+  Autoruns like in Meteor should be possible in my library:
+  
+  render(){ scope 0
+    r(() => { // scope 1
+
+      // this data changes, causing scope 0 to re-render
+      r(() => { // scope 2
+         // this data changes, causing scope 1 to re-render
+      })
+      r(() => { // scope 3
+         // this data changes, causing scope 1 to re-render
+      })
+    })
+  }
+
+  It would be awesome if we could have r() return a template
+  this would be a more scoped reactivity pattern
+  compared to manually entangling to sideways state containers in various components
+
+  if we can find a way to automatically know when something is created on first render
+  we can get rid of isFirst arg to render() and have code automatically clean up and
+  efficiently cached so they don't get re-created on updates
+
+
+
 Error boundaries:
   1. We should probably implement parent pointers.
   2. Once we do, we can simplify code that requires passing parent refs

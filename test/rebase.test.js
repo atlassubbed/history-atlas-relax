@@ -64,8 +64,8 @@ describe("rebasing (merging a new diff into current diff)", function(){
       it("should not mount nodes during willRemove mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
-        const f = diff(h(0, null, h(1)), null, {effs: [renderer, tracker, {willRemove: f => {
-          if (f.temp.data.id === 1){
+        const f = diff(h(0, null, h(1)), null, {effs: [renderer, tracker, {willRemove: (f, p, s, t) => {
+          if (t.data.id === 1){
             const res = diff(h(2), null, f);
             expect(res).to.be.false;
             called++
@@ -219,8 +219,8 @@ describe("rebasing (merging a new diff into current diff)", function(){
       it("should not mount nodes during willRemove mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
-        const f = diff(h(0, null, h(1)), null, {effs: [{willRemove: f => {
-          if (f.temp.data.id === 1){
+        const f = diff(h(0, null, h(1)), null, {effs: [{willRemove: (f, p, s, t) => {
+          if (t.data.id === 1){
             const res = diff(h(2), null, {effs: [renderer, tracker]});
             expect(res).to.be.false;
             called++
@@ -1173,7 +1173,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         diff(temp, null, {effs: [renderer, tracker]})
         expect(called).to.equal(1);
         expect(renderer.tree).to.eql(renderer.renderStatic(inject(copy(temp), h(1, data))));
-        expect(events).to.eql([{wA: 0}, {wA: 1}, {mWA: 0}, {mWA: 1}])
+        expect(events).to.eql([{wA: 0}, {wA: 1}, {mWA: 0}, {mWA: 1}, {mWR: 1}])
       })
       it("should rebase nodes that are not in the path when updating them during willAdd", function(){
         let called = 0;
@@ -1280,7 +1280,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         diff(copy(temp), r1);
         expect(called).to.equal(1);
         expect(renderer.tree).to.eql(renderer.renderStatic(inject(copy(temp), h(1, data))));
-        expect(events).to.eql([{wU: 0}, {wA: 1}, {mWR: 0}, {mWA: 1}])
+        expect(events).to.eql([{wU: 0}, {wA: 1}, {mWR: 0}, {mWA: 1}, {mWR: 1}])
       })
       it("should not rebase nodes that are in the path, but should update their input temp when updating them during willUpdate", function(){
         let called = 0;
@@ -1566,7 +1566,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(called).to.equal(1);
         expect(renderer.tree).to.eql(renderer.renderStatic(copy(temp)));
         expect(renderer2.tree).to.eql(renderer2.renderStatic(h(1, data)))
-        expect(events).to.eql([{wA: 0}, {wA: 1}, {mWA: 0}, {mWA: 1}])
+        expect(events).to.eql([{wA: 0}, {wA: 1}, {mWA: 0}, {mWA: 1}, {mWR: 1}])
       })
       it("should rebase nodes that are not in the path when updating them during willAdd", function(){
         let called = 0;
@@ -1670,7 +1670,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(called).to.equal(1);
         expect(renderer.tree).to.eql(renderer.renderStatic(copy(temp)));
         expect(renderer2.tree).to.eql(renderer2.renderStatic(h(1, data)))
-        expect(events).to.eql([{wU: 0}, {wA: 1}, {mWR: 0}, {mWA: 1}])
+        expect(events).to.eql([{wU: 0}, {wA: 1}, {mWR: 0}, {mWA: 1}, {mWR: 1}])
       })
       it("should not rebase nodes that are in the path, but should update their input temp when updating them during willUpdate", function(){
         let called = 0, r;

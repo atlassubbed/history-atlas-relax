@@ -30,9 +30,9 @@ module.exports = class LCRSRenderer extends Renderer {
     node.next = next[i = 0];
     while(child = next[i++], sib = next[i]) child.sib = sib;
   }
-  willAdd(f, p, s){
+  willAdd(f, p, s, t){
     this.counts.a++;
-    const node = f._node = this.node(f.temp);
+    const node = f._node = this.node(t);
     if (!p) this.tree = node;
     p && insertAfter(node, p._node, s && s._node);
   }
