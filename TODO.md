@@ -22,7 +22,7 @@ Declarative reactive computations:
   we can get rid of isFirst arg to render() and have code automatically clean up and
   efficiently cached so they don't get re-created on updates
 
-
+Readability: make variable names and logic more readable (less ternary operators and commas)
 
 Error boundaries:
   1. We should probably implement parent pointers.
@@ -109,6 +109,7 @@ Considerations:
    * can be used to vastly limit timer usage
    * provide a basis for implementing prioritized diff cycles
    * diff caller can provide a queueing function (e.g. rIC/rAF)
+     * this can actually be done beyond the engine level if we implement async diffs with didDiff cb
 8. Test non-happy cases for frame.diff, etc. (e.g. is calling frame.diff("string") defined?) 
 
 Minor considerations:
