@@ -1,6 +1,6 @@
 const { isArr, norm, isFn } = require("./util")
 const Frame = require("./Frame"), { isFrame } = Frame;
-const { unfill, fill, push } = require("./step-leader");
+const { fill, push, it } = require("./step-leader");
 const { relax, excite, pop } = require("./field")
 const KeyIndex = require("./KeyIndex")
 
@@ -76,8 +76,9 @@ const subdiff = (p, c=p.next, i=c && new KeyIndex, next, n) => {
       do orph.push(c); while(c = c.sib); unmount()
     } else if (n) {
       if (c) {
-        do (n = i.pop(c.temp)) ? n === (n.p = c).temp ? unfill(c) : receive(c, n) : orph.push(c);
-        while(c = c.sib); unmount();
+        do (n = i.pop(c.temp)) ?
+          n === (n.p = c).temp ? --c._affN || (c.path=0) : receive(c, n) :
+          orph.push(c); while(c = c.sib); unmount();
         for(i = p.next; i && (n = next.pop());) (c = n.p) ? (i === c ?
           (i = i.sib) : move(c, p, i.prev), n.p = null) : add(n, p, i.prev);
       }
@@ -136,9 +137,14 @@ const subdiff = (p, c=p.next, i=c && new KeyIndex, next, n) => {
 */
 
 let on = 0;
-const sidediff = (f, i=0, path=fill(on = 1)) => {
-  while(f = path.pop() || lags.pop()) if (f.path === 1) subdiff(f);
-  on = 2; while(f = evts[i++]) emit(f.pop(), f.pop(), f)
+const sidediff = (f, i, path=fill(on = 1)) => {
+  while(f = path.pop() || lags.pop()) {
+    if (!f.path) {
+      while(i = it(f)) --i._affN || (i.path=0)
+      f.step = 0, f._affs = null;
+    } else if (f.path < 2) subdiff(f);
+  }
+  i = 0, on = 2; while(f = evts[i++]) emit(f.pop(), f.pop(), f)
   on = evts.length = 0;
 }
 // temp is already normalized

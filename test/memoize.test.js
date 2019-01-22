@@ -5,7 +5,7 @@ const { Frame, diff } = require("../src/index");
 const { StemCell: { m } } = require("./cases/Frames");
 const { treeCase } = require("./cases/entangle");
 
-describe.only("memoization and immutability support", function(){
+describe("memoization and immutability support", function(){
   describe("updating root frames with new template === old template", function(){
     it("should not update", function(){
       const events = [], tracker = new Tracker(events);

@@ -25,9 +25,8 @@ Declarative reactive computations:
 Readability: make variable names and logic more readable (less ternary operators and commas)
 
 Error boundaries:
-  1. We should probably implement parent pointers.
-  2. Once we do, we can simplify code that requires passing parent refs
-  3. We can probably eliminate stx in step-leader
+  1. Parent pointers will help us bubble up errors, but won't let us remove the stack in step-leader
+     * might need to implement root state...
   4. Implement node.path = 3 state, indicating the node is being removed due to corruption
   5. Design motivation:
      * it is never OK to continue down a subtree during any diff stage if we hit an error
@@ -92,14 +91,10 @@ Managed diffs: keep track of prev/sib/parent automatically in prev/sib/parent fi
     Another idea, we could make all mutation events async, and queue them in parallel.
 
 2. Fix flushed event ordering (iterate over children backwards when filling path)
-4. Queue receive events in rems (just queue the node)
-5. Make render only take (node, isFirst) arguments.
 7. Make path a linked list using left/right pointers instead of inPath/step/it
    * might have to get rid of _affs and use entanglement change buffer map
    * could remove and insert elements O(1) into the path during a diff cycle
-8. Consider bringing back parent pointers to avoid using stack memory during tree traversals
-   * and helps us avoid doing the "f.it = p" hack for event flushing.
-   * might be required for error boundaries
+8. Consider using parent pointers to avoid using stack memory during tree traversals
 
 Considerations:
 
@@ -137,6 +132,7 @@ Minor considerations:
    * Disadvantage is that there are now TWO flavors of node - or is this an advantage?
 6. Investigate using weakmaps or symbols, falling back to strings for internal fields
 7. Investigate adding/removing effects (plugins) on the fly.
+   * probably don't wanna do this, as the model depends on static effs over lifetime of given node
 
 Application-level considerations (things that can be built without changing the engine):
 
