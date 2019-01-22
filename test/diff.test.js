@@ -29,7 +29,6 @@ const assertDeleted = f => {
   expect(f._node).to.be.null;
   expect(f.effs).to.be.null;
   expect(f.temp).to.be.null;
-  expect(f.it).to.be.null;
   expect(f.next).to.be.null;
   expect(f._affs).to.be.null;
   expect(f.parent).to.be.null;

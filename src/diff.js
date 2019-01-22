@@ -1,6 +1,6 @@
 const { isArr, norm, isFn } = require("./util")
 const Frame = require("./Frame"), { isFrame } = Frame;
-const { fill, push, it } = require("./step-leader");
+const { fill, push } = require("./step-leader");
 const { relax, excite, pop } = require("./field")
 const KeyIndex = require("./KeyIndex")
 
@@ -137,14 +137,16 @@ const subdiff = (p, c=p.next, i=c && new KeyIndex, next, n) => {
 */
 
 let on = 0;
-const sidediff = (f, i, path=fill(on = 1)) => {
+const sidediff = (f, c, path=fill(on = 1)) => {
   while(f = path.pop() || lags.pop()) {
     if (!f.path) {
-      while(i = it(f)) --i._affN || (i.path=0)
-      f.step = 0, f._affs = null;
+      if (f._affs) {
+        while(c = f._affs[f.step++]) --c._affN || (c.path=0)
+        f.step = 0, f._affs = null;
+      }
     } else if (f.path < 2) subdiff(f);
   }
-  i = 0, on = 2; while(f = evts[i++]) emit(f.pop(), f.pop(), f)
+  c = 0, on = 2; while(f = evts[c++]) emit(f.pop(), f.pop(), f)
   on = evts.length = 0;
 }
 // temp is already normalized

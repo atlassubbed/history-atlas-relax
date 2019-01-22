@@ -7,19 +7,16 @@ const path = [], stx = [];
 //   * whether or not a node gets diffed is impossible to know before executing the full diff
 //   * the leader is stored in the "path" stack, "stx" is used as an auxiliary stack
 
-// XXX simplify it(...) so that we don't need both step and it.
 // for stack safety, we acquire overhead trying to simulate recursion's post ordering
-const it = (f, i=f.step++) => i ?
-  f.it ? (f.it = f.it.sib) || f._affs && f._affs[(f.step = 1)-1] : f._affs[i] :
-  (f.it = f.next) || f._affs && f._affs[i];
-
 // compute a topologically ordered potential path to diff along
 const fill = (f, c, i, ch) => {
   while(i = stx.length) if (!((f = stx[i-1]).path && stx.pop())) {
-    if (!f.step && f.affs) for (c of (ch = f._affs = [], f.affs)) 
-      c.path < 2 ? ch.push(c) : c.unsub(f);
-    // XXX consider setting _affs to null here
-    if (!(c = it(f))) stx.pop().path = 1, f.step = 0, path.push(f);
+    if (!f.step && (f.next || f.affs)){
+      if (ch = f._affs = [], c = f.next) do ch.push(c); while(c = c.sib);
+      if (c = f.affs) for (c of c) c.path < 2 ? ch.push(c) : c.unsub(f);
+    }
+    if (!(c = f._affs && f._affs[f.step++]))
+      stx.pop().path = 1, f.step = 0, path.push(f);
     else if (!c.step) c.path || stx.push(c), c._affN++;
     else throw new Error("cyclic entanglement");
   }
@@ -33,4 +30,4 @@ const fill = (f, c, i, ch) => {
 // below we push nodes as originators to ensure they are in the physical path
 const push = f => {++f._affN, stx.push(f)}
 
-module.exports = { fill, push, it }
+module.exports = { fill, push }

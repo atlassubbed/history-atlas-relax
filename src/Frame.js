@@ -7,11 +7,9 @@ const Frame = module.exports = function(temp, effs){
   if (!temp) return;
   this.effs = effs, this.temp = temp;
   this.affs = this.next = this._affs = this.parent =
-  this.it = this.sib = this.prev = this.top = this.bot = null;
+  this.sib = this.prev = this.top = this.bot = null;
   // XXX consider combining step and path:
   //   state = -2 (path 2), -1 (path 1), 0 (path 0), 1 (step 1), 2 (step 2), ...
-  // XXX consider always setting _affs = [...children, ...affs] so we can deprecate "it"
-  // and simplify next(...) iterator
   this._affN = this.step = 0;
   this.path = 1;
 }
