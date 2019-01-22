@@ -18,10 +18,10 @@ let lags = [], orph = [], stx = [], evts = [];
 //   * flattens and returns the output of frame's diff function
 //   * ix is an optional KeyIndex
 // XXX only pass f, isFirst to render?
-const render = (f, ix, t=f.temp, isUpd=f._affN) => {
-  if (f.path = 0, isUpd) f._affN =+ (f._affs = null);
-  t = f.render(t, f, !isUpd);
-  if (f.path < 2) {
+const render = (f, ix, t, isUpd=f._affN) => {
+  if (f.path = 0, isUpd) f._affN = 0, f._affs = null;
+  t = f.render(f.temp, f, !isUpd);
+  if (f.path > -2) {
     const next = []; stx.push(t);
     while(stx.length) if (t = norm(stx.pop()))
       if (isArr(t)) for (let i of t) stx.push(i);
@@ -41,7 +41,6 @@ const link = (f, p, s, next) => {
   s ? (s.sib = f) : (p.next = f)
 }
 
-// TODO could further narrow captured events by making sure eff[type] exists beforehand
 // emit events
 const emit = (eff, type, args) => {
   if (isArr(eff)) for (eff of eff) eff[type] && eff[type](...args)
@@ -60,9 +59,9 @@ const unmount = (f, isRoot, c, ch) => {
   while(f = orph.pop()) {
     if (isRoot && (ch = f.affs)) for (c of ch) c.path || push(c);
     f.effs && evts.push([f, f.parent, f.prev, f.temp, "willRemove", f.effs]);
-    unlink(f, f.parent, f.prev), f.path = 2;
+    unlink(f, f.parent, f.prev), f.path = -2;
     // XXX could queue a cleanup function or render(null, node) in the path
-    //     or we could find a way to automatically clean up resources on unmount
+    //   or we could find a way to automatically clean up resources on unmount
     relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.effs = null)
     if (c = f.next) do orph.push(c); while(c = c.sib);
   }
@@ -92,8 +91,8 @@ const subdiff = (p, c=p.next, i=c && new KeyIndex, next, n) => {
      READ THIS FIRST: This comment is about a "subcycle" technique. I'm not removing this 
      comment because it was a prior train of thought and might be useful. I've skipped this
      and gone ahead implementing rebasing, because I think it is simpler and more intuitive
-     compared to subcycles. Note that rebasing can be a major footgun. 
-     Managed diffs are for advanced users.
+     compared to subcycles. Subcycles can also be simulated in userland by scheduling async diffs
+     Note that rebasing can be a major footgun; managed diffs are for advanced users.
    **********
 
    diff "sideways" along the calculated path
@@ -141,10 +140,10 @@ const sidediff = (f, c, path=fill(on = 1)) => {
   while(f = path.pop() || lags.pop()) {
     if (!f.path) {
       if (f._affs) {
-        while(c = f._affs[f.step++]) --c._affN || (c.path=0)
-        f.step = 0, f._affs = null;
+        while(c = f._affs[f.path++]) --c._affN || (c.path=0)
+        f.path = 0, f._affs = null;
       }
-    } else if (f.path < 2) subdiff(f);
+    } else if (f.path > -2) subdiff(f);
   }
   c = 0, on = 2; while(f = evts[c++]) emit(f.pop(), f.pop(), f)
   on = evts.length = 0;
@@ -166,7 +165,7 @@ const node = (t, p) => {
 const rediff = tau => () => sidediff(pop(tau, push))
 // instance (inner) diff (schedule updates for frames)
 Frame.prototype.diff = function(tau=-1){
-  if (on > 1 || this.path > 1 || (this.path && !this._affN)) return false;
+  if (on > 1 || this.path < -1 || (this.path && !this._affN)) return false;
   tau < 0 ? (on ? fill : sidediff)(push(this)) : excite(this, tau, rediff);
   return true;
 }
@@ -176,7 +175,7 @@ module.exports = (t, f, p, s, ps) => {
   let r = false, inDiff = on;
   if (inDiff < 2) try {
     if (!isArr(t = norm(t))){
-      if (!isFrame(f) || f.path === 2) t && (r = addR(t, p, s));
+      if (!isFrame(f) || f.path < -1) t && (r = addR(t, p, s));
       else if (!f.parent){
         if (t && t.name === f.temp.name) {
           if (t !== f.temp) receive(r = f, t, (f._affN || !f.path) && push(f));

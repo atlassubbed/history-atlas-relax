@@ -36,8 +36,7 @@ const assertDeleted = f => {
   expect(f.prev).to.be.null;
   expect(f.top).to.be.null;
   expect(f.bot).to.be.null;
-  expect(f.path).to.equal(2);
-  expect(f.step).to.equal(0);
+  expect(f.path).to.equal(-2);
   // expect(f._affN).to.equal(0)
 }
 
