@@ -13,6 +13,15 @@ const updateHooks = ["willUpdate"];
 const addHooks = ["willAdd"];
 const allHooks = [...addHooks, ...updateHooks];
 
+// note implicit ordering intuitive: 
+//   1. first declared children come first.
+//   2. first declared affects come first.
+// this is true as long as there are no other paths involving the nodes,
+// for example consider diff(t_c', C):
+//   `A.sub(C), B.sub(C)` will result in A getting updated before B.
+//   `A.sub(C), B.sub(C), A.sub(B)` will result in B getting updated before A
+//      since we made the ordering between A and B explicit 
+
 // TODO: refactor this, but maybe not too much
 describe("entanglement", function(){
   describe("amongst root frames", function(){
@@ -262,7 +271,7 @@ describe("entanglement", function(){
         })
         const result = [ 
           {wU: 0}, {wU: 1}, {wU: 4}, {wU: 5},
-          {wU: 2}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7}, {wU: 11}, {wU: 9}, {wU: 10},
+          {wU: 2}, {wU: 9}, {wU: 10}, {wU: 11}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},
           {mWR: 0}, {mWR: 1}, {mWR: 2}, {mWR: 3}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7}, {mWR: 9}, {mWR: 11}, {mWR: 10},
         ]
         const update = () => diff(treeCase.tag0(), nodes[0]);
@@ -301,8 +310,8 @@ describe("entanglement", function(){
           }
         })
         const result = [
-          {wU: 0}, {wU: 1}, {wU: 4}, {wU: 5}, {wU: 2},
-          {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7}, {wU: 11}, {wU: 9}, {wU: 10},
+          {wU: 0}, {wU: 1}, {wU: 4}, {wU: 5}, {wU: 2}, {wU: 11},
+          {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7}, {wU: 9}, {wU: 10},
           {mWR: 0}, {mWR: 1}, {mWR: 2}, {mWR: 3}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7}, {mWR: 9}, {mWR: 11}, {mWR: 10},
         ]
         const update = () => diff(treeCase.tag0(), nodes[0]);
@@ -342,8 +351,8 @@ describe("entanglement", function(){
           }
         })
         const result = [ 
-          {wU: 0}, {wU: 1}, {wU: 2}, {wU: 11}, {wU: 9}, {wU: 4}, {wU: 5},
-          {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},  {wU: 10},
+          {wU: 0}, {wU: 1}, {wU: 2}, {wU: 9}, {wU: 10}, {wU: 4}, {wU: 5}, {wU: 11},
+          {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},
           {mWR: 0}, {mWR: 1}, {mWR: 2}, {mWR: 3}, {mWR: 9}, {mWR: 11}, {mWR: 10}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},
         ]
         const update = () => diff(treeCase.tag0(), nodes[0]);
@@ -421,7 +430,7 @@ describe("entanglement", function(){
           }
         })
         const result = [
-          {wU: 4}, {wU: 9}, {wU: 5}, {wU: 6},  {wU: 8}, {wU: 7},
+          {wU: 4}, {wU: 5}, {wU: 6},  {wU: 8}, {wU: 7}, {wU: 9},
           {mWR: 4}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},
         ]
         diff(treeCase.tag0(), nodes[0]);

@@ -14,10 +14,10 @@ const fill = (f, c, i, ch) => {
     if (!f.path && (f.next || f.affs)){
       if (ch = f._affs = [], c = f.next) do ch.push(c); while(c = c.sib);
       if (c = f.affs) for (c of c) c.path > -2 ? ch.push(c) : c.unsub(f);
+      f.path = ch.length+1;
     }
-    if (!(c = f._affs && f._affs[f.path++]))
-      stx.pop().path = -1, path.push(f);
-    else if (c.path <= 0) c.path || stx.push(c), c._affN++;
+    if (--f.path <= 0) stx.pop().path = -1, path.push(f);
+    else if ((c = f._affs[f.path-1]).path <= 0) c.path || stx.push(c), c._affN++;
     else throw new Error("cyclic entanglement");
   }
   return path;

@@ -178,7 +178,7 @@ module.exports = (t, f, p, s, ps) => {
       if (!isFrame(f) || f.path < -1) t && (r = addR(t, p, s));
       else if (!f.parent){
         if (t && t.name === f.temp.name) {
-          if (t !== f.temp) receive(r = f, t, (f._affN || !f.path) && push(f));
+          if (t !== f.temp) receive(r = f, t, f.path || push(f));
           s === ps || moveR(r = f, p, s, ps);
         } else if (!t) {
           // cache parent and prev sib on orphaned root for performance

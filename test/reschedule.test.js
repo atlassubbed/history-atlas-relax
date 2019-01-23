@@ -460,10 +460,10 @@ function buildMochaScaffold(){
         task: effs => {
           let sib;
           const f = diff(
-            h(0, null, [h(1, hooks("ctor", f => sib = f)), h(2, hooks("willUpdate", () => {
+            h(0, null, [h(1, hooks("willUpdate", () => {
               const res = sib.setState({n: 0}, tau)
               expect(res).to.be.true;
-            }))]), null, {effs});
+            })), h(2, hooks("ctor", f => sib = f))]), null, {effs});
           diff(copy(f.temp), f);
         },
         result: [
@@ -471,11 +471,11 @@ function buildMochaScaffold(){
           {wA: 1, dt: -1, state: null},
           {wA: 2, dt: -1, state: null},
           {wU: 0, dt: -1, state: null},
-          {wU: 2, dt: -1, state: null},
-          {wU: 1, dt: -1, state: {n: 0}},
+          {wU: 1, dt: -1, state: null},
+          {wU: 2, dt: -1, state: {n: 0}},
           {wR: 0, dt: -1, state: null},
-          {wR: 1, dt: -1, state: {n: 0}},
-          {wR: 2, dt: -1, state: null}
+          {wR: 1, dt: -1, state: null},
+          {wR: 2, dt: -1, state: {n: 0}}
         ]
       })
       scaffold.push({

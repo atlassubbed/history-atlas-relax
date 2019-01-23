@@ -108,7 +108,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, [k(2), k(1)])));
         expect(events).to.eql([
           {wA: 0}, {wA: 1}, {wA: 2}, {mWA: 0}, {mWA: 1}, {mWA: 2},
-          {wU: 0}, {wU: 2}, {wU: 1}, {mWR: 0}, {mWR: 1}, {mWR: 2}, {mWM: 2}
+          {wU: 0}, {wU: 1}, {wU: 2}, {mWR: 0}, {mWR: 1}, {mWR: 2}, {mWM: 2}
         ])
       })
       allHooks.forEach(hook => {
@@ -173,7 +173,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         events.length = 0; // we don't care about initial mount
         diff(copy(temp), f);
         expect(events).to.eql([
-          {wU: 0}, {wU: 2}, {wU: 1}, {wA: 4}, {wA: 3}, 
+          {wU: 0}, {wU: 1}, {wU: 2}, {wA: 4}, {wA: 3}, 
           {mWR: 0}, {mWR: 1}, {mWR: 2}, {mWA: 3}, {mWA: 4}
         ])
       })
@@ -312,7 +312,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         events.length = 0; // we don't care about initial mount
         diff(copy(temp), f);
         expect(events).to.eql([
-          {wU: 0}, {wU: 2}, {wU: 1}, {wA: 4}, {wA: 3}, 
+          {wU: 0}, {wU: 1}, {wU: 2}, {wA: 4}, {wA: 3}, 
           {mWR: 0}, {mWR: 1}, {mWR: 2}, {mWA: 3}, {mWA: 4}
         ])
       })
@@ -625,7 +625,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
           {wA: 1}, {wA: 2}, {mWA: 1}, { mWA: 2 }, 
           {wA: 3}, {wA: 4}, {mWA: 3}, {mWA: 4},
           {wA: 5}, {wA: 6}, {wA: 7}, {mWA: 5}, {mWA:6}, {mWA: 7},
-          {wA: 8}, {wU: 3}, {wU: 4}, {wU: 5}, {wU: 7}, {wU: 6},
+          {wA: 8}, {wU: 3}, {wU: 4}, {wU: 5}, {wU: 6}, {wU: 7},
           {mWA: 8}, {mWP: 1}, {mWP: 2}, {mWR: 4}, {mWR: 6}, {mWR: 7}
         ])
       })
@@ -652,7 +652,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer2.tree).to.eql(renderer2.renderStatic(h(3, null, h(4))))
         expect(renderer3.tree).to.eql(renderer3.renderStatic(h(5, null, [h(6), h(7)])))
         expect(events).to.eql([
-          {wU: 8}, {wU: 3}, {wU: 4}, {wU: 5}, {wU: 7}, {wU: 6},
+          {wU: 8}, {wU: 3}, {wU: 4}, {wU: 5}, {wU: 6}, {wU: 7},
           {mWR: 8}, {mWP: 1}, {mWP: 2}, {mWR: 4}, {mWR: 6}, {mWR: 7}
         ])
       })
@@ -902,15 +902,15 @@ describe("rebasing (merging a new diff into current diff)", function(){
       it("should properly unmount an upstream parent during willUpdate without rendering unvisited children", function(){
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         let r, temp;
-        diff(temp = h(0, hooks("willAdd", f => r = f), [h(2, null, h(4)), h(1, hooks("willUpdate", f => {
+        diff(temp = h(0, hooks("willAdd", f => r = f), [h(1, hooks("willUpdate", f => {
           diff(null, r);
-        }))]), null, {effs: [renderer, tracker]});
+        })), h(2, null, h(4))]), null, {effs: [renderer, tracker]});
         events.length = 0;
         diff(copy(temp), r);
         expect(renderer.tree).to.be.null;
         expect(events).to.eql([
-          { wU: 0 }, { wU: 1 }, { mWR: 0 }, { mWR: 2 }, {mWR: 1},
-          { mWP: 0 }, {mWP: 1}, {mWP: 2}, {mWP: 4}
+          { wU: 0 }, { wU: 1 }, { mWR: 0 }, { mWR: 1 }, {mWR: 2},
+          { mWP: 0 }, {mWP: 2}, {mWP: 4}, {mWP: 1}
         ])
       })
       it("should unmount multiple nodes in call order during willAdd", function(){
@@ -989,7 +989,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
           {wA: 1}, {wA: 2}, {mWA: 1}, { mWA: 2 }, 
           {wA: 3}, {wA: 4}, {mWA: 3}, {mWA: 4},
           {wA: 5}, {wA: 6}, {wA: 7}, {mWA: 5}, {mWA:6}, {mWA: 7},
-          {wA: 8}, {wU: 3}, {wU: 4}, {wU: 5}, {wU: 7}, {wU: 6},
+          {wA: 8}, {wU: 3}, {wU: 4}, {wU: 5}, {wU: 6}, {wU: 7},
           {mWA: 8}, {mWP: 1}, {mWP: 2}, {mWR: 4}, {mWR: 6}, {mWR: 7}
         ])
       })
@@ -1015,7 +1015,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer2.tree).to.eql(renderer2.renderStatic(h(3, null, h(4))))
         expect(renderer3.tree).to.eql(renderer3.renderStatic(h(5, null, [h(6), h(7)])))
         expect(events).to.eql([
-          {wU: 8}, {wU: 3}, {wU: 4}, {wU: 5}, {wU: 7}, {wU: 6},
+          {wU: 8}, {wU: 3}, {wU: 4}, {wU: 5}, {wU: 6}, {wU: 7},
           {mWR: 8}, {mWP: 1}, {mWP: 2}, {mWR: 4}, {mWR: 6}, {mWR: 7}
         ])
       })
@@ -1343,7 +1343,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
           called++;
         }))
         const r3 = diff(temp, null, r1)
-        r3.sub(r1), r2.sub(r1);
+        r2.sub(r1), r3.sub(r1); //order matters here
         events.length = 0;
         diff(h(0, null), r1);
         expect(called).to.equal(1);
@@ -1366,7 +1366,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
           called++
         }))
         const r3 = diff(temp, null, r1)
-        r3.sub(r1), r2.sub(r1);
+        r2.sub(r1), r3.sub(r1);
         r2.next.sub(r3);
         events.length = 0;
         diff(h(0, null), r1);
@@ -1735,7 +1735,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
           called++;
         }))
         const r3 = diff(temp, null, {effs: [renderer3, tracker]})
-        r3.sub(r1), r2.sub(r1);
+        r2.sub(r1), r3.sub(r1);
         events.length = 0;
         diff(h(0), r1);
         expect(called).to.equal(1);
@@ -1761,7 +1761,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
           calledUpd2++
         }))
         const r3 = diff(temp, null, {effs: [renderer3, tracker]})
-        r3.sub(r1), r2.sub(r1);
+        r2.sub(r1), r3.sub(r1);
         r2.next.sub(r3);
         events.length = 0;
         diff(h(0), r1);
@@ -2095,7 +2095,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         calledUpd2++
       }))
       const r3 = diff(temp, null, {effs: tracker})
-      r3.sub(r1), r2.sub(r1);
+      r2.sub(r1), r3.sub(r1)
       events.length = 0;
       diff(h(0), r1);
       expect(calledUpd).to.equal(2);
@@ -2114,7 +2114,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         calledUpd2++
       }))
       const r3 = diff(temp, null, {effs: tracker})
-      r3.sub(r1), r2.sub(r1);
+      r2.sub(r1), r3.sub(r1);
       r2.next.sub(r3);
       events.length = 0;
       diff(h(0), r1);
