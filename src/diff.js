@@ -178,8 +178,8 @@ module.exports = (t, f, p, s, ps) => {
     if (!isArr(t = norm(t))){
       if (!isFrame(f) || f.path < -1) t && (r = addR(t, p, s));
       else if (!f.parent){
-        if (t && t.name === f.temp.name) {
-          if (t !== f.temp) receive(r = f, t, f.path || push(f));
+        if (t && t.name === f.temp.name) {    // note we mustn't incr _affN for laggards
+          if (t !== f.temp) receive(r = f, t, (f.path && !f._affN) || push(f));
           s === ps || moveR(r = f, p, s, ps);
         } else if (!t) {
           // cache parent and prev sib on orphaned root for performance

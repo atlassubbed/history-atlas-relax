@@ -171,5 +171,19 @@ describe("memoization and immutability support", function(){
         {wU: 2}, {wU: 3}, {mWP: 1}
       ])
     })
+    it("should always update nodes who are downstream from affectors who get memoized if they are updated via outer-diff", function(){
+      const events = [], t = new Tracker(events)
+      const f1 = diff(m(1), null, {effs: t})
+      const f2 = diff(m(2, {hooks: {willUpdate: () => diff(m(1), f1)}}, m(3)), null, {effs: t})
+      f2.getNext = function(data, next){
+        return this.next.temp;
+      }
+      f1.sub(f2.next);
+      events.length = 0;
+      f2.setState()
+      expect(events).to.eql([
+        {wU: 2}, {wU: 1}, {mWR: 1}
+      ])
+    })
   })
 })
