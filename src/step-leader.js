@@ -17,7 +17,7 @@ const fill = (f, c, i, ch) => {
       f.path = ch.length+1;
     }
     if (--f.path <= 0) stx.pop().path = -1, path.push(f);
-    else if ((c = f._affs[f.path-1]).path <= 0) c.path || stx.push(c), c._affN++;
+    else if ((c = f._affs[f.path-1]).path <= 0) push(c)
     else throw new Error("cyclic entanglement");
   }
   return path;
@@ -28,6 +28,6 @@ const fill = (f, c, i, ch) => {
 //   * i.e. if a parent updates and memoizes a child with pending state, the child will update early
 //   * such "premature" updates would be considered unexpected behavior
 // below we push nodes as originators to ensure they are in the physical path
-const push = f => {++f._affN, stx.push(f)}
+const push = f => {f.path || stx.push(f), ++f._affN}
 
 module.exports = { fill, push }

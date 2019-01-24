@@ -54,10 +54,11 @@ const move = (f, p, s, ps=f.prev) => {unlink(f, p, ps), link(f, p, s), f.effs &&
 const moveR = (f, p, s, ps) => isFrame(p) && f.effs && evts.push([f, p, ps, s, "willMove", f.effs])
 const receive = (f, t) => {f.temp = t, f.effs && evts.push([f, t, "willReceive", f.effs])}
 
+// TODO consider using parent pointer traversal
 // unmount several queued,  nodes
 const unmount = (f, isRoot, c, ch) => {
   while(f = orph.pop()) {
-    if (isRoot && (ch = f.affs)) for (c of ch) c.path || push(c);
+    if (isRoot && (ch = f.affs)) for (c of ch) push(c);
     f.effs && evts.push([f, f.parent, f.prev, f.temp, "willRemove", f.effs]);
     unlink(f, f.parent, f.prev), f.path = -2;
     // XXX could queue a cleanup function or render(null, node) in the path

@@ -157,5 +157,19 @@ describe("memoization and immutability support", function(){
       ]);
       setTimeout(() => done())
     })
+    it("should always update nodes who are downstream from removed affectors, even if their direct parent memoizes them", function(){
+      const events = [], t = new Tracker(events)
+      const f1 = diff(m(1), null, {effs: t})
+      const f2 = diff(m(2, {hooks: {willUpdate: () => diff(null, f1)}}, m(3)), null, {effs: t})
+      f2.getNext = function(data, next){
+        return this.next.temp;
+      }
+      f2.next.sub(f1);
+      events.length = 0;
+      f2.setState()
+      expect(events).to.eql([
+        {wU: 2}, {wU: 3}, {mWP: 1}
+      ])
+    })
   })
 })
