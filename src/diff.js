@@ -60,20 +60,14 @@ const KeyIndex = require("./KeyIndex")
 //   local state: node.path in {0: not in path, 1: in path, 2: will remove} 
 let lags = [], orph = [], stx = [], evts = [];
 
-// render a frame's next children
-//   * flattens and returns the output of frame's diff function
+// flatten and sanitize a frame's next children
 //   * ix is an optional KeyIndex
-// XXX only pass f, isFirst to render?
-const render = (f, ix, t, isUpd=f._affN) => {
-  if (f.path = 0, isUpd) f._affN = 0, f._affs = null;
-  t = f.render(f.temp, f, !isUpd);
-  if (f.path > -2 && (!f.next || !f.next.root)) {
-    const next = []; stx.push(t);
-    while(stx.length) if (t = norm(stx.pop()))
-      if (isArr(t)) for (let i of t) stx.push(i);
-      else next.push(t), ix && ix.push(t);
-    return next
-  }
+const clean = (t, ix, next=[]) => {
+  stx.push(t);
+  while(stx.length) if (t = norm(stx.pop()))
+    if (isArr(t)) for (let i of t) stx.push(i);
+    else next.push(t), ix && ix.push(t);
+  return next
 }
 
 // detach node f from linked list p after sibling s
@@ -111,7 +105,8 @@ const receive = (f, t) => {
   f.effs && evts.push([f, t, "willReceive", f.effs])
 }
 
-// unmount several queued,  nodes
+// unmount several queued nodes
+//   * we do this outside of the path loop since unmounts are immediate
 const unmount = (f, isRoot, c, ch) => {
   while(f = orph.pop()) {
     if (isRoot && (ch = f.affs)) for (c of ch) push(c);
@@ -124,39 +119,49 @@ const unmount = (f, isRoot, c, ch) => {
   }
 }
 
+// mount under a node that has no current children
+const mount = (f, next, c) => {
+  while(c = add(next.pop(), f, c));
+  while(c = stx.pop()) lags.push(c);
+}
+
 // diff "downwards" from a parent, p, short circuit if next or prev have zero elements
-//   * we used to have a separate mount(...) function, but it's more concise this way
-const subdiff = (p, c=p.next, i=c && !c.root && new KeyIndex, next, n) => {
+const subdiff = (p, c, next, i=new KeyIndex, n) => {
    // XXX use aux stack for all diff mounts called during render so that managed diff mounts happen in order?
-  if (next = render(p, i, relax(p))){
-    if (!(n=next.length) && c) {
-      do orph.push(c); while(c = c.sib); unmount()
-    } else if (n) {
-      if (c) {
-        do (n = i.pop(c.temp)) ?
-          n === (n.p = c).temp ? --c._affN || (c.path=0) : receive(c, n) :
-          orph.push(c); while(c = c.sib); unmount();
-        for(i = p.next; i && (n = next.pop());) (c = n.p) ? (i === c ?
-          (i = i.sib) : move(c, p, i.prev), n.p = null) : add(n, p, i.prev);
-      }
-      while(c = add(next.pop(), p, c));
-      while(c = stx.pop()) lags.push(c)
-    }
+  if ((next = clean(next, i)).length){
+    do (n = i.pop(c.temp)) ?
+      n === (n.p = c).temp ? --c._affN || (c.path=0) : receive(c, n) :
+      orph.push(c); while(c = c.sib); unmount();
+    for(i = p.next; i && (n = next.pop());) (c = n.p) ? (i === c ?
+      (i = i.sib) : move(c, p, i.prev), n.p = null) : add(n, p, i.prev);
+    mount(p, next, c);
+  } else {
+    do orph.push(c); while(c = c.sib); unmount();
   }
 }
 
 let on = 0;
-const sidediff = (f, c, path=fill(on = 1)) => {
+const sidediff = (f, c, path=fill(on = 1), raw) => {
   while(f = path.pop() || lags.pop()) {
     if (!f.path) {
       if (f._affs) {
-        while(c = f._affs[f.path++]) --c._affN || (c.path=0)
+        while(c = f._affs[f.path++])
+          --c._affN || (c.path=0);
         f.path = 0, f._affs = null;
       }
-      // XXX consider f.next ? f.next.root ? mandiff(f) : subdiff(f) : mount(f)
-    } else if (f.path > -2) subdiff(f);
+    } else if (f.path > -2) {
+      if (relax(f), f.path = 0, c = f._affN)
+        f._affN = 0, f._affs = null;
+      raw = f.render(f.temp, f, !c)
+      if (f.path > -2){
+        if (c = f.next) c.root || subdiff(f, c, raw);
+        else mount(f, clean(raw));
+      }
+    }
   }
-  c = 0, on = 2; while(f = evts[c++]) emit(f.pop(), f.pop(), f)
+  c = 0, on = 2;
+  while(f = evts[c++])
+    emit(f.pop(), f.pop(), f);
   on = evts.length = 0;
 }
 // temp is already normalized
