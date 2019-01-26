@@ -60,25 +60,21 @@ Error boundaries:
     })
 
 
-Managed diffs: keep track of prev/sib/parent automatically in prev/sib/parent fields?
-  * then use some field to indicate that this is a managed parent (e.g. node.root = 0, 1 or 2)
-  * then we can simplify outer-diff signatures
-    1. diff(t) mounts real t
-    2. diff(t, null, {effs}) mounts real t with effects
-    3. diff(null, f) unmounts real/virtual f 
-    4. diff(t, f) updates real/virtual f
-    5. diff(t, null, p) mounts virtual t under p
-    6. diff(t, f, s) updates virtual f, moves it after s
+Managed diffs: keep track of prev/sib/parent automatically in prev/sib/parent fields?  
   * need to test case where parent simultaneously creates real and virtual children
     * probably best to disallow this
     * not sure how it'd work if allowed...
     * could use magic number node.root in {0: not a root, 1: unknown type, 2: real, 3: virtual}
+  * need to test case where standalone (unmanaged) root nodes are created:
+    * these nodes should not be linked/unlinked from any parent (context) node 
+    * if created at top level, parent == null?
+    * otherwise, parent == context node, but don't unlink/link
   * need to disallow (return false/throw error):
-    1. removing a managed root from a parent that doesn't own it
-    2. updating a managed root under a parent that doesn't own it
-    3. moving a managed root after a node that doesn't share the same parent
-  * the first two of the above checks aren't needed if we do unlink/link for managed roots
-  * instead of this, investigate smarter field nullifying as opposed to doing all in ctor
+    1. moving a managed root after a node that doesn't share the same parent
+  * need to test case where we simulate managed nodes via standalone nodes on the same effect
+    * in which case, next/prev/sib aren't used.
+    * should be able to override next/prev/sib on the parent with custom data structures
+      without breaking the code. Should work since we use node.root now to conditionally render
 
 1. EITHER: Implement post-order events for effects
    OR: Keep an array of effects to notify about the end of the diff

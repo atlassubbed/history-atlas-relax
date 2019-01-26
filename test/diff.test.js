@@ -92,7 +92,7 @@ describe("diff", function(){
     })
     it("should not remove non-frames", function(){
       renderers().forEach(renderer => {
-        const result = diff(null, "not a frame", {effs: renderer});
+        const result = diff(null, "not a frame");
         expect(result).to.be.false;
         expect(renderer.tree).to.be.null;
         const { a, r, u } = renderer.counts;
@@ -102,7 +102,7 @@ describe("diff", function(){
     it("should not remove non-root frames", function(){
       renderers().forEach(renderer => {
         const child = diff({name: "p", next: {name: "p"}}).next;
-        const result = diff(null, child, {effs: renderer});
+        const result = diff(null, child);
         expect(result).to.be.false;
         expect(renderer.tree).to.be.null;
         const { a, r, u } = renderer.counts;
@@ -167,34 +167,12 @@ describe("diff", function(){
           expect(r).to.equal(u).to.equal(s).to.equal(0)
         })
       })
-      it("should not remove non-frames", function(){
-        const renderer = new LCRSRenderer;
-        const p = diff({name: "p"}, null, {effs: renderer});
-        const c = diff({name:"c"}, null, p);
-        const result = diff(null, "not a frame", p);
-        expect(result).to.be.false;
-        expect(renderer.renderStatic({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
-        const { a, r, u, n, s } = renderer.counts;
-        expect(a).to.equal(n).to.equal(2);
-        expect(r).to.equal(u).to.equal(s).to.equal(0)
-      })
-      it("should not remove non-root frames", function(){
-        const renderer = new LCRSRenderer;
-        const p = diff({name: "p", next: {name: "c"}}, null, {effs: renderer});
-        const c = p.next[0];
-        const result = diff(null, c, p);
-        expect(result).to.be.false;
-        expect(renderer.renderStatic({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
-        const { a, r, u, n, s } = renderer.counts;
-        expect(a).to.equal(n).to.equal(2);
-        expect(r).to.equal(u).to.equal(s).to.equal(0)
-      })
-      it("should remove the frame and unlink the first virtual child of the parent", function(){
+      it("should remove the first virtual child properly", function(){
         const renderer = new LCRSRenderer;
         const p = diff({name: "p"}, null, {effs: renderer});
         const c = diff({name:"c"}, null, p);
         const c2 = diff({name:"c2"}, null, p, c);
-        const result = diff(null, c, p);
+        const result = diff(null, c);
         expect(result).to.be.true;
         expect(renderer.renderStatic({name:"p", next: {name: "c2"}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
@@ -203,11 +181,40 @@ describe("diff", function(){
         expect(r).to.equal(1);
         expect(u).to.equal(s).to.equal(0)
       })
+      it("should remove the last virtual child properly", function(){
+        const renderer = new LCRSRenderer;
+        const p = diff({name: "p"}, null, {effs: renderer});
+        const c = diff({name:"c"}, null, p);
+        const c2 = diff({name:"c2"}, null, p, c);
+        const result = diff(null, c2);
+        expect(result).to.be.true;
+        expect(renderer.renderStatic({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
+        const { a, r, u, n, s } = renderer.counts;
+        expect(a).to.equal(3);
+        expect(n).to.equal(2);
+        expect(r).to.equal(1);
+        expect(u).to.equal(s).to.equal(0)
+      })
+      it("should remove a middle virtual child properly", function(){
+        const renderer = new LCRSRenderer;
+        const p = diff({name: "p"}, null, {effs: renderer});
+        const c = diff({name:"c"}, null, p);
+        const c2 = diff({name:"c2"}, null, p, c);
+        const c3 = diff({name:"c3"}, null, p, c2);
+        const result = diff(null, c2);
+        expect(result).to.be.true;
+        expect(renderer.renderStatic({name:"p", next: [{name: "c"}, {name: "c3"}]})).to.deep.equal(renderer.tree);
+        const { a, r, u, n, s } = renderer.counts;
+        expect(a).to.equal(4);
+        expect(n).to.equal(3);
+        expect(r).to.equal(1);
+        expect(u).to.equal(s).to.equal(0)
+      })
       it("should not be able to replace a frame with a different species", function(){
         const renderer = new LCRSRenderer;
         const p = diff({name: "p"}, null, {effs: renderer});
         const c = diff({name:"c"}, null, p);
-        const result = diff({name: "d"}, c, p);
+        const result = diff({name: "d"}, c);
         expect(result).to.be.false;
         expect(renderer.renderStatic({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
@@ -218,45 +225,37 @@ describe("diff", function(){
         const renderer = new LCRSRenderer;
         const p = diff({name: "p"}, null, {effs: renderer});
         const c = diff({name:"c"}, null, p);
-        const result = diff([{name: "d"}, {name: "e"}], c, p);
+        const result = diff([{name: "d"}, {name: "e"}], c);
         expect(result).to.be.false;
         expect(renderer.renderStatic({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(2);
         expect(r).to.equal(u).to.equal(s).to.equal(0)
       })
-      it("should not update or move frames if diffed with a memoized template", function(){
+      it("should not update or move frames if diffed with a memoized template with no after sibling argument", function(){
         const renderer = new LCRSRenderer;
         const p = diff({name: "p"}, null, {effs: renderer});
         const c = diff({name:"c"}, null, p);
-        const result = diff(c.temp, c, p);
+        diff({name:"d"}, null, p);
+        const result = diff(c.temp, c);
         expect(result).to.be.false;
-        expect(renderer.renderStatic({name:"p", next: {name: "c"}})).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic({name:"p", next: [{name:"d"}, {name: "c"}]}))
+          .to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
-        expect(a).to.equal(n).to.equal(2);
+        expect(a).to.equal(n).to.equal(3);
         expect(r).to.equal(u).to.equal(s).to.equal(0)
       })
-      it("should update but not move a frame if a new template is provided", function(){
+      it("should update but not move a frame if a new template is provided with no after sibling argument", function(){
         const renderer = new LCRSRenderer;
         const p = diff({name: "p"}, null, {effs: renderer});
         const c = diff({name:"c"}, null, p);
-        const result = diff({name: "c", data:{n:1}}, c, p);
-        expect(result).to.equal(c);
-        expect(renderer.renderStatic({name:"p", next: {name: "c", data:{n:1}}})).to.deep.equal(renderer.tree);
-        const { a, r, u, n, s } = renderer.counts;
-        expect(a).to.equal(n).to.equal(2);
-        expect(u).to.equal(1);
-        expect(r).to.equal(s).to.equal(0)
-      })
-      it("should not require a parent reference to a frame to update the frame without moving it", function(){
-        const renderer = new LCRSRenderer;
-        const p = diff({name: "p"}, null, {effs: renderer});
-        const c = diff({name:"c"}, null, p);
+        diff({name:"d"}, null, p);
         const result = diff({name: "c", data:{n:1}}, c);
         expect(result).to.equal(c);
-        expect(renderer.renderStatic({name:"p", next: {name: "c", data: {n:1}}})).to.deep.equal(renderer.tree);
+        expect(renderer.renderStatic({name:"p", next: [{name: "d"}, {name: "c", data:{n:1}}]}))
+          .to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
-        expect(a).to.equal(n).to.equal(2);
+        expect(a).to.equal(n).to.equal(3);
         expect(u).to.equal(1);
         expect(r).to.equal(s).to.equal(0)
       })
@@ -307,53 +306,12 @@ describe("diff", function(){
           expect(r).to.equal(u).to.equal(s).to.equal(0)
         })
       })
-      it("should not remove non-frames", function(){
-        const renderer = new LCRSRenderer;
-        const p = diff({name: "p"}, null, {effs: renderer});
-        diff({name:"c"}, null, p);
-        const c = diff({name:"c2"}, null, p);
-        const result = diff(null, "not a frame", p, c);
-        expect(result).to.be.false;
-        const tree = {name: "p", next: [{name:"c2"}, {name:"c"}]};
-        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
-        const { a, r, u, n, s } = renderer.counts;
-        expect(a).to.equal(n).to.equal(3);
-        expect(r).to.equal(u).to.equal(s).to.equal(0)
-      })
-      it("should not remove non-root frames", function(){
-        const renderer = new LCRSRenderer;
-        const p = diff({name: "p", next: [{name: "c"}, {name: "c2"}]}, null, {effs: renderer});
-        const c = p.next[0], c2 = p.next[1];
-        const result = diff(null, c2, p, c);
-        expect(result).to.be.false;
-        const tree = {name: "p", next: [{name:"c"}, {name:"c2"}]};
-        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
-        const { a, r, u, n, s } = renderer.counts;
-        expect(a).to.equal(n).to.equal(3);
-        expect(r).to.equal(u).to.equal(s).to.equal(0)
-      })
-      it("should remove and unlink the frame after the specified virtual sibling", function(){
-        const renderer = new LCRSRenderer;
-        const p = diff({name: "p"}, null, {effs: renderer});
-        const c = diff({name:"c"}, null, p);
-        const c2 = diff({name:"c2"}, null, p, c);
-        const c3 = diff({name:"c3"}, null, p, c2);
-        const result = diff(null, c2, p, c);
-        expect(result).to.be.true;
-        const tree = {name: "p", next: [{name: "c"}, {name: "c3"}]}
-        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
-        const { a, r, u, n, s } = renderer.counts;
-        expect(a).to.equal(4);
-        expect(n).to.equal(3);
-        expect(r).to.equal(1);
-        expect(u).to.equal(s).to.equal(0)
-      })
       it("should not be able to replace a frame with a different species", function(){
         const renderer = new LCRSRenderer;
         const p = diff({name: "p"}, null, {effs: renderer});
         const c = diff({name:"c"}, null, p);
         const d = diff({name: "d"}, null, p);
-        const result = diff({name: "e"}, c, p, d);
+        const result = diff({name: "e"}, c, d);
         expect(result).to.be.false;
         const tree = {name:"p", next: [{name: "d"}, {name: "c"}]}
         expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
@@ -366,7 +324,7 @@ describe("diff", function(){
         const p = diff({name: "p"}, null, {effs: renderer});
         const c = diff({name:"c"}, null, p);
         const d = diff({name: "d"}, null, p);
-        const result = diff([{name: "e"}, {name:"f"}], c, p, d);
+        const result = diff([{name: "e"}, {name:"f"}], c, d);
         expect(result).to.be.false;
         const tree = {name:"p", next: [{name: "d"}, {name: "c"}]}
         expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
@@ -379,7 +337,7 @@ describe("diff", function(){
         const p = diff({name: "p"}, null, {effs: renderer});
         const c = diff({name:"c"}, null, p);
         const d = diff({name: "d"}, null, p);
-        const result = diff(d.temp, d, p, c);
+        const result = diff(d.temp, d, c);
         expect(result).to.equal(d);
         const tree = {name:"p", next: [{name: "c"}, {name: "d"}]}
         expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
@@ -394,9 +352,39 @@ describe("diff", function(){
         const c = diff({name:"c"}, null, p);
         const d = diff({name: "d"}, null, p);
         const e = diff({name: "e"}, null, p);
-        const result = diff(d.temp, d, p, c, e);
+        const result = diff(d.temp, d, c);
         expect(result).to.equal(d);
         const tree = {name:"p", next: [{name: "e"}, {name: "c"}, {name: "d"}]}
+        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
+        const { a, r, u, n, s } = renderer.counts;
+        expect(a).to.equal(n).to.equal(4);
+        expect(s).to.equal(1);
+        expect(r).to.equal(u).to.equal(0)
+      })
+      it("should move a subsequent child frame to the top of the list but not update it if diffed with a memoized template and a null sibling", function(){
+        const renderer = new LCRSRenderer;
+        const p = diff({name: "p"}, null, {effs: renderer});
+        const c = diff({name:"c"}, null, p);
+        const d = diff({name: "d"}, null, p);
+        const e = diff({name: "e"}, null, p);
+        const result = diff(d.temp, d, null);
+        expect(result).to.equal(d);
+        const tree = {name:"p", next: [{name: "d"}, {name: "e"}, {name: "c"}]}
+        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
+        const { a, r, u, n, s } = renderer.counts;
+        expect(a).to.equal(n).to.equal(4);
+        expect(s).to.equal(1);
+        expect(r).to.equal(u).to.equal(0)
+      })
+      it("should not update the first child or move it if diffed with a memoized template and a null sibling", function(){
+        const renderer = new LCRSRenderer;
+        const p = diff({name: "p"}, null, {effs: renderer});
+        const c = diff({name:"c"}, null, p);
+        const e = diff({name: "e"}, null, p);
+        const d = diff({name: "d"}, null, p);
+        const result = diff(d.temp, d, null);
+        expect(result).to.equal(d);
+        const tree = {name:"p", next: [{name: "d"}, {name: "e"}, {name: "c"}]}
         expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(4);
@@ -408,9 +396,37 @@ describe("diff", function(){
         const p = diff({name: "p"}, null, {effs: renderer});
         const c = diff({name:"c"}, null, p);
         const d = diff({name: "d"}, null, p);
-        const result = diff({name:"d",data:{n:1}}, d, p, c);
+        const result = diff({name:"d",data:{n:1}}, d, c);
         expect(result).to.equal(d);
         const tree = {name:"p", next: [{name: "c"}, {name: "d", data:{n:1}}]}
+        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
+        const { a, r, u, n, s } = renderer.counts;
+        expect(a).to.equal(n).to.equal(3);
+        expect(u).to.equal(s).to.equal(1)
+        expect(r).to.equal(0)
+      })
+      it("should update and move a frame to the top of the list if a null sibling is provided", function(){
+        const renderer = new LCRSRenderer;
+        const p = diff({name: "p"}, null, {effs: renderer});
+        const d = diff({name: "d"}, null, p);
+        const c = diff({name:"c"}, null, p);
+        const result = diff({name:"d",data:{n:1}}, d, null);
+        expect(result).to.equal(d);
+        const tree = {name:"p", next: [{name: "d", data:{n:1}}, {name: "c"}]}
+        expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
+        const { a, r, u, n, s } = renderer.counts;
+        expect(a).to.equal(n).to.equal(3);
+        expect(u).to.equal(s).to.equal(1)
+        expect(r).to.equal(0)
+      })
+      it("should update and not move a frame if a null sibling is provided and it is already at the top of the list", function(){
+        const renderer = new LCRSRenderer;
+        const p = diff({name: "p"}, null, {effs: renderer});
+        const c = diff({name:"c"}, null, p);
+        const d = diff({name: "d"}, null, p);
+        const result = diff({name:"d",data:{n:1}}, d, null);
+        expect(result).to.equal(d);
+        const tree = {name:"p", next: [{name: "d", data:{n:1}}, {name: "c"}]}
         expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(3);
@@ -423,7 +439,7 @@ describe("diff", function(){
         const c = diff({name:"c"}, null, p);
         const d = diff({name: "d"}, null, p);
         const e = diff({name: "e"}, null, p);
-        const result = diff({name: "d", data:{n:1}}, d, p, e, e);
+        const result = diff({name: "d", data:{n:1}}, d, e);
         expect(result).to.equal(d);
         const tree = {name:"p", next: [{name: "e"}, {name: "d", data:{n:1}}, {name: "c"}]}
         expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
@@ -454,7 +470,7 @@ describe("diff", function(){
             const data = {v: 0, id};
             const cache = [], c = new Cache(cache);
             const frame = diff(get(data), null, [renderer, c]);
-            const result = diff(null, frame, [renderer, c]);
+            const result = diff(null, frame);
             expect(result).to.be.true;
             expect(renderer.tree).to.be.null
             const { a, r, u } = renderer.counts;
@@ -507,7 +523,7 @@ describe("diff", function(){
               renderers().forEach(renderer => {
                 const data = {v: 0, id}, cache = [], c = new Cache(cache);
                 const frame = diff(inject(get(data), nextGet(data)), null, {effs: [renderer, c]});
-                const result = diff(null, frame, {effs: [renderer, c]});
+                const result = diff(null, frame);
                 expect(result).to.be.true;
                 expect(renderer.tree).to.be.null;
                 const { a, r, u } = renderer.counts;

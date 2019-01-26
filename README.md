@@ -60,7 +60,14 @@ While arbitrary DAGs are too general, trees are too simple. Libraries like React
 
 Yes and no. Since perfect rooted trees are not sufficient to describe the majority of practical applications, yet arbitrary DAGs are unnecessarily general for most applications, Relax goes for the middle ground. Relax treats applications as "perturbed forests". You can think of an application as a set of trees, some of which have interweaving vines that connect their branches. Most web applications that people build with view frameworks end up looking like this, structurally. Note that we aren't distinguishing the View of our application from the Model as they are two manifestations of the same thing. We no longer need constructions like "context", Redux, Mobx, or Minimongo to manage data dependencies in our application. The "perturbed forest" picture takes care of that for us; a reactive data dependency is just an edge between two nodes.
 
-
+### How to perform outer-diffs
+  1. diff(t) mounts real t
+  2. diff(t, null, {effs}) mounts real t with effects
+  3. diff(t, null, p) mounts virtual t under p
+  4. diff(t, null, p, s) mounts virtual t under p after s
+  5. diff(null, f) unmounts real/virtual f 
+  6. diff(t, f) updates real/virtual f
+  7. diff(t, f, s) updates virtual f, moves it after s
 
 
 Terminology: A frame is a lightweight DAG of nodes which hold data, the ability to update the data, and lifecycle methods. A template is an object-literal describing a tree of frames. Frames should never be instantiated directly, but with the diff function, which creates, updates and destroys frames. All frames must implement an `diff` method which returns templates.

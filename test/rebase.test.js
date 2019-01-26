@@ -338,7 +338,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const r = diff(h(0, null), null, {effs: [renderer, tracker]});
         const managedR = diff(h(1), null, r);
         diff(h(2, hooks("ctor", f => {
-          const res = diff(null, managedR, f);
+          const res = diff(null, managedR);
           expect(res).to.be.false;
           called++
         })))
@@ -352,7 +352,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const r = diff(h(0, null), null, {effs: [renderer, tracker]});
         const m = diff(h(1), null, r);
         diff(h(2), null, {effs: [{willAdd: f => {
-          const res = diff(null, m, r);
+          const res = diff(null, m);
           expect(res).to.be.false;
           called++
         }}]})
@@ -366,7 +366,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const r = diff(h(0, null), null, {effs: [renderer, tracker]});
         const m = diff(h(1), null, r);
         const f = diff(h(2), null, {effs: [{willRemove: f => {
-          const res = diff(null, m, r);
+          const res = diff(null, m);
           expect(res).to.be.false;
           called++
         }}]})
@@ -381,7 +381,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const r = diff(h(0, null), null, {effs: [renderer, tracker]});
         const m = diff(h(1), null, r);
         const f = diff(h(2), null, {effs: [{willReceive: f => {
-          const res = diff(null, m, r);
+          const res = diff(null, m);
           expect(res).to.be.false;
           called++
         }}]})
@@ -397,7 +397,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const m = diff(h(1), null, r);
         const f = diff(h(2, null, [k(3), k(4)]), null, {effs: [{willMove: f => {
           if (f.temp.data.id === 4){
-            const res = diff(null, m, r);
+            const res = diff(null, m);
             expect(res).to.be.false;
             called++
           }
@@ -417,7 +417,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
             expect(f.managed).to.be.an.instanceOf(Frame);
             expect(f.managed.temp).to.equal(managedTemp);
             expect(renderer.tree).to.eql(renderer.renderStatic(h(0, hooks, h(1))))
-            const res = diff(null, f.managed, f)
+            const res = diff(null, f.managed)
             expect(res).to.be.true;
             called++;
           }
@@ -437,7 +437,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1))))
         let called = 0;
         const temp = h(2, hooks("willAdd", f => {
-          const res = diff(null, managedRoot, r1);
+          const res = diff(null, managedRoot);
           expect(res).to.be.true;
           called++;
         }));
@@ -455,7 +455,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1))))
         let called = 0;
         const temp = h(2, hooks("willUpdate", f => {
-          const res = diff(null, managedRoot, r1);
+          const res = diff(null, managedRoot);
           expect(res).to.be.true;
           called++;
         }));
@@ -472,7 +472,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const t = h(0, hooks("willAdd", f => {
           const r = diff(m(1), null, f);
-          diff(null, r, f);
+          diff(null, r);
         }))
         diff(t, null, {effs: [renderer, tracker]});
         expect(renderer.tree).to.eql(renderer.renderStatic(copy(t)));
@@ -482,7 +482,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const t = h(0, hooks("willUpdate", f => {
           const r = diff(m(1), null, f);
-          diff(null, r, f);
+          diff(null, r);
         }))
         const r = diff(t, null, {effs: [renderer, tracker]});
         events.length = 0;
@@ -493,7 +493,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
       it("should properly unmount itself during willAdd", function(){
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0), null, {effs: [renderer, tracker]});
-        const temp = h(1, hooks("willAdd", f => diff(null, f, r)));
+        const temp = h(1, hooks("willAdd", f => diff(null, f)));
         diff(temp, null, r);
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0)));
         expect(events).to.eql([ { wA: 0 }, { mWA: 0 }, { wA: 1 }, { mWA: 1 }, { mWP: 1 } ])
@@ -501,7 +501,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
       it("should properly unmount itself during willUpdate", function(){
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0), null, {effs: [renderer, tracker]});
-        const temp = h(1, hooks("willUpdate", f => diff(null, f, r)));
+        const temp = h(1, hooks("willUpdate", f => diff(null, f)));
         const r2 = diff(temp, null, r);
         events.length = 0;
         diff(copy(temp), r2)
@@ -517,9 +517,9 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, [h(1), h(2), h(3)])))
         let called = 0;
         const temp = h(4, hooks("willAdd", f => {
-          expect(diff(null, managedRoot1, r1)).to.be.true;
-          expect(diff(null, managedRoot2, r1)).to.be.true;
-          expect(diff(null, managedRoot3, r1)).to.be.true;
+          expect(diff(null, managedRoot1)).to.be.true;
+          expect(diff(null, managedRoot2)).to.be.true;
+          expect(diff(null, managedRoot3)).to.be.true;
           called++;
         }));
         diff(temp, null, {effs: [tracker]});
@@ -540,9 +540,9 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, [h(1), h(2), h(3)])))
         let called = 0;
         const temp = h(4, hooks("willUpdate", f => {
-          expect(diff(null, managedRoot1, r1)).to.be.true;
-          expect(diff(null, managedRoot2, r1)).to.be.true;
-          expect(diff(null, managedRoot3, r1)).to.be.true;
+          expect(diff(null, managedRoot1)).to.be.true;
+          expect(diff(null, managedRoot2)).to.be.true;
+          expect(diff(null, managedRoot3)).to.be.true;
           called++;
         }));
         const r2 = diff(temp, null, {effs: [tracker]});
@@ -563,9 +563,9 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, [h(1), h(2), h(3)])))
         let called = 0;
         const temp = h(4, hooks("willAdd", f => {
-          expect(diff(null, managedRoot3, r1, managedRoot2)).to.be.true;
-          expect(diff(null, managedRoot2, r1, managedRoot1)).to.be.true;
-          expect(diff(null, managedRoot1, r1)).to.be.true;
+          expect(diff(null, managedRoot3)).to.be.true;
+          expect(diff(null, managedRoot2)).to.be.true;
+          expect(diff(null, managedRoot1)).to.be.true;
           called++;
         }));
         diff(temp, null, {effs: [tracker]});
@@ -586,9 +586,9 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, [h(1), h(2), h(3)])))
         let called = 0;
         const temp = h(4, hooks("willUpdate", f => {
-          expect(diff(null, managedRoot3, r1, managedRoot2)).to.be.true;
-          expect(diff(null, managedRoot2, r1, managedRoot1)).to.be.true;
-          expect(diff(null, managedRoot1, r1)).to.be.true;
+          expect(diff(null, managedRoot3)).to.be.true;
+          expect(diff(null, managedRoot2)).to.be.true;
+          expect(diff(null, managedRoot1)).to.be.true;
           called++;
         }));
         const r2 = diff(temp, null, {effs: [tracker]});
@@ -611,7 +611,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1, null, h(2)))))
         let called = 0;
         const temp = h(8, hooks("willAdd", f => {
-          const res = diff(null, managedRoot, r1);
+          const res = diff(null, managedRoot);
           expect(res).to.be.true;
           called++;
         }));
@@ -640,7 +640,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1, null, h(2)))))
         let called = 0;
         const temp = h(8, hooks("willUpdate", f => {
-          const res = diff(null, managedRoot, r1);
+          const res = diff(null, managedRoot);
           expect(res).to.be.true;
           called++;
         }));
@@ -1021,6 +1021,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
       })
     })
   })
+  // TODO fix these up for new managed diff API, also test moves
   describe("updating (outer-diffs)", function(){
     describe("virtual (managed) nodes", function(){
       it("should not update nodes during a constructor", function(){
@@ -1029,7 +1030,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const r = diff(h(0, null), null, {effs: [renderer, tracker]});
         const managedR = diff(h(1), null, r);
         diff(h(1, hooks("ctor", f => {
-          const res = diff(h(1, {some:"data"}), managedR, f);
+          const res = diff(h(1, {some:"data"}), managedR);
           expect(res).to.be.false;
           called++
         })))
@@ -1043,7 +1044,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const r = diff(h(0, null), null, {effs: [renderer, tracker]});
         const m = diff(h(1), null, r);
         diff(h(2), null, {effs: [{willAdd: f => {
-          const res = diff(h(1, {some: "data"}), m, r);
+          const res = diff(h(1, {some: "data"}), m);
           expect(res).to.be.false;
           called++
         }}]})
@@ -1057,7 +1058,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const r = diff(h(0, null), null, {effs: [renderer, tracker]});
         const m = diff(h(1), null, r);
         const f = diff(h(2), null, {effs: [{willRemove: f => {
-          const res = diff(h(1, {some: "data"}), m, r);
+          const res = diff(h(1, {some: "data"}), m);
           expect(res).to.be.false;
           called++
         }}]})
@@ -1072,7 +1073,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const r = diff(h(0, null), null, {effs: [renderer, tracker]});
         const m = diff(h(1), null, r);
         const f = diff(h(2), null, {effs: [{willReceive: f => {
-          const res = diff(h(1, {some: "data"}), m, r);
+          const res = diff(h(1, {some: "data"}), m);
           expect(res).to.be.false;
           called++
         }}]})
@@ -1088,7 +1089,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const m = diff(h(1), null, r);
         const f = diff(h(2, null, [k(3), k(4)]), null, {effs: [{willMove: f => {
           if (f.temp.data.id === 4){
-            const res = diff(h(1, {some: "data"}), m, r);
+            const res = diff(h(1, {some: "data"}), m);
             expect(res).to.be.false;
             called++
           }
@@ -1104,7 +1105,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const r = diff(h(0, null), null, {effs: [renderer, tracker]});
         const managedTemp = h(1, hooks("willAdd", f => {
           const temp = h(1, {some: "data"});
-          const res = diff(temp, f, r);
+          const res = diff(temp, f);
           expect(res).to.equal(f);
           expect(res.temp).to.equal(temp);
           called++;
@@ -1121,7 +1122,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         let parent;
         const managedTemp = h(1, hooks("ctor", f => parent = f), h(2, hooks("willAdd", f => {
           const temp = h(1, {some: "data"}, h(2));
-          const res = diff(temp, parent, r);
+          const res = diff(temp, parent);
           expect(res).to.equal(parent);
           expect(res.temp).to.equal(temp);
           called++;
@@ -1143,7 +1144,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const affectTemp = h(2, hooks("willAdd", f => {
           f.sub(a);
           const temp = h(1, {some: "data"});
-          const res = diff(temp, a, r);
+          const res = diff(temp, a);
           expect(res).to.equal(a);
           expect(res.temp).to.equal(temp);
           called++;
@@ -1167,7 +1168,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
             called++;
           })), null, f);
           expect(managed).to.be.an.instanceOf(Frame);
-          const res = diff(h(1, data), managed, f);
+          const res = diff(h(1, data), managed);
           expect(res).to.be.an.instanceOf(Frame);
         }))
         diff(temp, null, {effs: [renderer, tracker]})
@@ -1183,7 +1184,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const r2 = diff(h(1), null, r1);
         const newTemp = h(1, {some:"data"});
         const temp = h(2, hooks("willAdd", f => {
-          const res = diff(newTemp, r2, r1);
+          const res = diff(newTemp, r2);
           expect(res).to.equal(r2)
           expect(res.temp).to.equal(newTemp)
           called++;
@@ -1202,14 +1203,14 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const managedTemp = h(1, hooks("willUpdate", f => {
           if (called) return;
           const temp = h(1, {some: "data"});
-          const res = diff(temp, f, r);
+          const res = diff(temp, f);
           expect(res).to.equal(f);
           expect(res.temp).to.equal(temp);
           called++;
         }))
         const f = diff(managedTemp, null, r);
         events.length = 0;
-        diff(copy(managedTemp), f, r);
+        diff(copy(managedTemp), f);
         expect(called).to.equal(1);
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1, {some: "data"}))));
         expect(events).to.eql([{wU: 1}, {wU: 1}, {mWR: 1}, {mWR: 1}])
@@ -1222,14 +1223,14 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const managedTemp = h(1, hooks("ctor", f => parent = f), h(2, hooks("willUpdate", f => {
           if (called) return;
           const temp = h(1, {some: "data"}, h(2));
-          const res = diff(temp, parent, r);
+          const res = diff(temp, parent);
           expect(res).to.equal(parent);
           expect(res.temp).to.equal(temp);
           called++;
         })))
         const f = diff(managedTemp, null, r);
         events.length = 0;
-        diff(copy(managedTemp), f, r);
+        diff(copy(managedTemp), f);
         expect(called).to.equal(1);
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1, {some: "data"}, h(2)))));
         expect(events).to.eql([
@@ -1246,7 +1247,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const affectTemp = h(2, hooks("willUpdate", f => {
           if (called) return;
           const temp = h(1, {some: "data"});
-          const res = diff(temp, a, r);
+          const res = diff(temp, a);
           expect(res).to.equal(a);
           expect(res.temp).to.equal(temp);
           called++;
@@ -1254,7 +1255,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const f = diff(affectTemp, null, {effs: [renderer2, tracker]});
         f.sub(a);
         events.length = 0;
-        diff(h(1), a, r);
+        diff(h(1), a);
         expect(called).to.equal(1);
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1, {some: "data"}))));
         expect(renderer2.tree).to.eql(renderer2.renderStatic(copy(affectTemp)))
@@ -1272,7 +1273,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
             called++;
           })), null, f);
           expect(managed).to.be.an.instanceOf(Frame);
-          const res = diff(h(1, data), managed, f);
+          const res = diff(h(1, data), managed);
           expect(res).to.be.an.instanceOf(Frame);
         }))
         const r1 = diff(temp, null, {effs: [renderer, tracker]})
@@ -1292,10 +1293,10 @@ describe("rebasing (merging a new diff into current diff)", function(){
             f.managed = diff(h(1), null, f);
           },
           willUpdate: f => {
-            const res1 = diff(temp1, f.managed, f);
+            const res1 = diff(temp1, f.managed);
             expect(res1).to.equal(f.managed);
             expect(res1.temp).to.equal(temp1);
-            const res2 = diff(temp2, f.managed, f);
+            const res2 = diff(temp2, f.managed);
             expect(res2).to.equal(f.managed);
             expect(res2.temp).to.equal(temp2);
             called++;
@@ -1317,7 +1318,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const r2 = diff(h(1), null, r1);
         const newTemp = h(1, {some:"data"});
         const temp = h(2, hooks("willUpdate", f => {
-          const res = diff(newTemp, r2, r1);
+          const res = diff(newTemp, r2);
           expect(res).to.equal(r2)
           expect(res.temp).to.equal(newTemp)
           called++;
@@ -1337,7 +1338,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const r1 = diff(h(0, null), null, {effs: [renderer, tracker]});
         const r2 = diff(h(1), null, r1);
         const temp = h(2, hooks("willUpdate", f => {
-          const res = diff(newTemp, r2, r1);
+          const res = diff(newTemp, r2);
           expect(res).to.equal(r2);
           expect(res.temp).to.equal(newTemp)
           called++;
@@ -1360,7 +1361,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
           called++
         }))), null, r1);
         const temp = h(2, hooks("willUpdate", f => {
-          const res = diff(newTemp, r2, r1);
+          const res = diff(newTemp, r2);
           expect(res).to.equal(r2);
           expect(res.temp).to.equal(newTemp)
           called++
@@ -1386,9 +1387,9 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, [h(1), h(2), h(3)])))
         let called = 0;
         const temp = h(4, hooks("willAdd", f => {
-          expect(diff(managedRoot1.temp, managedRoot1, r1, managedRoot3)).to.equal(managedRoot1);
-          expect(diff(managedRoot2.temp, managedRoot2, r1, managedRoot3)).to.equal(managedRoot2);
-          expect(diff(managedRoot3.temp, managedRoot3, r1, managedRoot1)).to.equal(managedRoot3);
+          expect(diff(managedRoot1.temp, managedRoot1, managedRoot3)).to.equal(managedRoot1);
+          expect(diff(managedRoot2.temp, managedRoot2, managedRoot3)).to.equal(managedRoot2);
+          expect(diff(managedRoot3.temp, managedRoot3, managedRoot1)).to.equal(managedRoot3);
           called++;
         }));
         events.length = 0;
@@ -1408,9 +1409,9 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, [h(1), h(2), h(3)])))
         let called = 0;
         const temp = h(4, hooks("willUpdate", f => {
-          expect(diff(managedRoot1.temp, managedRoot1, r1, managedRoot3)).to.equal(managedRoot1);
-          expect(diff(managedRoot2.temp, managedRoot2, r1, managedRoot3)).to.equal(managedRoot2);
-          expect(diff(managedRoot3.temp, managedRoot3, r1, managedRoot1)).to.equal(managedRoot3);
+          expect(diff(managedRoot1.temp, managedRoot1, managedRoot3)).to.equal(managedRoot1);
+          expect(diff(managedRoot2.temp, managedRoot2, managedRoot3)).to.equal(managedRoot2);
+          expect(diff(managedRoot3.temp, managedRoot3, managedRoot1)).to.equal(managedRoot3);
           called++;
         }));
         const r2 = diff(temp, null, {effs: [tracker]});

@@ -8,7 +8,7 @@ const Frame = module.exports = function(temp, effs){
   this.effs = effs, this.temp = temp;
   this.affs = this.next = this._affs = this.parent =
   this.sib = this.prev = this.top = this.bot = null;
-  this._affN = 0, this.path = -1
+  this.root = this._affN = 0, this.path = -1
 }
 
 Frame.prototype.render = function(temp){ return temp.next }

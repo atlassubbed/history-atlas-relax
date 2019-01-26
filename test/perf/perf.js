@@ -31,31 +31,16 @@ class Subframe extends Frame {
   }
 }
 
-const cleanup = (node, cb) => {
-  diff({name: (t, self) => {
-    if (!node.temp) {
-      const c = node.cache;
-      if (isArr(c)) for (let i = c.length; i--;) diff(null, c[i], node);
-      else diff(null, c, node);
-      self.unsub(node), diff(node.cache = null, self)
-    };
-  }}).sub(node)
-}
-
 // updates single root, uses auxiliary frame for cleanup
 class ManagedSubframe extends Frame {
   render({next}, node, isFirst){
     if (RENDER_WORK) init || doWork(RENDER_WORK);
     if (isFirst) {
-      cleanup(node);
       if (isArr(next)) {
-        const c = node.cache = [], n = next.length;
-        for (let i = next.length; i--;) c.push(diff(next[i], null, node))
-      } else node.cache = diff(next, null, node)
-    } else {
-      if (isArr(next)) diff(next[next.length-1], node.cache[0], node);
-      else diff(next, node.cache, node)
-    }
+        let i = next.length;
+        while(i--) diff(next[i], null, node)
+      } else diff(next, null, node)
+    } else diff(isArr(next) ? next[0] : next, node.next);
   }
 }
 

@@ -9,15 +9,15 @@ const path = [], stx = [];
 
 // for stack safety, we acquire overhead trying to simulate recursion's post ordering
 // compute a topologically ordered potential path to diff along
-const fill = (f, c, i, ch) => {
+const fill = (f, i, ch) => {
   while(i = stx.length) if (!((f = stx[i-1]).path < 0 && stx.pop())) {
-    if (!f.path && (f.next || f.affs)){
-      if (ch = f._affs = [], c = f.next) do ch.push(c); while(c = c.sib);
-      if (c = f.affs) for (c of c) c.path > -2 ? ch.push(c) : c.unsub(f);
+    if (!f.path && (((i = f.next) && !i.root) || f.affs)){
+      if (ch = f._affs = [], i && !i.root) do ch.push(i); while(i = i.sib);
+      if (i = f.affs) for (i of i) i.path > -2 ? ch.push(i) : i.unsub(f);
       f.path = ch.length+1;
     }
     if (--f.path <= 0) stx.pop().path = -1, path.push(f);
-    else if ((c = f._affs[f.path-1]).path <= 0) push(c)
+    else if ((i = f._affs[f.path-1]).path <= 0) push(i)
     else throw new Error("cyclic entanglement");
   }
   return path;

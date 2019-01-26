@@ -3,91 +3,6 @@ const Frame = require("./Frame"), { isFrame } = Frame;
 const { fill, push } = require("./step-leader");
 const { relax, excite, pop } = require("./field")
 const KeyIndex = require("./KeyIndex")
-
-// auxiliary stacks
-//   * lags: "laggards", accumulation of to-be-mounted nodes after the path exhausts
-//   * orph: "orphans", emphemral stack used for unmounting nodes immediately
-//   * stx:  "stack", all-purpose auxiliary stack used for re-ordering
-//   * evts: "events", accumulation of in-order mutation events
-// magic numbers
-//   global state: on in {0: not in diff, 1: in diff, can diff, 2: in diff, cannot diff}
-//   local state: node.path in {0: not in path, 1: in path, 2: will remove} 
-let lags = [], orph = [], stx = [], evts = [];
-
-// render a frame's next children
-//   * flattens and returns the output of frame's diff function
-//   * ix is an optional KeyIndex
-// XXX only pass f, isFirst to render?
-const render = (f, ix, t, isUpd=f._affN) => {
-  if (f.path = 0, isUpd) f._affN = 0, f._affs = null;
-  t = f.render(f.temp, f, !isUpd);
-  if (f.path > -2) {
-    const next = []; stx.push(t);
-    while(stx.length) if (t = norm(stx.pop()))
-      if (isArr(t)) for (let i of t) stx.push(i);
-      else next.push(t), ix && ix.push(t);
-    return next
-  }
-}
-
-// detach node f from linked list p after sibling s
-const unlink = (f, p, s, next) => {
-  (next = f.sib) && (next.prev = s);
-  s ? (s.sib = next) : p && (p.next = next);
-}
-// attach node f into linked list p after sibling s
-const link = (f, p, s, next) => {
-  (next = f.sib = (f.prev = s) ? s.sib : p.next) && (next.prev = f);
-  s ? (s.sib = f) : (p.next = f)
-}
-
-// emit events
-const emit = (eff, type, args) => {
-  if (isArr(eff)) for (eff of eff) eff[type] && eff[type](...args)
-  else eff[type] && eff[type](...args)
-}
-
-// mutation methods for subdiffs and rootdiffs (R)
-const add = (t, p, s) => t && (link(t = node(t, p), t.parent = p, s), stx.push(t), t.effs && evts.push([t, p, s, t.temp, "willAdd", t.effs]), t);
-const addR = (t, p, s) => (lags.push(t = node(t, p)), t.effs && evts.push([t, isFrame(p) && p, s, t.temp, "willAdd", t.effs]), t)
-const move = (f, p, s, ps=f.prev) => {unlink(f, p, ps), link(f, p, s), f.effs && evts.push([f, p, ps, s, "willMove", f.effs])}
-const moveR = (f, p, s, ps) => isFrame(p) && f.effs && evts.push([f, p, ps, s, "willMove", f.effs])
-const receive = (f, t) => {f.temp = t, f.effs && evts.push([f, t, "willReceive", f.effs])}
-
-// TODO consider using parent pointer traversal
-// unmount several queued,  nodes
-const unmount = (f, isRoot, c, ch) => {
-  while(f = orph.pop()) {
-    if (isRoot && (ch = f.affs)) for (c of ch) push(c);
-    f.effs && evts.push([f, f.parent, f.prev, f.temp, "willRemove", f.effs]);
-    unlink(f, f.parent, f.prev), f.path = -2;
-    // XXX could queue a cleanup function or render(null, node) in the path
-    //   or we could find a way to automatically clean up resources on unmount
-    relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.effs = null)
-    if (c = f.next) do orph.push(c); while(c = c.sib);
-  }
-}
-// diff "downwards" from a parent, p, short circuit if next or prev have zero elements
-//   * we used to have a separate mount(...) function, but it's more concise this way
-const subdiff = (p, c=p.next, i=c && new KeyIndex, next, n) => {
-   // XXX use aux stack for all diff mounts called during render so that managed diff mounts happen in order?
-  if (next = render(p, i, relax(p))){
-    if (!(n=next.length) && c) {
-      do orph.push(c); while(c = c.sib); unmount()
-    } else if (n) {
-      if (c) {
-        do (n = i.pop(c.temp)) ?
-          n === (n.p = c).temp ? --c._affN || (c.path=0) : receive(c, n) :
-          orph.push(c); while(c = c.sib); unmount();
-        for(i = p.next; i && (n = next.pop());) (c = n.p) ? (i === c ?
-          (i = i.sib) : move(c, p, i.prev), n.p = null) : add(n, p, i.prev);
-      }
-      while(c = add(next.pop(), p, c));
-      while(c = stx.pop()) lags.push(c)
-    }
-  }
-}
-
 /* **********
      READ THIS FIRST: This comment is about a "subcycle" technique. I'm not removing this 
      comment because it was a prior train of thought and might be useful. I've skipped this
@@ -133,8 +48,102 @@ const subdiff = (p, c=p.next, i=c && new KeyIndex, next, n) => {
     where an O(N) subdiff is simply too expensive for each update. In most cases,
     the linear cost of a subdiff is perfectly fine. Other times, the number of nodes 
     being updated is U, where 1 << U << N. In these cases, subdiffs may be too costly.
-    These situations justify being able to circumvent subdiff and perform managed diffs.
-*/
+    These situations justify being able to circumvent subdiff and perform managed diffs. */
+
+// auxiliary stacks
+//   * lags: "laggards", accumulation of to-be-mounted nodes after the path exhausts
+//   * orph: "orphans", emphemral stack used for unmounting nodes immediately
+//   * stx:  "stack", all-purpose auxiliary stack used for re-ordering
+//   * evts: "events", accumulation of in-order mutation events
+// magic numbers
+//   global state: on in {0: not in diff, 1: in diff, can diff, 2: in diff, cannot diff}
+//   local state: node.path in {0: not in path, 1: in path, 2: will remove} 
+let lags = [], orph = [], stx = [], evts = [];
+
+// render a frame's next children
+//   * flattens and returns the output of frame's diff function
+//   * ix is an optional KeyIndex
+// XXX only pass f, isFirst to render?
+const render = (f, ix, t, isUpd=f._affN) => {
+  if (f.path = 0, isUpd) f._affN = 0, f._affs = null;
+  t = f.render(f.temp, f, !isUpd);
+  if (f.path > -2 && (!f.next || !f.next.root)) {
+    const next = []; stx.push(t);
+    while(stx.length) if (t = norm(stx.pop()))
+      if (isArr(t)) for (let i of t) stx.push(i);
+      else next.push(t), ix && ix.push(t);
+    return next
+  }
+}
+
+// detach node f from linked list p after sibling s
+const unlink = (f, p, s, next) => {
+  (next = f.sib) && (next.prev = s);
+  s ? (s.sib = next) : p && (p.next = next);
+}
+// attach node f into linked list p after sibling s
+const link = (f, p, s, next) => {
+  (next = f.sib = (f.prev = s) ? s.sib : p && p.next) && (next.prev = f);
+  s ? (s.sib = f) : p && (p.next = f)
+}
+
+// emit events
+const emit = (eff, type, args) => {
+  if (isArr(eff)) for (eff of eff) eff[type] && eff[type](...args)
+  else eff[type] && eff[type](...args)
+}
+
+// mutation methods for subdiffs and rootdiffs (R)
+const add = (t, p, s, isRoot) => {
+  if (t){
+    link(t = node(t, p), p = t.parent, s);
+    isRoot ? lags.push(t) : stx.push(t);
+    t.effs && evts.push([t, p, s, t.temp, "willAdd", t.effs])
+    return t;
+  }
+}
+const move = (f, p, s, ps=f.prev) => {
+  unlink(f, p, ps), link(f, p, s);
+  f.effs && evts.push([f, p, ps, s, "willMove", f.effs])
+}
+const receive = (f, t) => {
+  f.temp = t;
+  f.effs && evts.push([f, t, "willReceive", f.effs])
+}
+
+// unmount several queued,  nodes
+const unmount = (f, isRoot, c, ch) => {
+  while(f = orph.pop()) {
+    if (isRoot && (ch = f.affs)) for (c of ch) push(c);
+    f.effs && evts.push([f, f.parent, f.prev, f.temp, "willRemove", f.effs]);
+    unlink(f, f.parent, f.prev), f.path = -2;
+    // XXX could queue a cleanup function or render(null, node) in the path
+    //   or we could find a way to automatically clean up resources on unmount
+    relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.effs = null)
+    if (c = f.next) do orph.push(c); while(c = c.sib);
+  }
+}
+
+// diff "downwards" from a parent, p, short circuit if next or prev have zero elements
+//   * we used to have a separate mount(...) function, but it's more concise this way
+const subdiff = (p, c=p.next, i=c && !c.root && new KeyIndex, next, n) => {
+   // XXX use aux stack for all diff mounts called during render so that managed diff mounts happen in order?
+  if (next = render(p, i, relax(p))){
+    if (!(n=next.length) && c) {
+      do orph.push(c); while(c = c.sib); unmount()
+    } else if (n) {
+      if (c) {
+        do (n = i.pop(c.temp)) ?
+          n === (n.p = c).temp ? --c._affN || (c.path=0) : receive(c, n) :
+          orph.push(c); while(c = c.sib); unmount();
+        for(i = p.next; i && (n = next.pop());) (c = n.p) ? (i === c ?
+          (i = i.sib) : move(c, p, i.prev), n.p = null) : add(n, p, i.prev);
+      }
+      while(c = add(next.pop(), p, c));
+      while(c = stx.pop()) lags.push(c)
+    }
+  }
+}
 
 let on = 0;
 const sidediff = (f, c, path=fill(on = 1)) => {
@@ -144,6 +153,7 @@ const sidediff = (f, c, path=fill(on = 1)) => {
         while(c = f._affs[f.path++]) --c._affN || (c.path=0)
         f.path = 0, f._affs = null;
       }
+      // XXX consider f.next ? f.next.root ? mandiff(f) : subdiff(f) : mount(f)
     } else if (f.path > -2) subdiff(f);
   }
   c = 0, on = 2; while(f = evts[c++]) emit(f.pop(), f.pop(), f)
@@ -158,6 +168,7 @@ const node = (t, p) => {
     if (isFrame(Sub.prototype)) t = new Sub(t, effs);
     else t = new Frame(t, effs), t.render = Sub;
   }
+  if (isFrame(p)) t.parent = p;
   return on = 1, t;
 }
 // TODO for inner and outer diffs:
@@ -172,21 +183,16 @@ Frame.prototype.diff = function(tau=-1){
 }
 // public (outer) diff (mount, unmount and update frames)
 //   * diff root node, supports virtual/managed diffs for imperative backdooring
-module.exports = (t, f, p, s, ps) => {
+module.exports = (t, f, p=f&&f.prev, s) => {
   let r = false, inDiff = on;
   if (inDiff < 2) try {
     if (!isArr(t = norm(t))){
-      if (!isFrame(f) || f.path < -1) t && (r = addR(t, p, s));
-      else if (!f.parent){
+      if (!isFrame(f) || f.path < -1) t && (r = add(t, p, s, 1)).root++;
+      else if (f.root){
         if (t && t.name === f.temp.name) {    // note we mustn't incr _affN for laggards
           if (t !== f.temp) receive(r = f, t, (f.path && !f._affN) || push(f));
-          s === ps || moveR(r = f, p, s, ps);
-        } else if (!t) {
-          // cache parent and prev sib on orphaned root for performance
-          if (isFrame(p)) f.parent = p;
-          if (s) f.prev = s;
-          unmount(orph.push(f), r = true)
-        }
+          if (isFrame(f.parent) && p !== f.prev) move(r = f, f.parent, p);
+        } else if (!t) unmount(orph.push(f), r = true);
       }
       (inDiff ? fill : sidediff)();
     }
