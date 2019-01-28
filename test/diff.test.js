@@ -174,7 +174,8 @@ describe("diff", function(){
         const c2 = diff({name:"c2"}, null, p, c);
         const result = diff(null, c);
         expect(result).to.be.true;
-        expect(renderer.renderStatic({name:"p", next: {name: "c2"}})).to.deep.equal(renderer.tree);
+
+        expect(renderer.tree).to.eql(renderer.renderStatic({name:"p", next: {name: "c2"}}));
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(3);
         expect(n).to.equal(2);
@@ -252,8 +253,7 @@ describe("diff", function(){
         diff({name:"d"}, null, p);
         const result = diff({name: "c", data:{n:1}}, c);
         expect(result).to.equal(c);
-        expect(renderer.renderStatic({name:"p", next: [{name: "d"}, {name: "c", data:{n:1}}]}))
-          .to.deep.equal(renderer.tree);
+        expect(renderer.tree).to.eql(renderer.renderStatic({name:"p", next: [{name: "d"}, {name: "c", data:{n:1}}]}))
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(3);
         expect(u).to.equal(1);

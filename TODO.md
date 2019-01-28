@@ -1,3 +1,41 @@
+Event Ordering and Squashing:
+  Without rebasing, the diff cycle is fairly simple. Removal, move, add, and receive events are generated and queued. Removal events may be processed before all of the other events, or, removals may be queued separately and flushed before the other events are flushed. This allows maximal resource recycling for a given diff cycle:
+
+    totalEventsQueue = [...removalEventsQueue, allOtherEventsQueue].
+
+  As soon as we introduce rebasing, this becomes a lot more complicated. We can no longer assume that every node corresponds to at most one move/add/remove event, nor can we assume that every node actually exists yet (according to the effects). Rebasing may lead to situations where a node is mutated in many ways, generating a sequence of non-commutative events. The addition of particular nodes may be dependent on the existence and/or location of other nodes. Nodes removed in rebase_i may have been added or moved in a previous rebase, in which case removing the node too early may result in inconsistencies.
+
+  We need to figure out the correct way of squashing different types of events together to reduce the event footprint. 
+
+    ADD events do not commute with each other unless parent-child order is preserved
+    REMOVE events should commute with each other
+    MOVE events do not commute with each other in the general case (sometimes, they do)
+    RECEIVE events do not commute with each other, however they can be squashed to the last-seen event
+    ADD and 
+
+    ADD -> ADD adding something after a (re)moved node or under a (re)moved node
+    ADD -> REMOVE
+    ADD -> MOVE
+    ADD -> RECEIVE
+
+    MOVE -> ADD
+    MOVE -> REMOVE
+    MOVE -> MOVE
+    MOVE -> RECEIVE
+
+    RECEIVE -> REMOVE
+    RECEIVE -> MOVE
+
+
+  Rebasing repeatedly leads to a potential perf problem.
+  Let the size of the union of the rebased affected regions be N.
+  Let the number of queued events be E.
+  Currently, it is possible for E >> N, and E is not bounded.
+
+  Rebasing repeatedly is an antipattern for large applications.
+  Many events may be generated for a single node
+
+
 Declarative reactive computations:
   Autoruns like in Meteor should be possible in my library:
   

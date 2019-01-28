@@ -119,13 +119,16 @@ describe("subdiff", function(){
       })
     })
   })
-  let c = 0;
+  // let c = 0;
   // brute force consistency checks
   describe("edits prev children to match next children", function(){
     bruteForceCases.forEach(({prevCases, nextCases}) => {
       prevCases.forEach((prev, j) => {
+        // if (prev.length !== 1) return;
         describe(`with prev [${prev.map(tag)}]`, function(){
           nextCases.forEach((next, i) => {
+            // if (next.length !== 2) return;
+            // if (++c !== 7) return;
             const t2 = h(next), t1 = h(prev);
             const r2 = new LCRSRenderer;
             describe(`LCRS rendered to next [${next.map(tag)}]`, function(){

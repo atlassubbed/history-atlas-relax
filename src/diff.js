@@ -3,6 +3,8 @@ const Frame = require("./Frame"), { isFrame } = Frame;
 const { fill, push } = require("./step-leader");
 const { relax, excite, pop } = require("./field")
 const KeyIndex = require("./KeyIndex")
+const EventQueue = require("./EventQueue");
+
 /* **********
      READ THIS FIRST: This comment is about a "subcycle" technique. I'm not removing this 
      comment because it was a prior train of thought and might be useful. I've skipped this
@@ -58,7 +60,7 @@ const KeyIndex = require("./KeyIndex")
 // magic numbers
 //   global state: on in {0: not in diff, 1: in diff, can diff, 2: in diff, cannot diff}
 //   local state: node.path in {0: not in path, 1: in path, 2: will remove} 
-let lags = [], orph = [], stx = [], evts = [];
+let lags = [], orph = [], stx = [], queue = new EventQueue;
 
 // flatten and sanitize a frame's next children
 //   * ix is an optional KeyIndex
@@ -81,28 +83,23 @@ const link = (f, p, s, next) => {
   s ? (s.sib = f) : p && (p.next = f)
 }
 
-// emit events
-const emit = (eff, type, args) => {
-  if (isArr(eff)) for (eff of eff) eff[type] && eff[type](...args)
-  else eff[type] && eff[type](...args)
-}
-
 // mutation methods for subdiffs and rootdiffs (R)
 const add = (t, p, s, isRoot) => {
   if (t){
-    link(t = node(t, p), p = t.parent, s);
+    t = node(t, p), p = t.parent;
+    t.effs && queue.add(t)
+    link(t, p, s);
     isRoot ? lags.push(t) : stx.push(t);
-    t.effs && evts.push([t, p, s, t.temp, "willAdd", t.effs])
     return t;
   }
 }
 const move = (f, p, s, ps=f.prev) => {
+  f.effs && queue.move(f)
   unlink(f, p, ps), link(f, p, s);
-  f.effs && evts.push([f, p, ps, s, "willMove", f.effs])
 }
 const receive = (f, t) => {
+  f.effs && queue.receive(f, t);
   f.temp = t;
-  f.effs && evts.push([f, t, "willReceive", f.effs])
 }
 
 // unmount several queued nodes
@@ -110,7 +107,8 @@ const receive = (f, t) => {
 const unmount = (f, isRoot, c, ch) => {
   while(f = orph.pop()) {
     if (isRoot && (ch = f.affs)) for (c of ch) push(c);
-    f.effs && evts.push([f, f.parent, f.prev, f.temp, "willRemove", f.effs]);
+    queue.cacheChildren(f);
+    f.effs && queue.remove(f)
     unlink(f, f.parent, f.prev), f.path = -2;
     // XXX could queue a cleanup function or render(null, node) in the path
     //   or we could find a way to automatically clean up resources on unmount
@@ -125,7 +123,8 @@ const mount = (f, next, c) => {
   while(c = stx.pop()) lags.push(c);
 }
 
-// diff "downwards" from a parent, p, short circuit if next or prev have zero elements
+// diff "downwards" from a parent, p, short circuit if next has zero elements
+//   * need keyed subdiff otherwise we'll incorrectly add/remove nodes
 const subdiff = (p, c, next, i=new KeyIndex, n) => {
    // XXX use aux stack for all diff mounts called during render so that managed diff mounts happen in order?
   if ((next = clean(next, i)).length){
@@ -150,8 +149,10 @@ const sidediff = (f, c, path=fill(on = 1), raw) => {
         f.path = 0, f._affs = null;
       }
     } else if (f.path > -2) {
-      if (relax(f), f.path = 0, c = f._affN)
+      if (relax(f), f.path = 0, c = f._affN){
+        queue.cacheChildren(f)
         f._affN = 0, f._affs = null;
+      }
       raw = f.render(f.temp, f, !c)
       if (f.path > -2){
         if (c = f.next) c.root || subdiff(f, c, raw);
@@ -159,10 +160,7 @@ const sidediff = (f, c, path=fill(on = 1), raw) => {
       }
     }
   }
-  c = 0, on = 2;
-  while(f = evts[c++])
-    emit(f.pop(), f.pop(), f);
-  on = evts.length = 0;
+  on = 2, queue.flush(), on = 0;
 }
 // temp is already normalized
 const node = (t, p) => {
@@ -194,6 +192,7 @@ module.exports = (t, f, p=f&&f.prev, s) => {
     if (!isArr(t = norm(t))){
       if (!isFrame(f) || f.path < -1) t && (r = add(t, p, s, 1)).root++;
       else if (f.root){
+        f.parent && queue.cacheChildren(f.parent);
         if (t && t.name === f.temp.name) {    // note we mustn't incr _affN for laggards
           if (t !== f.temp) receive(r = f, t, (f.path && !f._affN) || push(f));
           if (isFrame(f.parent) && p !== f.prev) move(r = f, f.parent, p);
