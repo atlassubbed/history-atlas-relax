@@ -119,27 +119,22 @@ describe("subdiff", function(){
       })
     })
   })
-  // let c = 0;
   // brute force consistency checks
   describe("edits prev children to match next children", function(){
     bruteForceCases.forEach(({prevCases, nextCases}) => {
       prevCases.forEach((prev, j) => {
-        // if (prev.length !== 1) return;
         describe(`with prev [${prev.map(tag)}]`, function(){
           nextCases.forEach((next, i) => {
-            // if (next.length !== 2) return;
-            // if (++c !== 7) return;
             const t2 = h(next), t1 = h(prev);
-            const r2 = new LCRSRenderer;
             describe(`LCRS rendered to next [${next.map(tag)}]`, function(){
-              const f = diff(t1, null, {effs: r2});
-              const { a: mA, r: mR, u: mU, s: mS } = r2.counts;
-              r2.resetCounts(), diff(t2, f);
-              const expectedTree = r2.renderStatic(t2)
-              // add, remove, update, total N, swaps
-              const { a, r, u, n, s } = r2.counts;
-              diff(t2, f);
               it("should not contain superfluous events", function(){
+                const renderer = new LCRSRenderer;
+                const f = diff(t1, null, {effs: renderer});
+                const { a: mA, r: mR, u: mU, s: mS } = renderer.counts;
+                renderer.resetCounts(), diff(t2, f);
+                const expectedTree = renderer.renderStatic(t2)
+                // add, remove, update, total N, swaps
+                const { a, r, u, n, s } = renderer.counts;
                 // mounting phase should only add nodes
                 expect(mA).to.equal(prev.length + 1);
                 expect(mR).to.equal(mU).to.equal(mS).to.equal(0)
@@ -152,7 +147,11 @@ describe("subdiff", function(){
                 expect(n).to.equal(next.length + 1) // sanity check
               })
               it("should edit prev to match next", function(){
-                expect(r2.tree).to.deep.equal(r2.renderStatic(t2));
+                const renderer = new LCRSRenderer;
+                const f = diff(t1, null, {effs: renderer});
+                diff(t2, f);
+                const expectedTree = renderer.renderStatic(t2)
+                expect(renderer.tree).to.deep.equal(renderer.renderStatic(t2));
               })
             })
           })

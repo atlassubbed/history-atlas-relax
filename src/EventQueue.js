@@ -2,59 +2,77 @@ const { isArr } = require("./util")
 const { isFrame } = require("./Frame");
 const stx = [];
 
-const printDLL = queue => {
-  console.log("printing reverse")
-  for (let [n, t] of queue.prevs){
-    console.log("  ", n.temp.data.id, "comes after", t && t.temp.data.id)
+const printDLL = cache => {
+  console.log("  printing reverse")
+  for (let [n, t] of cache.prevs){
+    console.log("    ", n && n.temp.data.id, "comes after", t && t.temp.data.id)
   }
-  console.log("printing forward")
-  for (let [n, t] of queue.sibs){
-    console.log("  ", n.temp.data.id, "comes before", t && t.temp.data.id)
+  console.log("  printing forward")
+  for (let [n, t] of cache.sibs){
+    console.log("    ", n && n.temp.data.id, "comes before", t && t.temp.data.id)
   }
 }
-// console.log("printing events set")
-// for (let f of this.events) {
-//   console.log("  ", f._id, f.prev && f.prev._id, this.isMounted(f))
-// }
-// console.log("printing temp map");
-// for (let [n, t] of this.temps){
-//   console.log("  ", n._id, "gets temp", !!t)
-// }
+const printEvts = q => {
+  console.log("printing temp map");
+  for (let [n, t] of q.temps){
+    console.log("  ", n.temp.data.id, "gets temp", !!t)
+  }
+  console.log("printing events set")
+  for (let [f, isAdding] of q.events) {
+    console.log("  ", f.temp.data.id, f.prev && f.prev.temp.data.id, isAdding)
+  }
+}
+const printAll = q => {
+  for (let [p, cache] of q.parents) {
+    console.log("printing parent dll", p.temp.data.id);
+    printDLL(cache)
+  }
+  console.log("printing rems")
+  for (let r in q.rems){
+    console.log(r[0].temp.data.id, r[1] && r[1].temp.data.id, r[2] && r[2].temp.data.id)
+  }
+  printEvts(q);
+}
 
 module.exports = class EventQueue {
   constructor(){
-    this.prevs = new Map, this.sibs = new Map,
-    this.temps = new Map, this.events = new Map,
-    this.parents = new Set;
-    this.rems = [];
+    this.temps = new Map, this.events = new Map, this.parents = new Map, this.rems = [];
   }
   cacheChildren(f, cur=f.next){
     if (!this.parents.has(f)) {
-      this.parents.add(f);
+      const cache = {prevs: new Map, sibs: new Map};
+      this.parents.set(f, cache);
+      cache.prevs.set(cur, null);
+      cache.sibs.set(null, cur);
       while(cur){
-        this.prevs.set(cur, cur.prev);
-        this.sibs.set(cur, cur = cur.sib);
+        cache.prevs.set(cur, cur.prev);
+        cache.sibs.set(cur, cur = cur.sib);
       }
     }
   }
-  removeChild(f, ps=this.prevs.get(f), s=this.sibs.get(f)){
-    if (ps) this.sibs.set(ps, s);
-    if (s) this.prevs.set(s, ps);
-    this.sibs.delete(f), this.prevs.delete(f);
+  removeChild(f){
+    const cache = this.parents.get(f.parent);
+    if (!cache) return;
+    const ps = cache.prevs.get(f), s = cache.sibs.get(f);
+    cache.sibs.set(ps, s);
+    cache.prevs.set(s, ps);
+    cache.sibs.delete(f), cache.prevs.delete(f);
   }
-  addChild(f, s, ns=this.sibs.get(s)){
-    if (ns) this.prevs.set(ns, f);
-    if (s) this.sibs.set(s, f);
-    this.sibs.set(f, ns);
-    this.prevs.set(f, s);
+  addChild(f, s){
+    const cache = this.parents.get(f.parent);
+    if (!cache) return;
+    const ns = cache.sibs.get(s);
+    cache.prevs.set(ns, f);
+    cache.sibs.set(s, f);
+    cache.sibs.set(f, ns);
+    cache.prevs.set(f, s);
   }
   moveChild(f, s){
     this.removeChild(f);
     this.addChild(f, s);
   }
   clear(){
-    this.prevs.clear(), this.sibs.clear(), this.events.clear(),
-    this.temps.clear(), this.parents.clear(), this.rems.length = 0;
+    this.events.clear(), this.temps.clear(), this.parents.clear(), this.rems.length = 0;
   }
   receive(f, t, pt=this.temps.get(f)){
     if (this.events.get(f) !== true){
@@ -66,11 +84,13 @@ module.exports = class EventQueue {
     this.events.set(f, true);
   }
   move(f){
+    if (this.events.has(f)) return;
     this.events.set(f, false);
   }
   remove(f){
     if (!this.events.get(f)){
-      this.rems.push([f, f.parent, this.prevs.get(f), f.temp, "willRemove", f.effs]);
+      const cache = this.parents.get(f.parent);
+      this.rems.push([f, f.parent, cache && cache.prevs.get(f), f.temp, "willRemove", f.effs]);
       this.removeChild(f);
     }
     this.events.delete(f);
@@ -82,6 +102,7 @@ module.exports = class EventQueue {
     else eff[type] && eff[type](...args);   
   }
   flush(){
+    // printAll(this)
     for (let event of this.rems){
       this.emit(event.pop(), event.pop(), event);
     }
@@ -98,7 +119,8 @@ module.exports = class EventQueue {
           this.emit(node.effs, "willAdd", [node, node.parent, node.prev, node.temp]);
           this.addChild(node, node.prev);
         } else {
-          const prev = this.prevs.get(node);
+          const cache = this.parents.get(node.parent);
+          const prev = cache && cache.prevs.get(node);
           if (node.prev !== prev){
             this.emit(node.effs, "willMove", [node, node.parent, prev, node.prev]);
             this.moveChild(node, node.prev);

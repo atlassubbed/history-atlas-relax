@@ -73,12 +73,12 @@ const clean = (t, ix, next=[]) => {
 }
 
 // detach node f from linked list p after sibling s
-const unlink = (f, p, s, next) => {
+const unlink = (f, p, s=null, next) => {
   (next = f.sib) && (next.prev = s);
   s ? (s.sib = next) : p && (p.next = next);
 }
 // attach node f into linked list p after sibling s
-const link = (f, p, s, next) => {
+const link = (f, p, s=null, next) => {
   (next = f.sib = (f.prev = s) ? s.sib : p && p.next) && (next.prev = f);
   s ? (s.sib = f) : p && (p.next = f)
 }
@@ -107,8 +107,9 @@ const receive = (f, t) => {
 const unmount = (f, isRoot, c, ch) => {
   while(f = orph.pop()) {
     if (isRoot && (ch = f.affs)) for (c of ch) push(c);
-    queue.cacheChildren(f);
-    f.effs && queue.remove(f)
+    if (f.effs){
+      queue.cacheChildren(f), queue.remove(f);
+    }
     unlink(f, f.parent, f.prev), f.path = -2;
     // XXX could queue a cleanup function or render(null, node) in the path
     //   or we could find a way to automatically clean up resources on unmount
@@ -150,7 +151,7 @@ const sidediff = (f, c, path=fill(on = 1), raw) => {
       }
     } else if (f.path > -2) {
       if (relax(f), f.path = 0, c = f._affN){
-        queue.cacheChildren(f)
+        f.effs && queue.cacheChildren(f)
         f._affN = 0, f._affs = null;
       }
       raw = f.render(f.temp, f, !c)
@@ -192,10 +193,11 @@ module.exports = (t, f, p=f&&f.prev, s) => {
     if (!isArr(t = norm(t))){
       if (!isFrame(f) || f.path < -1) t && (r = add(t, p, s, 1)).root++;
       else if (f.root){
-        f.parent && queue.cacheChildren(f.parent);
+        s = f.parent;
+        if (s && s.effs) queue.cacheChildren(s);
         if (t && t.name === f.temp.name) {    // note we mustn't incr _affN for laggards
           if (t !== f.temp) receive(r = f, t, (f.path && !f._affN) || push(f));
-          if (isFrame(f.parent) && p !== f.prev) move(r = f, f.parent, p);
+          if (isFrame(s) && p !== f.prev) move(r = f, s, p);
         } else if (!t) unmount(orph.push(f), r = true);
       }
       (inDiff ? fill : sidediff)();

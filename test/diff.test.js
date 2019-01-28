@@ -383,12 +383,12 @@ describe("diff", function(){
         const e = diff({name: "e"}, null, p);
         const d = diff({name: "d"}, null, p);
         const result = diff(d.temp, d, null);
-        expect(result).to.equal(d);
+        expect(result).to.be.false;
         const tree = {name:"p", next: [{name: "d"}, {name: "e"}, {name: "c"}]}
         expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(4);
-        expect(s).to.equal(1);
+        expect(s).to.equal(0);
         expect(r).to.equal(u).to.equal(0)
       })
       it("should update and move a frame", function(){
@@ -430,7 +430,8 @@ describe("diff", function(){
         expect(renderer.renderStatic(tree)).to.deep.equal(renderer.tree);
         const { a, r, u, n, s } = renderer.counts;
         expect(a).to.equal(n).to.equal(3);
-        expect(u).to.equal(s).to.equal(1)
+        expect(u).to.equal(1)
+        expect(s).to.equal(0);
         expect(r).to.equal(0)
       })
       it("should update but not move a frame if the previous virtual sibling was unchanged", function(){
