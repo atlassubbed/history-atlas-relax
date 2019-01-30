@@ -7,7 +7,7 @@ const Frame = module.exports = function(temp, effs){
   if (!temp) return;
   this.effs = effs, this.temp = temp;
   this.affs = this.next = this._affs = this.parent =
-  this.sib = this.prev = this.top = this.bot = null;
+  this.sib = this.prev = this.top = this.bot = this.evt = null;
   this.root = this._affN = 0, this.path = -1
 }
 
