@@ -118,21 +118,24 @@ module.exports = class EventQueue {
     const hasEvent = this.events.has(f);
     const temp = f.evt.temp;
     if (!hasEvent || temp){
-      this.rems.push([f, f.parent, this.nexts.has(f.parent) && f.evt.prev, temp || f.temp, "willRemove", f.effs]);
+      f.evt.parent = f.parent, f.evt.temp = temp || f.temp, f.evt.effs = f.effs;
+      this.rems.push(f);
       this.removeChild(f);
     }
     this.events.delete(f);
   }
-  emit(eff, type, args){
+  emit(eff, type, f, p, s, ps){
     // console.log(type, args.map(f => isFrame(f) && f.temp && f.temp.data.id))
-    if (isArr(eff)) for (eff of eff) eff[type] && eff[type](...args);
-    else eff[type] && eff[type](...args);   
+    if (isArr(eff)) for (eff of eff) eff[type] && eff[type](f, p, s, ps);
+    else eff[type] && eff[type](f, p, s, ps);   
   }
   flush(){
     // printAll(this)
     // assertDLL(this)
-    for (let event of this.rems){
-      this.emit(event.pop(), event.pop(), event);
+    for (let node of this.rems){
+      const e = node.evt;
+      this.emit(e.effs, "willRemove", node, e.parent, this.nexts.has(e.parent) ? e.prev : node.prev, e.temp);
+      node.evt = null;
     }
     for (let node of this.events){
       do {
@@ -142,15 +145,15 @@ module.exports = class EventQueue {
       while(node = stx.pop()){
         const temp = node.evt.temp;
         if (!temp){
-          this.emit(node.effs, "willAdd", [node, node.parent, node.prev, node.temp]);
+          this.emit(node.effs, "willAdd", node, node.parent, node.prev, node.temp);
           this.addChild(node, node.prev);
         } else {
           if (temp !== node.temp){
-            this.emit(node.effs, "willReceive", [node, node.temp]);
+            this.emit(node.effs, "willReceive", node, node.temp);
           }
           const prev = this.nexts.has(node.parent) ? node.evt.prev : null;
           if (node.prev !== prev){
-            this.emit(node.effs, "willMove", [node, node.parent, prev, node.prev]);
+            this.emit(node.effs, "willMove", node, node.parent, prev, node.prev);
             this.moveChild(node, node.prev);
           }
         }
