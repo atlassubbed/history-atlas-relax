@@ -87,14 +87,14 @@ const link = (f, p, s=null, next) => {
 const add = (t, p, s, isRoot) => {
   if (t){
     t = node(t, p), p = t.parent;
-    t.effs && queue.add(t)
+    t.effs && queue.add(t, p, s)
     link(t, p, s);
     isRoot ? lags.push(t) : stx.push(t);
     return t;
   }
 }
 const move = (f, p, s, ps=f.prev) => {
-  f.effs && queue.move(f)
+  f.effs && queue.move(f, p, s, ps)
   unlink(f, p, ps), link(f, p, s);
 }
 const receive = (f, t) => {
@@ -107,9 +107,7 @@ const receive = (f, t) => {
 const unmount = (f, isRoot, c, ch) => {
   while(f = orph.pop()) {
     if (isRoot && (ch = f.affs)) for (c of ch) push(c);
-    if (f.effs){
-      queue.cacheChildren(f), queue.remove(f);
-    }
+    f.effs && queue.remove(f);
     unlink(f, f.parent, f.prev), f.path = -2;
     // XXX could queue a cleanup function or render(null, node) in the path
     //   or we could find a way to automatically clean up resources on unmount

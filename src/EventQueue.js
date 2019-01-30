@@ -2,6 +2,7 @@ const { isArr } = require("./util")
 const { isFrame } = require("./Frame");
 const stx = [];
 
+let debug = 0
 const assertDLL = q => {
   for (let [n, t] of q.prevs){
     if (!n) throw new Error("mapping falsy to node in prevs");
@@ -26,30 +27,22 @@ const assertDLL = q => {
   }
 }
 const printDLL = q => {
-  console.log("  printing reverse")
-  for (let [n, t] of q.prevs){
-    console.log("    ", n && n.temp.data.id, "comes after", t && t.temp.data.id)
-  }
-  console.log("  printing forward")
-  for (let [n, t] of q.sibs){
-    console.log("    ", n && n.temp.data.id, "comes before", t && t.temp.data.id)
-  }
-  console.log("  printing first childs")
+  console.log("printing first childs")
   for (let [n, t] of q.nexts){
-    console.log("    ", n && n.temp.data.id, "has first child", t && t.temp.data.id)
+    console.log("    ", n && n.temp && n.temp.data, "has first child", t && t.temp && t.temp.data)
   }
 }
 const printEvts = q => {
   console.log("printing events set")
-  for (let [f, temp] of q.events) {
-    console.log("  ", f.temp.data.id, f.prev && f.prev.temp.data.id, !!temp)
+  for (let f of q.events) {
+    console.log("  ", f && f.temp && f.temp.data, f.evt && f.evt.temp &&f.evt.temp.data, f.evt && f.evt.update)
   }
 }
 const printAll = q => {
   printDLL(q);
   console.log("printing rems")
-  for (let r in q.rems){
-    console.log(r[0].temp.data.id, r[1] && r[1].temp.data.id, r[2] && r[2].temp.data.id)
+  for (let f of q.rems){
+    console.log(f.evt.temp && f.evt.temp.data)
   }
   printEvts(q);
 }
@@ -63,9 +56,37 @@ module.exports = class EventQueue {
     if (!this.nexts.has(f)) {
       this.nexts.set(f, cur);
       while(cur){
-        cur.evt = {prev: cur.prev, sib: cur = cur.sib, temp: null}
+        if (cur.evt && cur.evt.update) cur = cur.sib;
+        else cur.evt = {prev: cur.prev, sib: cur = cur.sib, temp: null, update: false}
       }
     }
+  }
+  queue(f, p, s){
+    f.evt.update = true;
+    if (!s){
+      this.events.add(f);
+      if (p && p.next && p.next.evt.update){
+        this.events.delete(p.next);
+      }
+    } else if (!s.evt.update) {
+      this.events.add(f);
+      if (s.sib && s.sib.evt.update){
+        this.events.delete(s.sib);
+      }
+    }
+  }
+  dequeue(f, ps, ns=f.sib){
+    if (ns && ns.evt.update){
+      if (f.evt.update){
+        if (!ps || !ps.evt.update){
+          this.events.add(ns);
+        }
+      } else if (ps && ps.evt.update){
+        this.events.delete(ns);
+      }
+    }
+    if (f.evt.update) this.events.delete(f);
+    else f.evt.update = true;
   }
   removeChild(f){
     if (!this.nexts.has(f.parent)) return;
@@ -99,50 +120,58 @@ module.exports = class EventQueue {
     this.nexts.clear(), this.rems.length = 0;
   }
   receive(f, t){
-    if (!this.events.has(f)){
+    if (!f.evt.update){
       f.evt.temp = f.temp;
-      this.events.add(f);
+      f.evt.update = true;
+      if (!f.prev || !f.prev.evt.update){
+        this.events.add(f);        
+      }
     }
   }
-  add(f){
+  add(f, p, s){
     f.evt = {temp: null}
-    this.events.add(f);
+    this.queue(f, p, s);
   }
-  move(f){
-    if (!this.events.has(f)){
-      f.evt.temp = f.temp;
-      this.events.add(f);
+  move(f, p, s, ps){
+    if (!f.evt.update){
+      f.evt.temp = f.evt.temp || f.temp;      
     }
+    this.dequeue(f, ps);
+    this.queue(f, p, s);
   }
   remove(f){
-    const hasEvent = this.events.has(f);
+    const hasEvent = f.evt.update;
     const temp = f.evt.temp;
     if (!hasEvent || temp){
       f.evt.parent = f.parent, f.evt.temp = temp || f.temp, f.evt.effs = f.effs;
       this.rems.push(f);
       this.removeChild(f);
     }
-    this.events.delete(f);
+    this.dequeue(f, f.prev)
+    this.nexts.delete(f);
   }
   emit(eff, type, f, p, s, ps){
-    // console.log(type, args.map(f => isFrame(f) && f.temp && f.temp.data.id))
+    if (debug){
+      console.log(type, f.temp && f.temp.data)
+      // console.log(type, args.map(f => isFrame(f) && f.temp && f.temp.data.id))      
+    }
     if (isArr(eff)) for (eff of eff) eff[type] && eff[type](f, p, s, ps);
     else eff[type] && eff[type](f, p, s, ps);   
   }
   flush(){
-    // printAll(this)
-    // assertDLL(this)
+    if (debug) {
+      printAll(this)
+      // assertDLL(this)
+    }
     for (let node of this.rems){
       const e = node.evt;
       this.emit(e.effs, "willRemove", node, e.parent, this.nexts.has(e.parent) ? e.prev : node.prev, e.temp);
       node.evt = null;
     }
     for (let node of this.events){
+      this.events.delete(node);
       do {
-        stx.push(node);
-        node = this.events.has(node.prev) ? node.prev : null;
-      } while(node);
-      while(node = stx.pop()){
+        node.evt.update = false;
         const temp = node.evt.temp;
         if (!temp){
           this.emit(node.effs, "willAdd", node, node.parent, node.prev, node.temp);
@@ -157,9 +186,9 @@ module.exports = class EventQueue {
             this.moveChild(node, node.prev);
           }
         }
-        this.events.delete(node);
-      }
+      } while(node = node.sib, node && node.evt.update);
     }
     this.clear();
+    debug && console.log("\n")
   }
 }
