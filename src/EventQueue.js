@@ -57,13 +57,13 @@ const printAll = q => {
 module.exports = class EventQueue {
   constructor(){
     this.nexts = new Map;
-    this.events = new Map, this.rems = [];
+    this.events = new Set, this.rems = [];
   }
   cacheChildren(f, cur=f.next){
     if (!this.nexts.has(f)) {
       this.nexts.set(f, cur);
       while(cur){
-        cur.evt = {prev: cur.prev, sib: cur = cur.sib}
+        cur.evt = {prev: cur.prev, sib: cur = cur.sib, temp: null}
       }
     }
   }
@@ -80,11 +80,13 @@ module.exports = class EventQueue {
       const ns = s.evt.sib;
       if (ns) ns.evt.prev = f;
       s.evt.sib = f;
-      f.evt = {prev: s, sib: ns};
+      f.evt.prev = s;
+      f.evt.sib = ns;
     } else {
       const ns = this.nexts.get(f.parent);
       if (ns) ns.evt.prev = f;
-      f.evt = {prev: null, sib: ns};
+      f.evt.prev = null;
+      f.evt.sib = ns;
       this.nexts.set(f.parent, f);
     }
   }
@@ -98,20 +100,23 @@ module.exports = class EventQueue {
   }
   receive(f, t){
     if (!this.events.has(f)){
-      this.events.set(f, f.temp);
+      f.evt.temp = f.temp;
+      this.events.add(f);
     }
   }
   add(f){
-    this.events.set(f, null);
+    f.evt = {temp: null}
+    this.events.add(f);
   }
   move(f){
     if (!this.events.has(f)){
-      this.events.set(f, f.temp);
+      f.evt.temp = f.temp;
+      this.events.add(f);
     }
   }
   remove(f){
     const hasEvent = this.events.has(f);
-    const temp = this.events.get(f);
+    const temp = f.evt.temp;
     if (!hasEvent || temp){
       this.rems.push([f, f.parent, this.nexts.has(f.parent) && f.evt.prev, temp || f.temp, "willRemove", f.effs]);
       this.removeChild(f);
@@ -129,13 +134,13 @@ module.exports = class EventQueue {
     for (let event of this.rems){
       this.emit(event.pop(), event.pop(), event);
     }
-    for (let node of this.events.keys()){
+    for (let node of this.events){
       do {
         stx.push(node);
         node = this.events.has(node.prev) ? node.prev : null;
       } while(node);
       while(node = stx.pop()){
-        const temp = this.events.get(node);
+        const temp = node.evt.temp;
         if (!temp){
           this.emit(node.effs, "willAdd", [node, node.parent, node.prev, node.temp]);
           this.addChild(node, node.prev);
