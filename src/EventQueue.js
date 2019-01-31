@@ -35,14 +35,14 @@ const printDLL = q => {
 const printEvts = q => {
   console.log("printing events set")
   for (let f of q.events) {
-    console.log("  ", f && f.temp && f.temp.data, f.evt && f.evt.temp &&f.evt.temp.data, f.evt && f.evt.update)
+    console.log("  ", f && f.temp && f.temp.data, f.prev && f.prev.temp.data, f.evt && f.evt[2] && f.evt[2].data, f.evt && f.evt.length)
   }
 }
 const printAll = q => {
   printDLL(q);
   console.log("printing rems")
   for (let f of q.rems){
-    console.log(f.evt.temp && f.evt.temp.data)
+    console.log(f.evt[2] && f.evt[2].data)
   }
   printEvts(q);
 }
@@ -52,62 +52,88 @@ module.exports = class EventQueue {
     this.nexts = new Map;
     this.events = new Set, this.rems = [];
   }
+  isUpd(f){
+    return f.evt.length !== 2
+  }
   cacheChildren(f, cur=f.next){
     if (!this.nexts.has(f)) {
       this.nexts.set(f, cur);
       while(cur){
-        if (cur.evt && cur.evt.update) cur = cur.sib;
-        else cur.evt = {prev: cur.prev, sib: cur = cur.sib, temp: null, update: false}
+        if (cur.evt && this.isUpd(cur)) cur = cur.sib;
+        else cur.evt = [cur.prev, cur = cur.sib]
       }
     }
   }
   queue(f, p, s){
-    f.evt.update = true;
     if (!s){
       this.events.add(f);
-      if (p && p.next && p.next.evt.update){
+      if (p && p.next && this.isUpd(p.next)){
         this.events.delete(p.next);
       }
-    } else if (!s.evt.update) {
+    } else if (!this.isUpd(s)) {
       this.events.add(f);
-      if (s.sib && s.sib.evt.update){
+      if (s.sib && this.isUpd(s.sib)){
         this.events.delete(s.sib);
       }
     }
+    // if (debug){
+    //   console.log("     queueing", s && s.temp.data, f.temp.data, s && s.sib && s.sib.temp.data)
+    //   printEvts(this);
+    //   console.log()
+    // }
+  }
+  requeue(f, s, ns){
+    if (!this.isUpd(f)){
+      if (ns && this.isUpd(ns)){
+        this.events.delete(ns);
+      }
+      if (!s || !this.isUpd(s)){
+        this.events.add(f);
+      }
+    }
+    // if (debug){
+    //   console.log("     requeueing", s && s.temp.data, f.temp.data, ns && ns.temp.data)
+    //   printEvts(this);
+    //   console.log()
+    // }
   }
   dequeue(f, ps, ns=f.sib){
-    if (ns && ns.evt.update){
-      if (f.evt.update){
-        if (!ps || !ps.evt.update){
+    if (ns && this.isUpd(ns)){
+      if (this.isUpd(f)){
+        if (!ps || !this.isUpd(ps)){
           this.events.add(ns);
         }
-      } else if (ps && ps.evt.update){
+      } else if (ps && this.isUpd(ps)){
         this.events.delete(ns);
       }
     }
-    if (f.evt.update) this.events.delete(f);
-    else f.evt.update = true;
+    if (this.isUpd(f)) this.events.delete(f);
+    // if (debug){
+    //   console.log("     dequeueing", ps && ps.temp.data, f.temp.data, ns && ns.temp.data)
+    //   printEvts(this);
+    //   console.log()
+    // }
   }
   removeChild(f){
     if (!this.nexts.has(f.parent)) return;
-    const ps = f.evt.prev, s = f.evt.sib;
-    if (ps) ps.evt.sib = s;
+    const ps = f.evt[0], s = f.evt[1];
+    if (ps) ps.evt[1] = s;
     else this.nexts.set(f.parent, s);
-    if (s) s.evt.prev = ps;
+    if (s) s.evt[0] = ps;
   }
   addChild(f, s){
     if (!this.nexts.has(f.parent)) return;
     if (s){
-      const ns = s.evt.sib;
-      if (ns) ns.evt.prev = f;
-      s.evt.sib = f;
-      f.evt.prev = s;
-      f.evt.sib = ns;
+      const ns = s.evt[1];
+      if (ns) ns.evt[0] = f;
+      s.evt[1] = f;
+      f.evt[0] = s;
+      f.evt[1] = ns;
     } else {
       const ns = this.nexts.get(f.parent);
-      if (ns) ns.evt.prev = f;
-      f.evt.prev = null;
-      f.evt.sib = ns;
+      if (ns) ns.evt[0] = f;
+      f.evt[0] = null;
+      f.evt[1] = ns;
       this.nexts.set(f.parent, f);
     }
   }
@@ -120,75 +146,70 @@ module.exports = class EventQueue {
     this.nexts.clear(), this.rems.length = 0;
   }
   receive(f, t){
-    if (!f.evt.update){
-      f.evt.temp = f.temp;
-      f.evt.update = true;
-      if (!f.prev || !f.prev.evt.update){
-        this.events.add(f);        
-      }
+    this.requeue(f, f.prev, f.sib);
+    if (!this.isUpd(f)){
+      f.evt.push(f.temp);
     }
   }
   add(f, p, s){
-    f.evt = {temp: null}
+    f.evt = []
     this.queue(f, p, s);
   }
   move(f, p, s, ps){
-    if (!f.evt.update){
-      f.evt.temp = f.evt.temp || f.temp;      
-    }
     this.dequeue(f, ps);
+    if (!this.isUpd(f)){
+      f.evt.push(f.temp)
+    }
     this.queue(f, p, s);
   }
   remove(f){
-    const hasEvent = f.evt.update;
-    const temp = f.evt.temp;
-    if (!hasEvent || temp){
-      f.evt.parent = f.parent, f.evt.temp = temp || f.temp, f.evt.effs = f.effs;
+    this.dequeue(f, f.prev)
+    if (f.evt.length >= 2){
+      if (!f.evt[2]) f.evt.push(f.temp);
+      f.evt.push(f.parent, f.effs);
       this.rems.push(f);
       this.removeChild(f);
     }
-    this.dequeue(f, f.prev)
-    this.nexts.delete(f);
   }
   emit(eff, type, f, p, s, ps){
-    if (debug){
-      console.log(type, f.temp && f.temp.data)
-      // console.log(type, args.map(f => isFrame(f) && f.temp && f.temp.data.id))      
-    }
+    // if (debug){
+    //   console.log(type, f.temp && f.temp.data)
+    //   // console.log(type, args.map(f => isFrame(f) && f.temp && f.temp.data.id))      
+    // }
     if (isArr(eff)) for (eff of eff) eff[type] && eff[type](f, p, s, ps);
     else eff[type] && eff[type](f, p, s, ps);   
   }
   flush(){
-    if (debug) {
-      printAll(this)
-      // assertDLL(this)
-    }
+    // if (debug) {
+    //   printAll(this)
+    //   // assertDLL(this)
+    // }
     for (let node of this.rems){
-      const e = node.evt;
-      this.emit(e.effs, "willRemove", node, e.parent, this.nexts.has(e.parent) ? e.prev : node.prev, e.temp);
+      const e = node.evt, eff = e.pop(), par = e.pop();
+      this.emit(eff, "willRemove", node, par, this.nexts.has(par) ? e[0] : node.prev, e[2]);
       node.evt = null;
     }
     for (let node of this.events){
       this.events.delete(node);
       do {
-        node.evt.update = false;
-        const temp = node.evt.temp;
+        const temp = node.evt.pop();
         if (!temp){
           this.emit(node.effs, "willAdd", node, node.parent, node.prev, node.temp);
           this.addChild(node, node.prev);
+          node.evt.length = 2
         } else {
           if (temp !== node.temp){
             this.emit(node.effs, "willReceive", node, node.temp);
           }
-          const prev = this.nexts.has(node.parent) ? node.evt.prev : null;
+          const prev = this.nexts.has(node.parent) ? node.evt[0] : null;
           if (node.prev !== prev){
             this.emit(node.effs, "willMove", node, node.parent, prev, node.prev);
             this.moveChild(node, node.prev);
           }
         }
-      } while(node = node.sib, node && node.evt.update);
+      } while(node = node.sib, node && this.isUpd(node));
     }
     this.clear();
-    debug && console.log("\n")
+    // debug && console.log("\n")
   }
 }
