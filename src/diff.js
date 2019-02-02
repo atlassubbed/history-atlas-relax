@@ -148,10 +148,8 @@ const sidediff = (f, c, path=fill(on = 1), raw) => {
         f.path = 0, f._affs = null;
       }
     } else if (f.path > -2) {
-      if (relax(f), f.path = 0, c = f._affN){
-        f.effs && queue.cacheChildren(f)
+      if (relax(f), f.path = 0, c = f._affN)
         f._affN = 0, f._affs = null;
-      }
       raw = f.render(f.temp, f, !c)
       if (f.path > -2){
         if (c = f.next) c.root || subdiff(f, c, raw);
@@ -191,11 +189,9 @@ module.exports = (t, f, p=f&&f.prev, s) => {
     if (!isArr(t = norm(t))){
       if (!isFrame(f) || f.path < -1) t && (r = add(t, p, s, 1)).root++;
       else if (f.root){
-        s = f.parent;
-        if (s && s.effs) queue.cacheChildren(s);
         if (t && t.name === f.temp.name) {    // note we mustn't incr _affN for laggards
           if (t !== f.temp) receive(r = f, t, (f.path && !f._affN) || push(f));
-          if (isFrame(s) && p !== f.prev) move(r = f, s, p);
+          if (isFrame(f.parent) && p !== f.prev) move(r = f, f.parent, p);
         } else if (!t) unmount(orph.push(f), r = true);
       }
       (inDiff ? fill : sidediff)();

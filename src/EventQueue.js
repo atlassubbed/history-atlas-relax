@@ -3,29 +3,6 @@ const { isFrame } = require("./Frame");
 const stx = [];
 
 let debug = 0
-const assertDLL = q => {
-  for (let [n, t] of q.prevs){
-    if (!n) throw new Error("mapping falsy to node in prevs");
-    if (t === undefined) throw new Error("mapping node to undefined in prevs");
-    if (!t) {
-      if (n.parent && q.nexts.get(n.parent) !== n) {
-        throw new Error("parent's first child doesn't match with null prev for node")
-      }
-    }
-  }
-  for (let [n, t] of q.nexts){
-    if (!n) throw new Error("mapping falsy to some first child")
-    if (t) {
-      if (q.prevs.get(t) !== null){
-        throw new Error("parent's first child has non-null prev")
-      }
-    }
-  }
-  for (let [n, t] of q.sibs){
-    if (!n) throw new Error("mapping falsy to node in prevs");
-    if (t === undefined) throw new Error("mapping node to undefined in prevs");
-  }
-}
 const printDLL = q => {
   console.log("printing first childs")
   for (let [n, t] of q.nexts){
@@ -35,11 +12,11 @@ const printDLL = q => {
 const printEvts = q => {
   console.log("printing events set")
   for (let f of q.events) {
-    console.log("  ", f && f.temp && f.temp.data, f.evt && f.evt.temp &&f.evt.temp.data, f.evt && f.evt.update)
+    console.log("  ", f && f.temp && f.temp.data, f.prev && f.prev.temp.data, f.evt && f.evt.prev && f.evt.prev.temp && f.evt.prev.temp.data)
   }
 }
 const printAll = q => {
-  printDLL(q);
+  // printDLL(q);
   console.log("printing rems")
   for (let f of q.rems){
     console.log(f.evt.temp && f.evt.temp.data)
@@ -47,56 +24,86 @@ const printAll = q => {
   printEvts(q);
 }
 
+let epoch = 0;
+
 module.exports = class EventQueue {
   constructor(){
-    this.nexts = new Map;
     this.events = new Set, this.rems = [];
   }
-  cacheChildren(f, cur=f.next){
-    if (!this.nexts.has(f)) {
-      this.nexts.set(f, cur);
-      while(cur){
-        if (cur.evt && cur.evt.update) cur = cur.sib;
-        else cur.evt = {prev: cur.prev, sib: cur = cur.sib, temp: null, update: false}
+  isUpd(f){
+    return f.evt && f.evt.epoch > epoch
+  }
+  isCached(f){
+    return f.evt && f.evt.epoch >= epoch
+  }
+  cache(f, e){
+    if (f && f.effs && !this.isCached(f)){
+      if (debug) {
+        console.log("CACHING", f.temp.data)
       }
+      e = f.evt = f.evt || {};
+      e.prev = f.prev, e.sib = f.sib, e.next = f.next, e.temp = null, e.epoch = epoch;
     }
   }
   queue(f, p, s){
-    f.evt.update = true;
     if (!s){
       this.events.add(f);
-      if (p && p.next && p.next.evt.update){
+      if (p && p.next && this.isUpd(p.next)){
         this.events.delete(p.next);
       }
-    } else if (!s.evt.update) {
+    } else if (!this.isUpd(s)) {
       this.events.add(f);
-      if (s.sib && s.sib.evt.update){
+      if (s.sib && this.isUpd(s.sib)){
         this.events.delete(s.sib);
       }
     }
+    if (debug){
+      console.log("      queueing", s && s.temp.data, f && f.temp.data, s && s.sib && s.sib.temp.data)
+      printEvts(this);
+      console.log()
+    }
+  }
+  requeue(f, s, ns){
+    if (!this.isUpd(f)){
+      if (ns && this.isUpd(ns)){
+        this.events.delete(ns);
+      }
+      if (!s || !this.isUpd(s)){
+        this.events.add(f);
+      }
+    }
+    if (debug){
+      console.log("      requeueing", s && s.temp.data, f && f.temp.data, ns && ns.temp.data)
+      printEvts(this);
+      console.log()
+    }
   }
   dequeue(f, ps, ns=f.sib){
-    if (ns && ns.evt.update){
-      if (f.evt.update){
-        if (!ps || !ps.evt.update){
+    if (ns && this.isUpd(ns)){
+      if (this.isUpd(f)){
+        if (!ps || !this.isUpd(ps)){
           this.events.add(ns);
         }
-      } else if (ps && ps.evt.update){
+      } else if (ps && this.isUpd(ps)){
         this.events.delete(ns);
       }
     }
-    if (f.evt.update) this.events.delete(f);
-    else f.evt.update = true;
+    if (this.isUpd(f)) this.events.delete(f);
+    if (debug){
+      console.log("      dequeueing", ps && ps.temp.data, f && f.temp.data, ns && ns.temp.data)
+      printEvts(this);
+      console.log()
+    }
   }
   removeChild(f){
-    if (!this.nexts.has(f.parent)) return;
+    if (!f.parent) return;
     const ps = f.evt.prev, s = f.evt.sib;
     if (ps) ps.evt.sib = s;
-    else this.nexts.set(f.parent, s);
+    else f.parent.evt.next = s;
     if (s) s.evt.prev = ps;
   }
   addChild(f, s){
-    if (!this.nexts.has(f.parent)) return;
+    if (!f.parent) return;
     if (s){
       const ns = s.evt.sib;
       if (ns) ns.evt.prev = f;
@@ -104,11 +111,11 @@ module.exports = class EventQueue {
       f.evt.prev = s;
       f.evt.sib = ns;
     } else {
-      const ns = this.nexts.get(f.parent);
+      const ns = f.parent.evt.next;
       if (ns) ns.evt.prev = f;
       f.evt.prev = null;
       f.evt.sib = ns;
-      this.nexts.set(f.parent, f);
+      f.parent.evt.next = f;
     }
   }
   moveChild(f, s){
@@ -116,39 +123,55 @@ module.exports = class EventQueue {
     this.addChild(f, s);
   }
   clear(){
+    epoch+=2;
     this.events.clear(),
-    this.nexts.clear(), this.rems.length = 0;
+    this.rems.length = 0;
   }
   receive(f, t){
-    if (!f.evt.update){
+    this.cache(f);     
+    this.requeue(f, f.prev, f.sib);
+    if (!this.isUpd(f)){
       f.evt.temp = f.temp;
-      f.evt.update = true;
-      if (!f.prev || !f.prev.evt.update){
-        this.events.add(f);        
-      }
+      f.evt.epoch = epoch+1
     }
   }
   add(f, p, s){
-    f.evt = {temp: null}
+    if (s) this.cache(s), this.cache(s.sib);
+    else if (p){
+      this.cache(p);
+      if (p.next) this.cache(p.next), this.cache(p.next.sib);
+    }
+    f.evt = {temp: null, epoch: epoch+1}
     this.queue(f, p, s);
   }
   move(f, p, s, ps){
-    if (!f.evt.update){
-      f.evt.temp = f.evt.temp || f.temp;      
+    if (s) this.cache(s), this.cache(s.sib);
+    else if (p){
+      this.cache(p);
+      if (p.next) this.cache(p.next), this.cache(p.next.sib);
     }
+    if (ps) this.cache(ps);
+    else if (p) this.cache(p);
+    this.cache(f);
+    this.cache(f.sib);
     this.dequeue(f, ps);
+    if (!this.isUpd(f)){
+      f.evt.temp = f.temp;
+      f.evt.epoch = epoch+1
+    }
     this.queue(f, p, s);
   }
   remove(f){
-    const hasEvent = f.evt.update;
+    this.cache(f);
+    if (f.prev) this.cache(f.prev);
+    if (f.sib) this.cache(f.sib);
     const temp = f.evt.temp;
-    if (!hasEvent || temp){
+    if (!this.isUpd(f) || temp){
       f.evt.parent = f.parent, f.evt.temp = temp || f.temp, f.evt.effs = f.effs;
       this.rems.push(f);
       this.removeChild(f);
     }
     this.dequeue(f, f.prev)
-    this.nexts.delete(f);
   }
   emit(eff, type, f, p, s, ps){
     if (debug){
@@ -161,17 +184,15 @@ module.exports = class EventQueue {
   flush(){
     if (debug) {
       printAll(this)
-      // assertDLL(this)
     }
     for (let node of this.rems){
       const e = node.evt;
-      this.emit(e.effs, "willRemove", node, e.parent, this.nexts.has(e.parent) ? e.prev : node.prev, e.temp);
+      this.emit(e.effs, "willRemove", node, e.parent, e.prev, e.temp);
       node.evt = null;
     }
     for (let node of this.events){
       this.events.delete(node);
       do {
-        node.evt.update = false;
         const temp = node.evt.temp;
         if (!temp){
           this.emit(node.effs, "willAdd", node, node.parent, node.prev, node.temp);
@@ -180,13 +201,13 @@ module.exports = class EventQueue {
           if (temp !== node.temp){
             this.emit(node.effs, "willReceive", node, node.temp);
           }
-          const prev = this.nexts.has(node.parent) ? node.evt.prev : null;
+          const prev = node.evt.prev;
           if (node.prev !== prev){
             this.emit(node.effs, "willMove", node, node.parent, prev, node.prev);
             this.moveChild(node, node.prev);
           }
         }
-      } while(node = node.sib, node && node.evt.update);
+      } while(node = node.sib, node && this.isUpd(node));
     }
     this.clear();
     debug && console.log("\n")
