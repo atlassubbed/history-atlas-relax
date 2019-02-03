@@ -3,7 +3,7 @@ const Frame = require("./Frame"), { isFrame } = Frame;
 const { fill, push } = require("./step-leader");
 const { relax, excite, pop } = require("./field")
 const KeyIndex = require("./KeyIndex")
-const EventQueue = require("./EventQueue");
+const thread = require("./thread");
 
 /* **********
      READ THIS FIRST: This comment is about a "subcycle" technique. I'm not removing this 
@@ -60,7 +60,7 @@ const EventQueue = require("./EventQueue");
 // magic numbers
 //   global state: on in {0: not in diff, 1: in diff, can diff, 2: in diff, cannot diff}
 //   local state: node.path in {0: not in path, 1: in path, 2: will remove} 
-let lags = [], orph = [], stx = [], queue = new EventQueue;
+let lags = [], orph = [], stx = [];
 
 // flatten and sanitize a frame's next children
 //   * ix is an optional KeyIndex
@@ -87,18 +87,18 @@ const link = (f, p, s=null, next) => {
 const add = (t, p, s, isRoot) => {
   if (t){
     t = node(t, p), p = t.parent;
-    t.effs && queue.add(t, p, s)
+    t.effs && thread.add(t, p, s)
     link(t, p, s);
     isRoot ? lags.push(t) : stx.push(t);
     return t;
   }
 }
 const move = (f, p, s, ps=f.prev) => {
-  f.effs && queue.move(f, p, s, ps)
+  f.effs && thread.move(f, p, s, ps)
   unlink(f, p, ps), link(f, p, s);
 }
 const receive = (f, t) => {
-  f.effs && queue.receive(f, t);
+  f.effs && thread.receive(f);
   f.temp = t;
 }
 
@@ -107,7 +107,7 @@ const receive = (f, t) => {
 const unmount = (f, isRoot, c, ch) => {
   while(f = orph.pop()) {
     if (isRoot && (ch = f.affs)) for (c of ch) push(c);
-    f.effs && queue.remove(f);
+    f.effs && thread.remove(f);
     unlink(f, f.parent, f.prev), f.path = -2;
     // XXX could queue a cleanup function or render(null, node) in the path
     //   or we could find a way to automatically clean up resources on unmount
@@ -157,7 +157,7 @@ const sidediff = (f, c, path=fill(on = 1), raw) => {
       }
     }
   }
-  on = 2, queue.flush(), on = 0;
+  on = 2, thread.flush(), on = 0;
 }
 // temp is already normalized
 const node = (t, p) => {
