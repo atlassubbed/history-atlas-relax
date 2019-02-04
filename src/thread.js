@@ -1,18 +1,35 @@
 const { isArr } = require("./util")
 
-const rems = [], events = new Set;
-
-const queue = (f, s, ns) => {
-  if (ns && ns.evt.upd) events.delete(ns);
-  if (!s || !s.evt.upd) events.add(f);
+let rems = [], head, tail;
+const swapLeader = (f, ns, e=ns.evt, l=e.bot, r=e.top) => {
+  if (f.evt.bot = l) l.evt.top = f, e.bot = null
+  else head = f;
+  if (f.evt.top = r) r.evt.bot = f, e.top = null
+  else tail = f;
 }
-const dequeue = (f, ps, ns=f.sib) => {
-  if (ns && ns.evt.upd){
-    if (f.evt.upd){
-      if (!ps || !ps.evt.upd) events.add(ns);
-    } else if (ps && ps.evt.upd) events.delete(ns);
+const pushLeader = f => {
+  if (!head) head = tail = f;
+  else (tail.evt.top = f).evt.bot = tail, tail = f;
+}
+const popLeader = (ns, e=ns.evt, l=e.bot, r=e.top) => {
+  if (l) l.evt.top = r, e.bot = null;
+  else head = r;
+  if (r) r.evt.bot = l, e.top = null;
+  else tail = l;
+}
+const queue = (f, s, ns) => {
+  if (!s || !s.evt.upd){
+    if (!ns || !ns.evt.upd) pushLeader(f);
+    else swapLeader(f, ns);
   }
-  if (f.evt.upd) events.delete(f);
+}
+const dequeue = (f, s, ns=f.sib) => {
+  if (f.evt.upd){
+    if (!s || !s.evt.upd) {
+      if (!ns || !ns.evt.upd) popLeader(f);
+      else swapLeader(ns, f);
+    }
+  } else if (s && s.evt.upd && ns && ns.evt.upd) popLeader(ns);
 }
 const unlink = (f, p, s=f.prev, next) => {
   (next = f.sib) && (next.evt.prev = s);
@@ -24,7 +41,7 @@ const link = (e, f, p, s, next) => {
 }
 
 const add = (f, p, s) => {
-  f.evt = {temp: null, prev: null, sib: null, next: null, upd: true}
+  f.evt = {temp: null, prev: null, sib: null, next: null, top: null, bot: null, upd: true}
   queue(f, s, s ? s.sib : p && p.next);
 }
 const receive = (f, e=f.evt) => {
@@ -57,23 +74,26 @@ const emit = (eff, type, f, p, s, ps) => {
 const flush = (c=0, f, e, t, p) => {
   while(f = rems[c++])
     emit((e = f.evt).effs, "willRemove", f, e.parent, e.prev, e.temp, f.evt = null);
-  rems.length = 0; for (f of events) {
-    e = f.evt, p = f.parent;
-    do {
-      if (t = e.temp){
-        if (t !== f.temp) emit(f.effs, "willReceive", f, f.temp);
-        if (f.prev !== (c = e.prev)){
-          emit(f.effs, "willMove", f, p, c, f.prev);
-          unlink(e, p.evt), link(e, f, p.evt, f.prev);
-        }
-      } else {
-        emit(f.effs, "willAdd", f, p, f.prev, f.temp);
-        if (p) link(e, f, p.evt, f.prev);
+  rems.length = 0;
+  if (!head) return;
+  f = head, p = f.parent;
+  while(f) {
+    if (t = (e = f.evt).temp){
+      if (t !== f.temp) emit(f.effs, "willReceive", f, f.temp);
+      if (f.prev !== (c = e.prev)){
+        emit(f.effs, "willMove", f, p, c, f.prev);
+        unlink(e, p.evt), link(e, f, p.evt, f.prev);
       }
-      e.upd = false;
-    } while((f = f.sib) && (e = f.evt).upd);
+    } else {
+      emit(f.effs, "willAdd", f, p, f.prev, f.temp);
+      if (p) link(e, f, p.evt, f.prev);
+    }
+    e.upd = false, f = f.sib;
+    if (!f || !f.evt.upd){
+      popLeader(head);
+      if (f = head) p = f.parent;
+    }
   }
-  events.clear();
 }
 
 module.exports = { receive, add, move, remove, flush }
