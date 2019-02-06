@@ -4,8 +4,15 @@ const { isFn } = require("../util");
 
 const renderer = new LCRSRenderer, events = [], effs = [new Tracker(events), renderer]
 
+const makeChildrenTemps = (name, id, n) => {
+  const children = [];
+  for (let i = 0; i < n; i++){
+    children.push({name, data: {id: id+""+i}});
+  }
+  return children;
+}
 const makeNode = (name, id="root", p, s) => {
-  const node = diff({name, data: {id}}, null, p, s);
+  const node = diff({name, data: {id}, next: makeChildrenTemps(name, id, 3)}, null, p, s);
   node._id = id;
   if (p.cache) p.cache[id] = node;
   return node;
@@ -31,9 +38,9 @@ const rootNode = makeNode((temp, p, isFirst) => {
     makeNode("DIV", 5, p, c[3]) //  add 5 after 3    014352
     makeNode("DIV", 6, p, c[4]) //  add 6 after 4    0146352
     diff(c[3].temp, c[3], c[0]) // move 3 after 0    0314652
-    diff(c[1].temp, c[1], c[3]) // move 1 after 3
-    diff(null, c[2])            //       remove 2
-    diff(null, c[4])            //       remove 4
+    diff(c[1].temp, c[1], c[3]) // move 1 after 3     "  "
+    diff(null, c[2])            //       remove 2    031465
+    diff(null, c[4])            //       remove 4    03165
   }
 }, "root", {effs});
 

@@ -75,30 +75,30 @@ const clean = (t, ix, next=[]) => {
 // detach node f from linked list p after sibling s
 const unlink = (f, p, s=null, next) => {
   (next = f.sib) && (next.prev = s);
-  s ? (s.sib = next) : p && (p.next = next);
+  s ? (s.sib = next) : (p.next = next);
 }
 // attach node f into linked list p after sibling s
 const link = (f, p, s=null, next) => {
-  (next = f.sib = (f.prev = s) ? s.sib : p && p.next) && (next.prev = f);
-  s ? (s.sib = f) : p && (p.next = f)
+  (next = f.sib = (f.prev = s) ? s.sib : p.next) && (next.prev = f);
+  s ? (s.sib = f) : (p.next = f)
 }
 
 // mutation methods for subdiffs and rootdiffs (R)
 const add = (t, p, s, isRoot) => {
   if (t){
     t = node(t, p), p = t.parent;
-    t.effs && thread.add(t, p, s)
-    link(t, p, s);
+    t.evt && thread.add(t, p, s)
+    p && link(t, p, s);
     isRoot ? lags.push(t) : stx.push(t);
     return t;
   }
 }
 const move = (f, p, s, ps=f.prev) => {
-  f.effs && thread.move(f, p, s, ps)
+  f.evt && thread.move(f, p, s, ps)
   unlink(f, p, ps), link(f, p, s);
 }
 const receive = (f, t) => {
-  f.effs && thread.receive(f);
+  f.evt && thread.receive(f);
   f.temp = t;
 }
 
@@ -107,11 +107,11 @@ const receive = (f, t) => {
 const unmount = (f, isRoot, c, ch) => {
   while(f = orph.pop()) {
     if (isRoot && (ch = f.affs)) for (c of ch) push(c);
-    f.effs && thread.remove(f);
-    unlink(f, f.parent, f.prev), f.path = -2;
+    f.evt && thread.remove(f);
+    f.parent && unlink(f, f.parent, f.prev), f.path = -2;
     // XXX could queue a cleanup function or render(null, node) in the path
     //   or we could find a way to automatically clean up resources on unmount
-    relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.effs = null)
+    relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = null)
     if (c = f.next) do orph.push(c); while(c = c.sib);
   }
 }
@@ -160,15 +160,15 @@ const sidediff = (f, c, path=fill(on = 1), raw) => {
   on = 2, thread.flush(), on = 0;
 }
 // temp is already normalized
-const node = (t, p) => {
-  let effs = p && p.effs; on = 2;
+const node = (t, p, isF=isFrame(p), effs=isF ? p.evt && p.evt.effs : p && p.effs) => {
+  on = 2;
   if (!isFn(t.name)) t = new Frame(t, effs);
   else {
     const Sub = t.name;
     if (isFrame(Sub.prototype)) t = new Sub(t, effs);
     else t = new Frame(t, effs), t.render = Sub;
   }
-  if (isFrame(p)) t.parent = p;
+  if (isF) t.parent = p;
   return on = 1, t;
 }
 // TODO for inner and outer diffs:

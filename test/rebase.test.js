@@ -186,7 +186,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const f = diff(temp, null, {effs: tracker});
         expect(events).to.eql([
           {wA: 0}, {wA: 1}, {wA: 4}, {wA: 3}, {wA: 2}, 
-          {mWA: 0}, {mWA: 1}, {mWA: 2}, {mWA: 4}, {mWA: 3}
+          {mWA: 0}, {mWA: 1}, {mWA: 4}, {mWA: 3}, {mWA: 2}
         ])
       })
     })

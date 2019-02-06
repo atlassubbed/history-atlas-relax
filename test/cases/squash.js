@@ -11,7 +11,9 @@ const { findAll, genPermGraph } = require("./combinatorics");
      5. Should not produce receive events for nodes that are removed
      6. Should not produce receive events for nodes that are added
      7. Should not produce move events for nodes that are added 
-     8. Should not produce move events for nodes that are removed */
+     8. Should not produce move events for nodes that are removed 
+   
+   note that some of these tests will be redundant, but that's fine for now. */
 
 // maps our sequences to our (transformed) test cases
 const mapToBasis = (seqs, S) => seqs.map(s => s.map(el => copy(S[el])));

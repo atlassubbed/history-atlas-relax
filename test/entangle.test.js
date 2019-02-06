@@ -255,7 +255,7 @@ describe("entanglement", function(){
           {wU: 0}, {wU: 1}, {wU: 4}, {wU: 5}, {wU: 2}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},
           {wA: 9}, {wA: 10}, {wA: 11}, 
           {mWR: 0}, {mWR: 1}, {mWR: 2}, {mWR: 3}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},
-          {mWA: 9}, {mWA: 11}, {mWA: 10},
+          {mWA: 9}, {mWA: 10}, {mWA: 11},
         ]
         diff(treeCase.tag0(), nodes[0]);
         expect(events).to.deep.equal(result);
@@ -293,7 +293,7 @@ describe("entanglement", function(){
           {wU: 0}, {wU: 1}, {wU: 4}, {wU: 5}, {wU: 2}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7}, 
           {wA: 9}, {wA: 10}, {wA: 11},
           {mWR: 0}, {mWR: 1}, {mWR: 2}, {mWR: 3}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},
-          {mWA: 9}, {mWA: 11}, {mWA: 10},
+          {mWA: 9}, {mWA: 10}, {mWA: 11},
         ]
         diff(treeCase.tag0(), nodes[0]);
         expect(events).to.deep.equal(result);
@@ -334,7 +334,7 @@ describe("entanglement", function(){
           {wU: 0}, {wU: 1}, {wU: 4}, {wU: 5}, {wU: 2}, {wU: 3}, {wU: 6}, {wU: 8}, {wU: 7},
           {wA: 9}, {wA: 10}, {wA: 11},
           {mWR: 0}, {mWR: 1}, {mWR: 2}, {mWR: 3}, {mWR: 5}, {mWR: 8}, {mWR: 6}, {mWR: 7},
-          {mWA: 9}, {mWA: 11}, {mWA: 10},
+          {mWA: 9}, {mWA: 10}, {mWA: 11},
         ]
         diff(treeCase.tag0(), nodes[0]);
         expect(events).to.deep.equal(result);

@@ -16,8 +16,7 @@ describe("Frame", function(){
         (f.prev).to.equal
         (f.sib).to.equal
       expect(f._affN).to.equal(0)
-      expect(f.hasOwnProperty("effs")).to.be.true;
-      expect(f.effs).to.be.undefined;
+      expect(f.evt).to.be.null;
       expect(f.path).to.equal(-1);
     })
     it("should set template and effects and tau getter onto the instance", function(){
@@ -26,8 +25,8 @@ describe("Frame", function(){
       const f = new Frame(temp, effs);
       const f2 = new Frame(temp2, effs[0])
       expect(f.temp).to.equal(temp)
-      expect(f.effs).to.equal(effs);
-      expect(f2.effs).to.equal(5)
+      expect(f.evt.effs).to.equal(effs);
+      expect(f2.evt.effs).to.equal(5)
       expect(f2.temp).to.equal(temp2)
     })
   })

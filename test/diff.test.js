@@ -27,7 +27,6 @@ const getNullFrame = () => {
 
 const assertDeleted = f => {
   expect(f._node).to.be.null;
-  expect(f.effs).to.be.null;
   expect(f.temp).to.be.null;
   expect(f.next).to.be.null;
   expect(f._affs).to.be.null;
@@ -36,6 +35,7 @@ const assertDeleted = f => {
   expect(f.prev).to.be.null;
   expect(f.top).to.be.null;
   expect(f.bot).to.be.null;
+  expect(f.evt).to.be.null;
   expect(f.path).to.equal(-2);
   // expect(f._affN).to.equal(0)
 }

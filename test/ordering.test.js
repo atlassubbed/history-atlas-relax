@@ -36,19 +36,10 @@ describe("mutation event and lifecycle event ordering", function(){
         {wA: 0}, {wA: 1}, {wA: 3}, {wA: 4}, {wA: 2}, {wA: 5}, {wA: 6}
       ])
     })
-     // XXX this should change to a more intuitive forward order
-     //       since adding things to the DOM in this order is probably bad for reflow
-     //       e.g.
-     //       time ->           
-     //         ul1    ul1      and      here we end up squeezing deep children between live nodes...
-     //         ul2      li1    so       clever timing may allow us to avoid reflow
-     //         ul3      li2    on...    or, we can let effects build DOM fragments and then attach them
-     //                ul2               at the end of the diff cycle with something like didDiff 
-     //                ul3 
-    it("should run willAdd events in depth-children-first order after all render events", function(){
+    it("should run willAdd events in depth-first order after all render events", function(){
       const events = [], f = mount(events);
       expect(events.slice(-N)).to.eql([
-        {mWA: 0}, {mWA: 1}, {mWA: 2}, {mWA: 3}, {mWA: 4}, {mWA: 5}, {mWA: 6}
+        {mWA: 0}, {mWA: 1}, {mWA: 3}, {mWA: 4}, {mWA: 2}, {mWA: 5}, {mWA: 6}
       ])
     })
   })
