@@ -60,7 +60,7 @@ const thread = require("./thread");
 // magic numbers
 //   global state: on in {0: not in diff, 1: in diff, can diff, 2: in diff, cannot diff}
 //   local state: node.path in {0: not in path, 1: in path, 2: will remove} 
-let lags = [], orph = [], stx = [];
+const lags = [], orph = [], stx = [];
 
 // flatten and sanitize a frame's next children
 //   * ix is an optional KeyIndex
