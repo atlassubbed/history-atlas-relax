@@ -1,5 +1,43 @@
 const { isArr } = require("./util")
 
+/* a 'thread' is linked list of contiguous child chains.
+
+   Why do we need this data structure? 
+     1. Rebasing diffs on a parent diff can lead to unbounded memory usage
+     2. Removals should be processed before all other events, allowing immediate resource recycling.
+     3. Events do not commute.
+     4. Linked lists are awesome and we don't need random access, but need O(1) add/remove
+
+   given a list of children, we can color the nodes red and black:
+
+     r-r-r-r-b-b-b-b-r-r-r-r-b-b-b-b-r-r-r-r-b-b-r-b-r-b-b-b-r-b
+     |     |         |     |         |     |     |   |      |
+     a1    w1        a2    w2        a3    w3    a4  w4     a5 & w5
+
+   contiguous groups of red nodes form chains in a thread. the first red node in a chain
+   is called a 'leader' or alpha node. the last one is called an omega node.
+   a node may be an alpha and an omega node. a previous algorithm chained alphas and omegas.
+   we just chain alphas for simplicity (while maintaining O(1) access).
+   
+   red nodes are nodes with updates. 
+   nodes in a thread need not share the same parent.
+   nodes in a chain share the same parent.
+
+   thread:
+
+     (head)                  (tail)
+       a1----a2----a3----a4----a5
+       |      |     |     |     |
+          ... sibling chains ....
+
+   properties of thread:
+      1. every node in the thread must be an alpha node
+      2. O(1) insert and remove
+      3. O(U) traversal (U <= N)
+      4. O(N) extra memory
+      5. unmounts are processed immediately
+      6. subtree mounts are processed before the next sibling */
+
 let rems = [], head, tail;
 // const logNode = f => {
 //   let evts = [];
