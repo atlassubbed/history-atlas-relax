@@ -104,11 +104,11 @@ const receive = (f, t) => {
 
 // unmount several queued nodes
 //   * we do this outside of the path loop since unmounts are immediate
-const unmount = (f, isRoot, c, ch) => {
+const unmount = (f, isRoot, c) => {
   while(f = orph.pop()) {
-    if (isRoot && (ch = f.affs)) for (c of ch) push(c);
-    f.evt && thread.remove(f);
-    f.parent && unlink(f, f.parent, f.prev), f.path = -2;
+    if (isRoot && (c = f.affs)) for (c of c) push(c);
+    if (c = f.parent, f.evt) thread.remove(f, c);
+    c && unlink(f, c, f.prev), f.path = -2;
     // XXX could queue a cleanup function or render(null, node) in the path
     //   or we could find a way to automatically clean up resources on unmount
     relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = null)

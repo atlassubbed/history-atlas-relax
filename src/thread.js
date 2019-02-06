@@ -68,7 +68,7 @@ const move = (f, p, s, ps, e=f.evt) => {
   }
   isAdd(p) || queue(f, s, s ? s.sib : p && p.next);
 }
-const remove = (f, e=f.evt, p=f.parent) => {
+const remove = (f, p, e=f.evt) => {
   if (!e.upd || e.temp){
     e.temp = e.temp || f.temp;
     rems.push(f);
