@@ -17,7 +17,7 @@ const Frame = module.exports = function(temp, effs){
   } : null
   this.temp = temp;
   this.affs = this.next = this._affs = this.parent =
-  this.sib = this.prev = this.top = this.bot = null;
+  this.sib = this.prev = this.tau = null;
   this.root = this._affN = 0, this.path = -1
 }
 

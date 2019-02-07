@@ -17,26 +17,28 @@ const reject = e => setTimeout(() => {throw e}); // i don't like this
 // but we'll keep the internal API and file size small by overloading relax
 
 // remove a node from an oscillator
-const relax = (f, tau, t) => {
-  if (t = f.top){
-    if (t.bot = f.bot) f.bot.top = t;
-    else if (t === field[t.tau] && t.tau !== tau)
-      field[t.tau] = t.timer && clearTimeout(t.timer);
-    f.top = f.bot = null;
+const relax = (f, t) => {
+  if (t = f.tau){
+    t.delete(f), f.tau = null;
+    t.size || (field[t.tau] = t.timer && clearTimeout(t.timer))
   }
 }
 
 // add/move a node to an oscillator
 const excite = (f, tau, cb, t) => {
-  relax(f, tau), t = field[tau] = field[tau] || 
-    {tau, timer: tau || !asap ? setTimeout(cb(tau), tau) : !asap(cb(tau)).catch(reject)};
-  if (t.bot) (f.bot = t.bot).top = f;
-  (f.top = t).bot = f;
+  if (!f.tau || tau !== f.tau.tau) {
+    relax(f);
+    if (!(t = field[tau])) {
+      (t = field[tau] = new Set).tau = tau;
+      t.timer = tau || !asap ? setTimeout(cb(tau), tau) : !asap(cb(tau)).catch(reject);
+    }
+    f.tau = t.add(f);
+  }
 }
 
 // pop a triggered oscillator off the field
 const pop = (tau, cb, f=field[tau]) => {
-  if (f) while(f=f.bot) cb(f);
+  if (f) for (f of f) cb(f);
   field[tau] = null;
 }
 
