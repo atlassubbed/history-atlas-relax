@@ -40,4 +40,9 @@ const pop = (tau, cb, f=field[tau]) => {
   field[tau] = null;
 }
 
+// alternative pop function which relaxes nodes before adding them to the originator set
+// const pop = (tau, cb, f=field[tau]) => {
+//   if (f = f && f.bot) while(f = relax(f, cb(f)));
+// }
+
 module.exports = { relax, excite, pop }

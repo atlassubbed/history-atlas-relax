@@ -23,6 +23,10 @@ const fill = (f, i, ch) => {
   return path;
 }
 
+// TODO
+//   create an unfill function which goes thru path/stx and resets/relaxes all nodes
+//   before throwing cyclic errors.
+
 // XXX we could push nodes as originators in frame.diff, however:
 //   * path state would bleed outside of the diff cycle's context
 //   * i.e. if a parent updates and memoizes a child with pending state, the child will update early

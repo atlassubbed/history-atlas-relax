@@ -150,10 +150,14 @@ const sidediff = (f, c, path=fill(on = 1), raw) => {
     } else if (f.path > -2) {
       if (relax(f), f.path = 0, c = f._affN)
         f._affN = 0, f._affs = null;
-      raw = f.render(f.temp, f, !c)
-      if (f.path > -2){
-        if (c = f.next) c.root || subdiff(f, c, raw);
-        else mount(f, clean(raw));
+      try {
+        raw = f.render(f.temp, f, !c)
+        if (f.path > -2){
+          if (c = f.next) c.root || subdiff(f, c, raw);
+          else mount(f, clean(raw));
+        }
+      } catch (err) {
+        // bubble the error up to the boundary
       }
     }
   }
