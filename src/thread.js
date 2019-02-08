@@ -89,7 +89,8 @@ const link = (e, f, p, s, next) => {
 const isAdd = f => (f = f && f.evt) && f.upd && !f.temp;
 
 const add = (f, p, s) => {
-  isAdd(p) || queue(f, s, s ? s.sib : p && p.next)
+  if (f.root < 2) isAdd(p) || queue(f, s, s ? s.sib : p && p.next);
+  else pushLeader(f);
 }
 const receive = (f, e=f.evt) => {
   if (!e.upd){
@@ -110,9 +111,10 @@ const remove = (f, p, e=f.evt) => {
   if (!e.upd || e.temp){
     e.temp = e.temp || f.temp;
     rems.push(f);
-    if (e.parent = p) unlink(e, p.evt);
+    if (e.parent = f.root < 2 ? p : null) unlink(e, p.evt);
   }
-  isAdd(p) || dequeue(f, f.prev)
+  if (f.root < 2) isAdd(p) || dequeue(f, f.prev);
+  else if (e.upd) popLeader(f);
 }
 const emit = (eff, type, f, p, s, ps) => {
   if (isArr(eff)) for (eff of eff) eff[type] && eff[type](f, p, s, ps);
@@ -130,8 +132,8 @@ const flush = (c=0, f, e, p, owner) => {
     if ((e = f.evt).upd){
       e.upd = false;
       if (!e.temp){
-        emit(e.effs, "willAdd", f, p, f.prev, f.temp);
-        if (p) link(e, f, p.evt, f.prev);
+        emit(e.effs, "willAdd", f, f.root < 2 && p, f.prev, f.temp);
+        if (f.root < 2 && p) link(e, f, p.evt, f.prev);
         if (p !== owner || f.next){
           f = f.next || f.sib || p;
           continue;
@@ -148,7 +150,7 @@ const flush = (c=0, f, e, p, owner) => {
       f = f.sib || p;
       continue;
     }
-    if (!(f = f.sib) || !f.evt.upd){
+    if (f.root > 1 || !(f = f.sib) || !f.evt.upd){
       popLeader(head);
       if (f = head) owner = f.parent;
     }

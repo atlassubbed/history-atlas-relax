@@ -3,6 +3,7 @@ const { expect } = require("chai")
 const { Frame, diff } = require("../src/index");
 const { copy } = require("./util");
 
+// need to test for managed, standalone and direct children
 describe("error boundaries", function(){
   describe("when not in a diff", function(){
     it("should throw a constructor error globablly without unmounting the offending tree", function(){

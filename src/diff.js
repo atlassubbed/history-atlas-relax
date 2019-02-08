@@ -86,9 +86,9 @@ const link = (f, p, s=null, next) => {
 // mutation methods for subdiffs and rootdiffs (R)
 const add = (t, p, s, isRoot) => {
   if (t){
-    t = node(t, p), p = t.parent;
+    t = node(t, p, isRoot), p = t.parent;
     t.evt && thread.add(t, p, s)
-    p && link(t, p, s);
+    p && t.root < 2 && link(t, p, s);
     isRoot ? lags.push(t) : stx.push(t);
     return t;
   }
@@ -108,7 +108,7 @@ const unmount = (f, isRoot, c) => {
   while(f = orph.pop()) {
     if (isRoot && (c = f.affs)) for (c of c) push(c);
     if (c = f.parent, f.evt) thread.remove(f, c);
-    c && unlink(f, c, f.prev), f.path = -2;
+    c && f.root < 2 && unlink(f, c, f.prev), f.path = -2;
     // XXX could queue a cleanup function or render(null, node) in the path
     //   or we could find a way to automatically clean up resources on unmount
     relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = null)
@@ -138,33 +138,29 @@ const subdiff = (p, c, next, i=new KeyIndex, n) => {
   }
 }
 
-let on = 0;
-const sidediff = (f, c, path=fill(on = 1), raw) => {
-  while(f = path.pop() || lags.pop()) {
-    if (!f.path) {
-      if (f._affs) {
-        while(c = f._affs[f.path++])
+let on = 0, ctx = null;
+const sidediff = (c, path=fill(on = 1), raw) => {
+  while(ctx = path.pop() || lags.pop()) {
+    if (!ctx.path) {
+      if (ctx._affs) {
+        while(c = ctx._affs[ctx.path++])
           --c._affN || (c.path=0);
-        f.path = 0, f._affs = null;
+        ctx.path = 0, ctx._affs = null;
       }
-    } else if (f.path > -2) {
-      if (relax(f), f.path = 0, c = f._affN)
-        f._affN = 0, f._affs = null;
-      try {
-        raw = f.render(f.temp, f, !c)
-        if (f.path > -2){
-          if (c = f.next) c.root || subdiff(f, c, raw);
-          else mount(f, clean(raw));
-        }
-      } catch (err) {
-        // bubble the error up to the boundary
+    } else if (ctx.path > -2) {
+      if (relax(ctx), ctx.path = 0, c = ctx._affN)
+        ctx._affN = 0, ctx._affs = null;
+      raw = ctx.render(ctx.temp, ctx, !c)
+      if (ctx.path > -2){
+        if (c = ctx.next) c.root || subdiff(ctx, c, raw);
+        else mount(ctx, clean(raw));
       }
     }
   }
-  on = 2, thread.flush(), on = 0;
+  on = 2, thread.flush(), on = 0, ctx = null;
 }
 // temp is already normalized
-const node = (t, p, isF=isFrame(p), effs=isF ? p.evt && p.evt.effs : p && p.effs) => {
+const node = (t, p, isRoot, isF=isFrame(p), effs=isF ? p.evt && p.evt.effs : p && p.effs) => {
   on = 2;
   if (!isFn(t.name)) t = new Frame(t, effs);
   else {
@@ -172,7 +168,8 @@ const node = (t, p, isF=isFrame(p), effs=isF ? p.evt && p.evt.effs : p && p.effs
     if (isFrame(Sub.prototype)) t = new Sub(t, effs);
     else t = new Frame(t, effs), t.render = Sub;
   }
-  if (isF) t.parent = p;
+  if (isRoot) t.root = 1 + !isF;
+  t.parent = isF ? p : ctx;
   return on = 1, t;
 }
 // TODO for inner and outer diffs:
@@ -188,18 +185,18 @@ Frame.prototype.diff = function(tau=-1){
 // public (outer) diff (mount, unmount and update frames)
 //   * diff root node, supports virtual/managed diffs for imperative backdooring
 module.exports = (t, f, p=f&&f.prev, s) => {
-  let r = false, inDiff = on;
+  let r = false, inDiff = on, context = ctx;
   if (inDiff < 2) try {
     if (!isArr(t = norm(t))){
-      if (!isFrame(f) || f.path < -1) t && (r = add(t, p, s, 1)).root++;
+      if (!isFrame(f) || f.path < -1) t && (r = add(t, p, s, 1));
       else if (f.root){
         if (t && t.name === f.temp.name) {    // note we mustn't incr _affN for laggards
           if (t !== f.temp) receive(r = f, t, (f.path && !f._affN) || push(f));
-          if (isFrame(f.parent) && p !== f.prev) move(r = f, f.parent, p);
+          if (f.root < 2 && isFrame(f.parent) && p !== f.prev) move(r = f, f.parent, p);
         } else if (!t) unmount(orph.push(f), r = true);
       }
       (inDiff ? fill : sidediff)();
     }
-  } finally { on = inDiff }
+  } finally { on = inDiff, ctx = context }
   return r;
 }
