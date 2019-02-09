@@ -60,7 +60,7 @@ const thread = require("./thread");
 // magic numbers
 //   global state: on in {0: not in diff, 1: in diff, can diff, 2: in diff, cannot diff}
 //   local state: node.path in {0: not in path, 1: in path, 2: will remove} 
-const lags = [], orph = [], stx = [];
+const lags = [], orph = [], stx = [], errs = new Set;
 
 // flatten and sanitize a frame's next children
 //   * ix is an optional KeyIndex
@@ -139,6 +139,7 @@ const subdiff = (p, c, next, i=new KeyIndex, n) => {
 }
 
 let on = 0, ctx = null;
+const flush = () => {on = 2, thread.flush(), on = 0, ctx = null, errs.clear()}
 const sidediff = (c, path=fill(on = 1), raw) => {
   while(ctx = path.pop() || lags.pop()) {
     if (!ctx.path) {
@@ -150,14 +151,31 @@ const sidediff = (c, path=fill(on = 1), raw) => {
     } else if (ctx.path > -2) {
       if (relax(ctx), ctx.path = 0, c = ctx._affN)
         ctx._affN = 0, ctx._affs = null;
-      raw = ctx.render(ctx.temp, ctx, !c)
-      if (ctx.path > -2){
-        if (c = ctx.next) c.root || subdiff(ctx, c, raw);
-        else mount(ctx, clean(raw));
+      try {
+        raw = ctx.render(ctx.temp, ctx, !c)
+        if (ctx.path > -2){
+          if (c = ctx.next) c.root || subdiff(ctx, c, raw);
+          else mount(ctx, clean(raw));
+        }
+      } catch (err){
+        while(c = ctx){
+          if (!(ctx = c.parent)) {
+            flush(unmount(orph.push(c)));
+            throw err;
+          } else if (isFn(ctx.catch) && !errs.has(ctx)){
+            errs.add(ctx), ctx.next && subdiff(ctx, ctx.next);
+            try {
+              ctx.catch(err);
+              break;
+            } catch (nextErr) {
+              err = nextErr
+            };
+          }
+        }
       }
     }
   }
-  on = 2, thread.flush(), on = 0, ctx = null;
+  flush();
 }
 // temp is already normalized
 const node = (t, p, isRoot, isF=isFrame(p), effs=isF ? p.evt && p.evt.effs : p && p.effs) => {

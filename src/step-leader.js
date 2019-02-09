@@ -1,3 +1,5 @@
+const { relax } = require("./field");
+
 const path = [], stx = [];
 
 // "step-leader" is a sequence of nodes that defines a potential "strike" path of a diff
@@ -26,6 +28,12 @@ const fill = (f, i, ch) => {
 // TODO
 //   create an unfill function which goes thru path/stx and resets/relaxes all nodes
 //   before throwing cyclic errors.
+// const unfill = f => {
+//   while(f = path.pop() || stx.pop()){
+//     f.path = f._affN = 0;
+//     relax(f, f._affs = null);
+//   }
+// }
 
 // XXX we could push nodes as originators in frame.diff, however:
 //   * path state would bleed outside of the diff cycle's context
