@@ -1,3 +1,30 @@
+Cleanup and flush cycle (post-order/rendered) code:
+  Once we imlement context tracking and automatic unmounting for context nodes, we will need a way for nodes to specify code to run before/after unmount so they can clean up unwanted resources (timers, caches, etc.). We have a few options:
+
+    1. Export cleanup() and then() functions which queue up rendered/cleanup callbacks and run them
+       after flush.
+    2. Bring back cleanup() and rendered() lifecycle methods.
+    3. Create concept of ephemeral effects (like plugins but for that node in that render cycle only)
+       Export something like withEffect() which lets a node use an auxiliary effect that becomes part of the flush cycle for that diff only. Since it's in the flush stage, we can't do sync diffs in that code. Would be useful for reading the dom right before flush, mutating/reading the dom right after flush, doing work after the render phase to lower time-to-mount.
+    4. Export a function then() which lets nodes queue up custom willDo events, treated like any other
+       event, but lets the node run some function during flush. If the temp is null in that function, we're cleaning up. Should have a reference to the prev temp and cur temp so it can properly update:
+
+        render(){
+          // do stuff
+          then((temp, prevTemp) => {
+            // should probably allow async inner diffs here as long as not cleanup
+            if (!temp) // cleanup prevTemp;
+            else if (!prevTemp) // initial mount
+            else if (!equals(prevTemp.prop, temp.prop)) // cleanup old and init new.
+          })
+        }
+
+        then we'd need to add this in the event thread objects: {..., cbs: Array[fns]}
+       Could also export a cleanup() function that does the same thing but only calls after an unmount, as opposed to after each render.
+    5. Similar to 4, but instead of exporting then, we supply a cb to render() so render would have the 
+       signature: render(temp, node, isFirst, cb). cb would take a function (like then)
+
+
 Event Ordering and Squashing:
   Without rebasing, the diff cycle is fairly simple. Removal, move, add, and receive events are generated and queued. Removal events may be processed before all of the other events, or, removals may be queued separately and flushed before the other events are flushed. This allows maximal resource recycling for a given diff cycle:
 
