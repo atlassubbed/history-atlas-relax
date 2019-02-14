@@ -94,6 +94,7 @@ const count = tree => {
   while(next = stack.pop()){
     n++;
     if (next.next) stack.push(next.next);
+    if (next.ctx) stack.push(next.ctx);
     if (!next.prev) while(next = next.sib) stack.push(next);
   }
   return n;
