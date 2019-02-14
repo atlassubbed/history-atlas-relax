@@ -24,7 +24,8 @@ const { copy } = require("./util")
                We need to test situations where we rebase shit around c which may result in 
                c getting mounted after c1 (illegal). This test file is to test that this 
                behavior does not occur (i.e. that c1's event is always emitted after c's). 
-               Normally, we aren't concerned w/ inter-level event ordering in this iteration.
+               Normally, we aren't concerned w/ inter-level event ordering in this iteration
+               as long as all non-commutative events have a preserved order.
                However, we must at least guard against the possibility of a child mounting
                before its own parent has even mounted! */
 

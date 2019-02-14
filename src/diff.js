@@ -1,8 +1,9 @@
-const { isArr, norm, isFn } = require("./util")
+const { isArr, norm, isFn, sib } = require("./util")
 const Frame = require("./Frame"), { isFrame } = Frame;
 const { fill, push } = require("./step-leader");
+const { link, unlink } = require("./seg-list");
 const { relax, excite, pop } = require("./field")
-const KeyIndex = require("./KeyIndex")
+const KeyIndex = require("./KeyIndex");
 const thread = require("./thread");
 
 /* **********
@@ -67,20 +68,9 @@ const lags = [], orph = [], stx = [];
 const clean = (t, ix, next=[]) => {
   stx.push(t);
   while(stx.length) if (t = norm(stx.pop()))
-    if (isArr(t)) for (let i of t) stx.push(i);
+    if (isArr(t)) for (t of t) stx.push(t);
     else next.push(t), ix && ix.push(t);
   return next
-}
-
-// detach node f from linked list p after sibling s
-const unlink = (f, p, s=null, next) => {
-  (next = f.sib) && (next.prev = s);
-  s ? (s.sib = next) : (p.next = next);
-}
-// attach node f into linked list p after sibling s
-const link = (f, p, s=null, next) => {
-  (next = f.sib = (f.prev = s) ? s.sib : p.next) && (next.prev = f);
-  s ? (s.sib = f) : (p.next = f)
 }
 
 // mutation methods for subdiffs and rootdiffs (R)
@@ -88,14 +78,14 @@ const add = (t, p, s, isRoot) => {
   if (t){
     t = node(t, p, isRoot), p = t.parent;
     t.evt && thread.add(t, p, s)
-    p && t.root < 2 && link(t, p, s);
+    p && link(t, p, s);
     isRoot ? lags.push(t) : stx.push(t);
     return t;
   }
 }
-const move = (f, p, s, ps=f.prev) => {
+const move = (f, p, s, ps=sib(f.prev)) => {
   f.evt && thread.move(f, p, s, ps)
-  unlink(f, p, ps), link(f, p, s);
+  unlink(f, p, f.prev), link(f, p, s);
 }
 const receive = (f, t) => {
   f.evt && thread.receive(f);
@@ -108,14 +98,14 @@ const unmount = (f, isRoot, c) => {
   while(f = orph.pop()) {
     if (isRoot && (c = f.affs)) for (c of c) push(c);
     if (c = f.parent, f.evt) thread.remove(f, c);
-    c && f.root < 2 && unlink(f, c, f.prev), f.path = -2;
+    c && c.path > -2 && unlink(f, c, f.prev), f.path = -2;
     // XXX could queue a cleanup function or render(null, node) in the path
     //   or we could find a way to automatically clean up resources on unmount
-    relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = null)
     if (c = f.next) do orph.push(c); while(c = c.sib);
+    if (c = f.next) while(c = c.prev) orph.push(c);
+    relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.next = null)
   }
 }
-
 // mount under a node that has no current children
 const mount = (f, next, c) => {
   while(c = add(next.pop(), f, c));
@@ -130,8 +120,12 @@ const subdiff = (p, c, next, i=new KeyIndex, n) => {
     do (n = i.pop(c.temp)) ?
       n === (n.p = c).temp ? --c._affN || (c.path=0) : receive(c, n) :
       orph.push(c); while(c = c.sib); unmount();
-    for(i = p.next; i && (n = next.pop());) (c = n.p) ? (i === c ?
-      (i = i.sib) : move(c, p, i.prev), n.p = null) : add(n, p, i.prev);
+    for(i = p.next; i && (n = next.pop());)
+      (c = n.p) ?
+        (n.p = null, i === c) ?
+          (i = i.sib) :
+          move(c, p, sib(i.prev)) :
+        add(n, p, sib(i.prev));
     mount(p, next, c);
   } else {
     do orph.push(c); while(c = c.sib); unmount();
@@ -152,7 +146,7 @@ const sidediff = (c, path=fill(on = 1), raw) => {
         ctx._affN = 0, ctx._affs = null;
       raw = ctx.render(ctx.temp, ctx, !c)
       if (ctx.path > -2){
-        if (c = ctx.next) c.root || subdiff(ctx, c, raw);
+        if (sib(c = ctx.next)) c.root || subdiff(ctx, c, raw);
         else mount(ctx, clean(raw));
       }
     }
@@ -188,11 +182,14 @@ module.exports = (t, f, p=f&&f.prev, s) => {
   let r = false, inDiff = on, context = ctx;
   if (inDiff < 2) try {
     if (!isArr(t = norm(t))){
-      if (!isFrame(f) || f.path < -1) t && (r = add(t, p, s, 1));
-      else if (f.root){
+      if (!isFrame(f) || f.path < -1){
+        if (t && (!s || s.parent === p)) r = add(t, p, sib(s), 1)
+      } else if (f.root){
         if (t && t.name === f.temp.name) {    // note we mustn't incr _affN for laggards
           if (t !== f.temp) receive(r = f, t, (f.path && !f._affN) || push(f));
-          if (f.root < 2 && isFrame(f.parent) && p !== f.prev) move(r = f, f.parent, p);
+          if (sib(f) && isFrame(s = f.parent) && (!p || p.parent === s)){
+            (p = sib(p)) === (s = sib(f.prev)) || move(r = f, f.parent, p, s);
+          }
         } else if (!t) unmount(orph.push(f), r = true);
       }
       (inDiff ? fill : sidediff)();

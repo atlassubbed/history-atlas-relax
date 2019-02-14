@@ -4,7 +4,7 @@ const { LCRSRenderer, Tracker } = require("./effects");
 const { StemCell } = require("./cases/Frames");
 const { diff } = require("../src/index");
 const { prevCases, nextCases, finalCases } = require("./cases/squash");
-const { has, isFn } = require("./util")
+const { has, isFn, copy } = require("./util")
 
 const tag = ({name: n, data: {id}}) => {
   if (id) n += `-${id}`;
@@ -99,6 +99,30 @@ describe("event squashing", function(){
                   }}).sub(f);
                   diff(t2, f);
                   const expectedTree = renderer.renderStatic(t3)
+                  expect(renderer.tree).to.deep.equal(expectedTree);
+                })
+                it("should edit prev to match next when segregated children are present", function(){
+                  const renderer = new LCRSRenderer, events = [], tracker = new Tracker(events);
+                  let called = 0, s1, s2;
+                  const s1Temp = {name: "s1", data: {id: "s1"}};
+                  const s2Temp = {name: "s2", data: {id: "s2"}};
+                  const f = diff({name: (temp, a, isFirst) => {
+                    if (!called++){
+                      s1 = diff(s1Temp);
+                      s2 = diff(s2Temp);
+                      return t1;
+                    } else {
+                      if (isFirst || called > 1) return t3;
+                      else return t2;
+                    }
+                  }, data: {id: "root"}}, null, {effs: [renderer, tracker]})
+                  f.diff();
+                  f.diff();
+                  expect(s1.temp).to.equal(s1Temp);
+                  expect(s2.temp).to.equal(s2Temp);
+                  const copyTemp = copy(f.temp);
+                  copyTemp.next = t3;
+                  const expectedTree = renderer.renderStatic(copyTemp)
                   expect(renderer.tree).to.deep.equal(expectedTree);
                 })
               })

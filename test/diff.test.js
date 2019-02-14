@@ -2,7 +2,7 @@ const { describe, it } = require("mocha")
 const { expect } = require("chai")
 const { LCRSRenderer, Cache } = require("./effects");
 const { Frame, diff } = require("../src/index");
-const { isScalar, type, inject, deepIgnore } = require("./util")
+const { isScalar, type, inject, deepIgnore, assertDeleted } = require("./util")
 const { 
   irreducibleBlackboxes: primes, 
   reducibleBlackboxes: comps,
@@ -23,21 +23,6 @@ const getNullFrame = () => {
   const f = diff({});
   diff(null, f);
   return f;
-}
-
-const assertDeleted = f => {
-  expect(f._node).to.be.null;
-  expect(f.temp).to.be.null;
-  expect(f.next).to.be.null;
-  expect(f._affs).to.be.null;
-  expect(f.parent).to.be.null;
-  expect(f.sib).to.be.null;
-  expect(f.prev).to.be.null;
-  expect(f.top).to.be.null;
-  expect(f.bot).to.be.null;
-  expect(f.evt).to.be.null;
-  expect(f.path).to.equal(-2);
-  // expect(f._affN).to.equal(0)
 }
 
 // XXX needs to be a factory, this is a legacy factory which used to support ArrayRenderers
