@@ -132,7 +132,7 @@ const flush = (c=0, f, e, p, owner) => {
     if ((e = f.evt).upd){
       e.upd = false;
       if (!e.temp){
-        emit(e.effs, "willAdd", f, f.root < 2 && p, f.prev, f.temp);
+        emit(e.effs, "willAdd", f, f.root < 2 && p, f.root < 2 && f.prev, f.temp);
         if (f.root < 2 && p) link(e, f, p.evt, f.prev);
         if (p !== owner || f.next){
           f = f.next || f.sib || p;
