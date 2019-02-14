@@ -20,10 +20,11 @@ Cleanup and flush cycle (post-order/rendered) code:
         }
 
         then we'd need to add this in the event thread objects: {..., cbs: Array[fns]}
-       Could also export a cleanup() function that does the same thing but only calls after an unmount, as opposed to after each render.
+       Could also export a cleanup() function that does the same thing but only calls after an unmount, as opposed to after each render. Could also distinguish between thenAfterThisRender() and thenAfterEachRender() to avoid having to continually destroy and reconstruct callbacks
     5. Similar to 4, but instead of exporting then, we supply a cb to render() so render would have the 
        signature: render(temp, node, isFirst, cb). cb would take a function (like then)
-
+    6. Similar to 4 and 5 but instead of a cleanup() callback, we have the function supplied to then()
+       return another function, which specifies how to clean up the function, and takes dependency arguments to know when not to cleanup and reset
 
 Event Ordering and Squashing:
   Without rebasing, the diff cycle is fairly simple. Removal, move, add, and receive events are generated and queued. Removal events may be processed before all of the other events, or, removals may be queued separately and flushed before the other events are flushed. This allows maximal resource recycling for a given diff cycle:

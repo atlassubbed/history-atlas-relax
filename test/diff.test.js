@@ -92,7 +92,7 @@ describe("diff", function(){
     })
     it("should not remove non-frames", function(){
       renderers().forEach(renderer => {
-        const result = diff(null, "not a frame");
+        const result = diff(null, "not a frame", {effs: renderer});
         expect(result).to.be.false;
         expect(renderer.tree).to.be.null;
         const { a, r, u } = renderer.counts;
@@ -101,12 +101,26 @@ describe("diff", function(){
     })
     it("should not remove non-root frames", function(){
       renderers().forEach(renderer => {
-        const child = diff({name: "p", next: {name: "p"}}).next;
+        const temp = {name: "p", next: {name: "p"}};
+        const child = diff(temp, null, {effs: renderer}).next;
         const result = diff(null, child);
         expect(result).to.be.false;
-        expect(renderer.tree).to.be.null;
+        expect(renderer.tree).to.eql(renderer.renderStatic(temp))
         const { a, r, u } = renderer.counts;
-        expect(a).to.equal(r).to.equal(u).to.equal(0)
+        expect(a).to.equal(2);
+        expect(r).to.equal(u).to.equal(0)
+      })
+    })
+    it("should not move top level root frames", function(){
+      renderers().forEach(renderer => {
+        const child = diff({name: "p"}, null, {effs: renderer});
+        const child2 = diff({name: "c"})
+        const result = diff(child.temp, child, child2);
+        expect(result).to.be.false;
+        expect(renderer.tree).to.eql(renderer.renderStatic({name: "p"}));
+        const { a, r, u } = renderer.counts;
+        expect(u).to.equal(r).to.equal(0);
+        expect(a).to.equal(1)
       })
     })
   })
