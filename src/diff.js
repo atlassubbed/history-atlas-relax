@@ -82,13 +82,21 @@ const link = (f, p, s=null, next) => {
   (next = f.sib = (f.prev = s) ? s.sib : p.next) && (next.prev = f);
   s ? (s.sib = f) : (p.next = f)
 }
+const unlinkCtx = (f, p, s=null, next) => {
+  (next = f.sib) && (next.prev = s);
+  s ? (s.sib = next) : (p.ctx = next);
+}
+const linkCtx = (f, p, s=p.ctx) => {
+  if (s) (f.sib = s).prev = f;
+  p.ctx = f;
+}
 
 // mutation methods for subdiffs and rootdiffs (R)
 const add = (t, p, s, isRoot) => {
   if (t){
     t = node(t, p, isRoot), p = t.parent;
     t.evt && thread.add(t, p, s)
-    p && t.root < 2 && link(t, p, s);
+    if (p) t.root < 2 ? link(t, p, s) : linkCtx(t, p)
     isRoot ? lags.push(t) : stx.push(t);
     return t;
   }
@@ -108,11 +116,13 @@ const unmount = (f, isRoot, c) => {
   while(f = orph.pop()) {
     if (isRoot && (c = f.affs)) for (c of c) push(c);
     if (c = f.parent, f.evt) thread.remove(f, c);
-    c && f.root < 2 && unlink(f, c, f.prev), f.path = -2;
+    if (c) (f.root < 2 ? unlink : unlinkCtx)(f, c, f.prev);
+    f.path = -2;
     // XXX could queue a cleanup function or render(null, node) in the path
     //   or we could find a way to automatically clean up resources on unmount
     relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = null)
     if (c = f.next) do orph.push(c); while(c = c.sib);
+    if (c = f.ctx) do orph.push(c); while(c = c.sib);
   }
 }
 

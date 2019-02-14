@@ -1,3 +1,20 @@
+const { expect } = require("chai");
+
+const assertDeleted = f => {
+  expect(f._node).to.be.null;
+  expect(f.temp).to.be.null;
+  expect(f.next).to.be.null;
+  expect(f._affs).to.be.null;
+  expect(f.parent).to.be.null;
+  expect(f.sib).to.be.null;
+  expect(f.prev).to.be.null;
+  expect(f.top).to.be.null;
+  expect(f.bot).to.be.null;
+  expect(f.ctx).to.be.null;
+  expect(f.evt).to.be.null;
+  expect(f.path).to.equal(-2);
+}
+
 const isArr = Array.isArray;
 
 const isObj = x => x && typeof x === "object";
@@ -41,7 +58,8 @@ const pretty = tree => JSON.stringify(tree, null, 2)
 // pseudo-deep copy a multi-dimensional array
 const copy = t => t && (isArr(t) ? t.map(copy) : Object.assign({}, t));
 
-module.exports = { 
+module.exports = {
+  assertDeleted,
   isArr, isObj, isFn, isVoid, isScalar,
   toArr, has, inject, type, pretty, copy, deepIgnore, merge
 }
