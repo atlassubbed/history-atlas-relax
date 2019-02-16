@@ -1,4 +1,4 @@
-const { isArr } = require("./util")
+const { isArr, sib } = require("./util")
 
 /* a 'thread' is linked list of contiguous child chains.
 
@@ -46,7 +46,7 @@ let rems = [], head, tail;
 //     if (f.evt.temp !== f.temp) evts.push("mWR")
 //     if (f.prev !== f.evt.prev) evts.push("mWM")
 //   }
-//   console.log("   ",evts.toString() || "N/A", f.temp.data.id, !!(f.evt.top || f.evt.bot || f === head));
+//   console.log("   ",evts.toString() || "N/A", f.temp && f.temp.data.id, !!(f.evt.top || f.evt.bot || f === head));
 // }
 // const logThread = () => {
 //   let f = head, h = head;
@@ -56,6 +56,8 @@ let rems = [], head, tail;
 //     else f = h = h.evt.top;
 //   }
 // }
+
+
 const pushLeader = f => {
   if (!head) head = tail = f;
   else (tail.evt.top = f).evt.bot = tail, tail = f;
@@ -88,33 +90,30 @@ const link = (e, f, p, s, next) => {
 
 const isAdd = f => (f = f && f.evt) && f.upd && !f.temp;
 
-const add = (f, p, s) => {
-  if (f.root < 2) isAdd(p) || queue(f, s, s ? s.sib : p && p.next);
-  else pushLeader(f);
-}
+const add = (f, p, s) =>
+  sib(f) ? isAdd(p) || queue(f, s, s ? s.sib : sib(p && p.next)) : pushLeader(f);
+
 const receive = (f, e=f.evt) => {
   if (!e.upd){
-    queue(f, f.prev, f.sib);
+    sib(f) ? queue(f, sib(f.prev), f.sib) : pushLeader(f)
     e.temp = f.temp;
     e.upd = true
   }
 }
 const move = (f, p, s, ps, e=f.evt) => {
   isAdd(p) || dequeue(f, ps);
-  if (!e.upd){
-    e.temp = f.temp;
-    e.upd = true
-  }
-  isAdd(p) || queue(f, s, s ? s.sib : p && p.next);
+  if (!e.upd) e.temp = f.temp, e.upd = true;
+  isAdd(p) || queue(f, s, s ? s.sib : sib(p && p.next));
 }
 const remove = (f, p, e=f.evt) => {
   if (!e.upd || e.temp){
     e.temp = e.temp || f.temp;
     rems.push(f);
-    if (e.parent = f.root < 2 ? p : null) unlink(e, p.evt);
+    if (e.next = sib(f) && p) 
+      p.path > -2 && unlink(e, p.evt);
   }
-  if (f.root < 2) isAdd(p) || dequeue(f, f.prev);
-  else if (e.upd) popLeader(f);
+  sib(f) ? isAdd(p) || dequeue(f, sib(f.prev)) : e.upd && popLeader(f);
+  e.upd = false;
 }
 const emit = (eff, type, f, p, s, ps) => {
   if (isArr(eff)) for (eff of eff) eff[type] && eff[type](f, p, s, ps);
@@ -123,7 +122,7 @@ const emit = (eff, type, f, p, s, ps) => {
 // iterates and destroys the threads
 const flush = (c=0, f, e, p, owner) => {
   while(f = rems[c++])
-    emit((e = f.evt).effs, "willRemove", f, e.parent, e.prev, e.temp, f.evt = null);
+    emit((e = f.evt).effs, "willRemove", f, e.next, e.prev, e.temp, f.evt = null);
   rems.length = 0;
   if (!(f = head)) return;
   owner = f.parent;
@@ -132,25 +131,24 @@ const flush = (c=0, f, e, p, owner) => {
     if ((e = f.evt).upd){
       e.upd = false;
       if (!e.temp){
-        emit(e.effs, "willAdd", f, f.root < 2 && p, f.root < 2 && f.prev, f.temp);
-        if (f.root < 2 && p) link(e, f, p.evt, f.prev);
-        if (p !== owner || f.next){
-          f = f.next || f.sib || p;
+        c = sib(f);
+        emit(e.effs, "willAdd", f, c && p, c && f.prev, f.temp);
+        if (c && p) link(e, f, p.evt, sib(f.prev));
+        if (sib(f.next)){
+          f = f.next;
           continue;
         }
       } else {
         if (f.temp !== e.temp) emit(e.effs, "willReceive", f, f.temp);
-        if (f.prev !== e.prev){
-          emit(e.effs, "willMove", f, p, e.prev, f.prev);
-          unlink(e, p.evt), link(e, f, p.evt, f.prev);
+        if ((c = sib(f.prev)) !== e.prev){
+          emit(e.effs, "willMove", f, p, e.prev, c);
+          unlink(e, p.evt), link(e, f, p.evt, c);
         }
         e.temp = null;
       }
-    } else if (p !== owner) {
-      f = f.sib || p;
-      continue;
     }
-    if (f.root > 1 || !(f = f.sib) || !f.evt.upd){
+    if (p !== owner) f = f.sib || p;
+    else if (!sib(f) || !(f = f.sib) || !f.evt.upd){
       popLeader(head);
       if (f = head) owner = f.parent;
     }
