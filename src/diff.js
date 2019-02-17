@@ -73,18 +73,14 @@ const clean = (t, ix, next=[]) => {
 }
 
 // detach node f from linked list p after sibling s
-const unlink = (f, p, s=null, next) => {
-  (next = f.sib) && (next.prev = s);
-  s ? (s.sib = next) : (f.root < 2 ? (p.next = next) : (p.ctx = next));
+const unlink = (f, p, s=null, n) => {
+  (n = f.sib) && (n.prev = s);
+  s ? (s.sib = n) : f.root < 2 ? (p.next = n) : (p.ctx = n);
 }
 // attach node f into linked list p after sibling s
-const link = (f, p, s=null, next) => {
-  (next = f.sib = (f.prev = s) ? s.sib : p.next) && (next.prev = f);
-  s ? (s.sib = f) : (p.next = f)
-}
-const linkCtx = (f, p, s=p.ctx) => {
-  if (s) (f.sib = s).prev = f;
-  p.ctx = f;
+const link = (f, p, s=null, n) => {
+  if (n = f.sib = f.root < 2 ? (f.prev = s) ? s.sib : p.next : p.ctx) n.prev = f;
+  s ? (s.sib = f) : f.root < 2 ? (p.next = f) : (p.ctx = f)
 }
 
 // mutation methods for subdiffs and rootdiffs (R)
@@ -92,7 +88,7 @@ const add = (t, p, s, isRoot) => {
   if (t){
     t = node(t, p, isRoot), p = t.parent;
     t.evt && thread.add(t, p, s)
-    if (p) t.root < 2 ? link(t, p, s) : linkCtx(t, p)
+    p && link(t, p, s);
     isRoot ? lags.push(t) : stx.push(t);
     return t;
   }
@@ -203,7 +199,7 @@ module.exports = (t, f, p=f&&f.prev, s) => {
         if (t && t.name === f.temp.name) {    // note we mustn't incr _affN for laggards
           if (t !== f.temp) receive(r = f, t, (f.path && !f._affN) || push(f));
           if (sib(f) && isFrame(s = f.parent) && (!p || p.parent === s))
-            (p = sib(p)) === f.prev || move(r = f, f.parent, p);
+            (p = sib(p)) === f.prev || move(r = f, s, p);
         } else if (!t) unmount(orph.push(f), r = true);
       }
       (inDiff ? fill : sidediff)();

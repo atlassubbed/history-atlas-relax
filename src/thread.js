@@ -46,7 +46,7 @@ let rems = [], head, tail;
 //     if (f.evt.temp !== f.temp) evts.push("mWR")
 //     if (f.prev !== f.evt.prev) evts.push("mWM")
 //   }
-//   console.log("   ",evts.toString() || "N/A", f.temp.data.id, !!(f.evt.top || f.evt.bot || f === head));
+//   console.log("   ",evts.toString() || "N/A", f.temp && f.temp.data.id, !!(f.evt.top || f.evt.bot || f === head));
 // }
 // const logThread = () => {
 //   let f = head, h = head;
