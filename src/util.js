@@ -8,4 +8,6 @@ const norm = t => t != null && t !== true && t !== false && (typeof t === "objec
 
 const isArr = Array.isArray;
 
-module.exports = { isFn, isArr, norm, name }
+const sib = p => p && p.root < 2 ? p : null;
+
+module.exports = { isFn, isArr, norm, name, sib }
