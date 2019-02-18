@@ -3,7 +3,7 @@ const { isFn } = require("./util");
 const isFrame = f => f && isFn(f.render);
 
 // not to be instantiated by caller
-const Frame = module.exports = function(temp, effs){
+const Frame = module.exports = function Frame(temp, effs){
   if (!temp) return;
   this.evt = effs ? {
     effs,
@@ -33,7 +33,7 @@ Frame.prototype = {
     isFrame(f) && f !== this && (f.affs = f.affs || new Set).add(this)
   },
   unsub(f){
-    isFrame(f) && f.affs && f.affs.delete(this) && f.affs.size || (f.affs = null)
+    isFrame(f) && f.affs && f.affs.delete(this) && (f.affs.size || (f.affs = null))
   }
 }
 

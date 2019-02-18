@@ -80,5 +80,14 @@ describe("Frame", function(){
       nodes[0].unsub(nodes[1]);
       expect(nodes[1]).to.deep.equal(nodes[2])
     })
+    it("should not remove nodes that aren't in the set", function(){
+      const nodes = ["p","p","p"].map(name => diff({name}));
+      expect(nodes[0]).to.deep.equal(nodes[1]).to.deep.equal(nodes[2])
+      nodes[0].sub(nodes[1])
+      nodes[0].sub(nodes[2])
+      expect(nodes[1]).to.eql(nodes[2]);
+      nodes[2].unsub(nodes[1]);
+      expect(nodes[1]).to.eql(nodes[2])
+    })
   })
 })
