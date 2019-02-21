@@ -195,7 +195,7 @@ function buildMochaScaffold(){
         ]
       })
       scaffold.push({
-        desc: `should rebase a previously scheduled tau ${tau} 0 update when hit with a sync update`,
+        desc: `should rebase a previously scheduled tau ${rel} 0 update when hit with a sync update`,
         task: effs => {
           diff(h(id, hooks("willAdd", f => {
             const res = f.setState({n: 0}, tau);
@@ -223,6 +223,60 @@ function buildMochaScaffold(){
           },
           result: [
             {wA: id, dt: -1, state: null},
+            {wU: id, dt: newTau, state: {n: 1}}
+          ]
+        })
+      })
+    })
+  })
+  scaffold.describe("async inner-diff on itself during didAdd", () => {
+    asyncTaus.forEach(tau => {
+      const rel = tau > 0 ? ">" : "=", id = 0;
+      scaffold.push({
+        desc: `should schedule a tau ${rel} 0 update`,
+        task: effs => {
+          diff(h(id, hooks("didAdd", f => {
+            const res = f.setState({n: 0}, tau)
+            expect(res).to.be.true;
+          })), null, {effs})
+        },
+        result: [
+          {wA: id, dt: -1, state: null},
+          {dA: id, dt: -1, state: null},
+          {wU: id, dt: tau, state: {n: 0}}
+        ]
+      })
+      scaffold.push({
+        desc: `should rebase a previously scheduled tau ${rel} 0 update when hit with a sync update`,
+        task: effs => {
+          diff(h(id, hooks("didAdd", f => {
+            const res = f.setState({n: 0}, tau);
+            expect(res).to.be.true;
+            const res2 = f.setState({n: 1});
+            expect(res2).to.be.true;
+          })), null, {effs})
+        },
+        result: [
+          {wA: id, dt: -1, state: null},
+          {dA: id, dt: -1, state: null},
+          {wU: id, dt: -1, state: {n: 1}}
+        ]
+      })
+      asyncTaus.forEach(newTau => {
+        const newRel = newTau > 0 ? ">" : "=";
+        scaffold.push({
+          desc: `should coalesce an initial tau ${rel} 0 update into a new tau ${newRel} 0 update`,
+          task: effs => {
+            diff(h(id, hooks("didAdd", f => {
+              const res = f.setState({n: 0}, tau)
+              expect(res).to.be.true;
+              const res2 = f.setState({n: 1}, newTau);
+              expect(res2).to.be.true;
+            })), null, {effs})
+          },
+          result: [
+            {wA: id, dt: -1, state: null},
+            {dA: id, dt: -1, state: null},
             {wU: id, dt: newTau, state: {n: 1}}
           ]
         })
@@ -266,7 +320,7 @@ function buildMochaScaffold(){
         ]
       })
       scaffold.push({
-        desc: `should rebase a previously scheduled tau ${tau} 0 update when hit with a sync update`,
+        desc: `should rebase a previously scheduled tau ${rel} 0 update when hit with a sync update`,
         task: effs => {
           const r = diff(h(1), null, {effs});
           diff(h(id, hooks("willAdd", f => {
@@ -343,6 +397,126 @@ function buildMochaScaffold(){
       })
     })
   })
+  scaffold.describe("async inner-diff on other nodes during didAdd", () => {
+    asyncTaus.forEach(tau => {
+      const rel = tau > 0 ? ">" : "=", id = 0;
+      scaffold.push({
+        desc: `should schedule a tau ${rel} 0 update on nodes not in the path`,
+        task: effs => {
+          const r = diff(h(1), null, {effs});
+          diff(h(id, hooks("didAdd", () => {
+            const res = r.setState({n: 0}, tau)
+            expect(res).to.be.true;
+          })), null, {effs})
+        },
+        result: [
+          {wA: 1, dt: -1, state: null},
+          {wA: id, dt: -1, state: null},
+          {dA: id, dt: -1, state: null},
+          {wU: 1, dt: tau, state: {n: 0}}
+        ]
+      })
+      scaffold.push({
+        desc: `should not reschedule but should coalesce a tau ${rel} 0 update on nodes about to be mounted`,
+        task: effs => {
+          diff(
+            h(0, null, h(1, hooks("didAdd", () => {
+              const sib = diff(h(2), null, {effs});
+              const res = sib.setState({n: 0}, tau)
+              expect(res).to.be.false;
+            }))), 
+            null, {effs}
+          );
+        },
+        result: [
+          {wA: 0, dt: -1, state: null},
+          {wA: 1, dt: -1, state: null},
+          {dA: 1, dt: -1, state: null},
+          {wA: 2, dt: -1, state: {n: 0}},
+        ]
+      })
+      scaffold.push({
+        desc: `should rebase a previously scheduled tau ${rel} 0 update when hit with a sync update`,
+        task: effs => {
+          const r = diff(h(1), null, {effs});
+          diff(h(id, hooks("didAdd", f => {
+            const res = r.setState({n: 0}, tau);
+            expect(res).to.be.true;
+            const res2 = r.setState({n: 1});
+            expect(res2).to.be.true;
+          })), null, {effs})
+        },
+        result: [
+          {wA: 1, dt: -1, state: null},
+          {wA: id, dt: -1, state: null},
+          {dA: id, dt: -1, state: null},
+          {wU: 1, dt: -1, state: {n: 1}}
+        ]
+      })
+      asyncTaus.forEach(newTau => {
+        const newRel = newTau > 0 ? ">" : "=";
+        scaffold.push({
+          desc: `should coalesce an initial tau ${rel} 0 update into a new tau ${newRel} 0 update on the same node`,
+          task: effs => {
+            const r = diff(h(1), null, {effs});
+            diff(h(id, hooks("didAdd", f => {
+              const res = r.setState({n: 0}, tau)
+              expect(res).to.be.true;
+              const res2 = r.setState({n: 1}, newTau);
+              expect(res2).to.be.true;
+            })), null, {effs})
+          },
+          result: [
+            {wA: 1, dt: -1, state: null},
+            {wA: id, dt: -1, state: null},
+            {dA: id, dt: -1, state: null},
+            {wU: 1, dt: newTau, state: {n: 1}}
+          ]
+        })
+        if (tau === newTau) scaffold.push({
+          desc: `should schedule two tau ${rel} 0 updates on different nodes in the same cycle`,
+          task: effs => {
+            const r1 = diff(h(1), null, {effs});
+            const r2 = diff(h(2), null, {effs});
+            diff(h(id, hooks("didAdd", f => {
+              const res = r1.setState({n: 0}, tau)
+              expect(res).to.be.true;
+              const res2 = r2.setState({n: 1}, tau);
+              expect(res2).to.be.true;
+            })), null, {effs})
+          },
+          result: [
+            {wA: 1, dt: -1, state: null},
+            {wA: 2, dt: -1, state: null},
+            {wA: id, dt: -1, state: null},
+            {dA: id, dt: -1, state: null},
+            {wU: 2, dt: tau, state: {n: 1}},
+            {wU: 1, dt: tau, state: {n: 0}},
+          ]
+        }); else scaffold.push({
+          desc: `should schedule a tau ${rel} 0 and a tau ${newRel} 0 update on different nodes in different cycles`,
+          task: effs => {
+            const r1 = diff(h(1), null, {effs});
+            const r2 = diff(h(2), null, {effs});
+            diff(h(id, hooks("didAdd", f => {
+              const res = r1.setState({n: 0}, tau)
+              expect(res).to.be.true;
+              const res2 = r2.setState({n: 1}, newTau);
+              expect(res2).to.be.true;
+            })), null, {effs})
+          },
+          result: [
+            {wA: 1, dt: -1, state: null},
+            {wA: 2, dt: -1, state: null},
+            {wA: id, dt: -1, state: null},
+            {dA: id, dt: -1, state: null},
+            {wU: newTau < tau ? 2 : 1, dt: Math.min(newTau, tau), state: {n: newTau < tau ? 1 : 0}},
+            {wU: newTau < tau ? 1 : 2, dt: Math.max(newTau, tau), state: {n: newTau < tau ? 0 : 1}},
+          ]
+        })
+      })
+    })
+  })
   scaffold.describe("async inner-diff on itself during willUpdate", () => {
     asyncTaus.forEach(tau => {
       const rel = tau > 0 ? ">" : "=", id = 0;
@@ -365,7 +539,7 @@ function buildMochaScaffold(){
         ]
       })
       scaffold.push({
-        desc: `should rebase a previously scheduled tau ${tau} 0 update when hit with a sync update`,
+        desc: `should rebase a previously scheduled tau ${rel} 0 update when hit with a sync update`,
         task: effs => {
           let called = 0;
           const f = diff(h(id, hooks("willUpdate", f => {
@@ -404,6 +578,78 @@ function buildMochaScaffold(){
             {wU: id, dt: -1, state: null},
             {wR: id, dt: -1, state: null},
             {wU: id, dt: newTau, state: {n: 1}}
+          ]
+        })
+      })
+    })
+  })
+  scaffold.describe("async inner-diff on itself during didUpdate", () => {
+    asyncTaus.forEach(tau => {
+      const rel = tau > 0 ? ">" : "=", id = 0;
+      scaffold.push({
+        desc: `should schedule a tau ${rel} 0 update`,
+        task: effs => {
+          let called = 0;
+          const f = diff(h(id, hooks("didUpdate", f => {
+            if (called) return;
+            const res = f.setState({n: called++}, tau)
+            expect(res).to.be.true;
+          })), null, {effs});
+          diff(copy(f.temp), f);
+        },
+        result: [
+          {wA: id, dt: -1, state: null},
+          {wU: id, dt: -1, state: null},
+          {wR: id, dt: -1, state: null},
+          {dU: id, dt: -1, state: null},
+          {wU: id, dt: tau, state: {n: 0}},
+          {dU: id, dt: tau, state: {n: 0}}
+        ]
+      })
+      scaffold.push({
+        desc: `should rebase a previously scheduled tau ${rel} 0 update when hit with a sync update`,
+        task: effs => {
+          let called = 0;
+          const f = diff(h(id, hooks("didUpdate", f => {
+            if (called) return;
+            const res = f.setState({n: called++}, tau);
+            expect(res).to.be.true;
+            const res2 = f.setState({n: called++});
+            expect(res2).to.be.true;
+          })), null, {effs});
+          diff(copy(f.temp), f);
+        },
+        result: [
+          {wA: id, dt: -1, state: null},
+          {wU: id, dt: -1, state: null},
+          {wR: id, dt: -1, state: null},
+          {dU: id, dt: -1, state: null},
+          {wU: id, dt: -1, state: {n: 1}},
+          {dU: id, dt: -1, state: {n: 1}},
+        ]
+      })
+      asyncTaus.forEach(newTau => {
+        const newRel = newTau > 0 ? ">" : "=";
+        scaffold.push({
+          desc: `should coalesce an initial tau ${rel} 0 update into a new tau ${newRel} 0 update`,
+          task: effs => {
+            let called = 0;
+            const f = diff(h(id, hooks("didUpdate", f => {
+              if (called) return;
+              const res = f.setState({n: called++}, tau)
+              expect(res).to.be.true;
+              const res2 = f.setState({n: called++}, newTau);
+              expect(res2).to.be.true;
+            })), null, {effs});
+            diff(copy(f.temp), f);
+          },
+          result: [
+            {wA: id, dt: -1, state: null},
+            {wU: id, dt: -1, state: null},
+            {wR: id, dt: -1, state: null},
+            {dU: id, dt: -1, state: null},
+            {wU: id, dt: newTau, state: {n: 1}},
+            {dU: id, dt: newTau, state: {n: 1}}
           ]
         })
       })
@@ -479,7 +725,7 @@ function buildMochaScaffold(){
         ]
       })
       scaffold.push({
-        desc: `should rebase a previously scheduled tau ${tau} 0 update when hit with a sync update`,
+        desc: `should rebase a previously scheduled tau ${rel} 0 update when hit with a sync update`,
         task: effs => {
           const r = diff(h(1), null, {effs});
           const f = diff(h(id, hooks("willUpdate", f => {
@@ -561,6 +807,171 @@ function buildMochaScaffold(){
             {wA: id, dt: -1, state: null},
             {wU: id, dt: -1, state: null},
             {wR: id, dt: -1, state: null},
+            {wU: newTau < tau ? 2 : 1, dt: Math.min(newTau, tau), state: {n: newTau < tau ? 1 : 0}},
+            {wU: newTau < tau ? 1 : 2, dt: Math.max(newTau, tau), state: {n: newTau < tau ? 0 : 1}},
+          ]
+        })
+      })
+    })
+  })
+  scaffold.describe("async inner-diff on other nodes during didUpdate", () => {
+    asyncTaus.forEach(tau => {
+      const rel = tau > 0 ? ">" : "=", id = 0;
+      scaffold.push({
+        desc: `should schedule a tau ${rel} 0 update on nodes not in the path`,
+        task: effs => {
+          const r = diff(h(1), null, {effs});
+          const f = diff(h(id, hooks("didUpdate", () => {
+            const res = r.setState({n: 0}, tau)
+            expect(res).to.be.true;
+          })), null, {effs})
+          diff(copy(f.temp), f);
+        },
+        result: [
+          {wA: 1, dt: -1, state: null},
+          {wA: id, dt: -1, state: null},
+          {wU: id, dt: -1, state: null},
+          {wR: id, dt: -1, state: null},
+          {dU: id, dt: -1, state: null},
+          {wU: 1, dt: tau, state: {n: 0}}
+        ]
+      })
+      scaffold.push({
+        desc: `should not reschedule but should coalesce a tau ${rel} 0 update on nodes about to be mounted`,
+        task: effs => {
+          const f = diff(
+            h(0, null, h(1, hooks("didUpdate", () => {
+              const sib = diff(h(2), null, {effs});
+              const res = sib.setState({n: 0}, tau)
+              expect(res).to.be.false;
+            }))), 
+            null, {effs}
+          );
+          diff(copy(f.temp), f);
+        },
+        result: [
+          {wA: 0, dt: -1, state: null},
+          {wA: 1, dt: -1, state: null},
+          {wU: 0, dt: -1, state: null},
+          {wU: 1, dt: -1, state: null},
+          {wR: 0, dt: -1, state: null},
+          {wR: 1, dt: -1, state: null},
+          {dU: 1, dt: -1, state: null},
+          {wA: 2, dt: -1, state: {n: 0}},
+        ]
+      })
+      scaffold.push({
+        desc: `should not reschedule but should coalesce a tau ${rel} 0 update on nodes in the path`,
+        task: effs => {
+          const sib = diff(h(2), null, {effs})
+          const f = diff(
+            h(0, null, h(1, hooks("didUpdate", () => {
+              diff(copy(sib.temp), sib);
+              const res = sib.setState({n: 0}, tau)
+              expect(res).to.be.true;
+            }))), null, {effs});
+          diff(copy(f.temp), f);
+        },
+        result: [
+          {wA: 2, dt: -1, state: null},
+          {wA: 0, dt: -1, state: null},
+          {wA: 1, dt: -1, state: null},
+          {wU: 0, dt: -1, state: null},
+          {wU: 1, dt: -1, state: null},
+          {wR: 0, dt: -1, state: null},
+          {wR: 1, dt: -1, state: null},
+          {dU: 1, dt: -1, state: null},
+          {wU: 2, dt: -1, state: {n: 0}},
+          {wR: 2, dt: -1, state: {n: 0}}
+        ]
+      })
+      scaffold.push({
+        desc: `should rebase a previously scheduled tau ${rel} 0 update when hit with a sync update`,
+        task: effs => {
+          const r = diff(h(1), null, {effs});
+          const f = diff(h(id, hooks("didUpdate", f => {
+            const res = r.setState({n: 0}, tau);
+            expect(res).to.be.true;
+            const res2 = r.setState({n: 1});
+            expect(res2).to.be.true;
+          })), null, {effs});
+          diff(copy(f.temp), f);
+        },
+        result: [
+          {wA: 1, dt: -1, state: null},
+          {wA: id, dt: -1, state: null},
+          {wU: id, dt: -1, state: null},
+          {wR: id, dt: -1, state: null},
+          {dU: id, dt: -1, state: null},
+          {wU: 1, dt: -1, state: {n: 1}},
+        ]
+      })
+      asyncTaus.forEach(newTau => {
+        const newRel = newTau > 0 ? ">" : "=";
+        scaffold.push({
+          desc: `should coalesce an initial tau ${rel} 0 update into a new tau ${newRel} 0 update on the same node`,
+          task: effs => {
+            const r = diff(h(1), null, {effs});
+            const f = diff(h(id, hooks("didUpdate", f => {
+              const res = r.setState({n: 0}, tau)
+              expect(res).to.be.true;
+              const res2 = r.setState({n: 1}, newTau);
+              expect(res2).to.be.true;
+            })), null, {effs});
+            diff(copy(f.temp), f);
+          },
+          result: [
+            {wA: 1, dt: -1, state: null},
+            {wA: id, dt: -1, state: null},
+            {wU: id, dt: -1, state: null},
+            {wR: id, dt: -1, state: null},
+            {dU: id, dt: -1, state: null},
+            {wU: 1, dt: newTau, state: {n: 1}},
+          ]
+        })
+        if (tau === newTau) scaffold.push({
+          desc: `should schedule two tau ${rel} 0 updates on different nodes in the same cycle`,
+          task: effs => {
+            const r1 = diff(h(1), null, {effs});
+            const r2 = diff(h(2), null, {effs});
+            const f = diff(h(id, hooks("didUpdate", f => {
+              const res = r1.setState({n: 0}, tau)
+              expect(res).to.be.true;
+              const res2 = r2.setState({n: 1}, tau);
+              expect(res2).to.be.true;
+            })), null, {effs})
+            diff(copy(f.temp), f);
+          },
+          result: [
+            {wA: 1, dt: -1, state: null},
+            {wA: 2, dt: -1, state: null},
+            {wA: id, dt: -1, state: null},
+            {wU: id, dt: -1, state: null},
+            {wR: id, dt: -1, state: null},
+            {dU: id, dt: -1, state: null},
+            {wU: 2, dt: tau, state: {n: 1}},
+            {wU: 1, dt: tau, state: {n: 0}},
+          ]
+        }); else scaffold.push({
+          desc: `should schedule a tau ${rel} 0 and a tau ${newRel} 0 update on different nodes in different cycles`,
+          task: effs => {
+            const r1 = diff(h(1), null, {effs});
+            const r2 = diff(h(2), null, {effs});
+            const f = diff(h(id, hooks("didUpdate", f => {
+              const res = r1.setState({n: 0}, tau)
+              expect(res).to.be.true;
+              const res2 = r2.setState({n: 1}, newTau);
+              expect(res2).to.be.true;
+            })), null, {effs});
+            diff(copy(f.temp), f);
+          },
+          result: [
+            {wA: 1, dt: -1, state: null},
+            {wA: 2, dt: -1, state: null},
+            {wA: id, dt: -1, state: null},
+            {wU: id, dt: -1, state: null},
+            {wR: id, dt: -1, state: null},
+            {dU: id, dt: -1, state: null},
             {wU: newTau < tau ? 2 : 1, dt: Math.min(newTau, tau), state: {n: newTau < tau ? 1 : 0}},
             {wU: newTau < tau ? 1 : 2, dt: Math.max(newTau, tau), state: {n: newTau < tau ? 0 : 1}},
           ]

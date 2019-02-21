@@ -23,8 +23,9 @@ const linkBefore = (f, s, n=s.prev) =>
 
 // attach node f into seg-list p after sibling s
 const link = (f, p, s=null) => {
+  // short the highest probability case
   if (f.root < 2 && s) return linkAfter(f, s);
-  else if (s = p.next) (s.root < 2 ? linkBefore : linkAfter)(f, s);
+  if (s = p.next) (s.root < 2 ? linkBefore : linkAfter)(f, s);
   if (f.root < 2 || !s || s.root > 1) p.next = f;
 }
 // detach node f from seg-list p after sibling s

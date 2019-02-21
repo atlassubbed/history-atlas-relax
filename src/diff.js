@@ -6,62 +6,141 @@ const { relax, excite, pop } = require("./field")
 const KeyIndex = require("./KeyIndex");
 const thread = require("./thread");
 
-/* **********
-     READ THIS FIRST: This comment is about a "subcycle" technique. I'm not removing this 
-     comment because it was a prior train of thought and might be useful. I've skipped this
-     and gone ahead implementing rebasing, because I think it is simpler and more intuitive
-     compared to subcycles. Subcycles can also be simulated in userland by scheduling async diffs
-     Note that rebasing can be a major footgun; managed diffs are for advanced users.
-   **********
+/* Diff cycles, Subcycles & Rebasing:
+   TLDR: 
+     A diff cycle is an update cycle where a sequence of render(...) functions are called,
+     which produce mutations, which are flushed out to event listeners. When the 
+     diff cycle is complete, the graph is in its updated state, and a new diff cycle may be executed
+     to repeat this process.
 
-   diff "sideways" along the calculated path
-     History: 
-       * initially used call stack; led to overflows for lateral updates
-       * initially did not have a concept of "subcycles"
-       * "subcycles" introduced to allow well-defined diffs
-       * "subcycles" is a first implementation of well-defined diffs
-     Future: 
-       * implement the "rebasing" technique.
-       * tau = 0 async diffs could be implemented as a way to simulate subcycles
-       * rebasing opens up other exciting features
+     Diff cycles can be extended with additional synchronous work. The semantics for
+     initializing and extending diff cycles are identical -- via inner or outer diffs.
+     If you extend the current diff cycle before flush, it's called rebasing. 
+     If you extend it after flush, you add an additional subcycle to the diff cycle.
 
-   Every diff consists of a sequence of synchronous subcycles. 
-   Each subcycle is cycle-safe only within its own context (the rebase method may fix this).
+   History:
+     Well before developing the diff cycle, I just used recursion, since recursion is easy
+     and it is very concise. Recursion was being used pretty much everywhere. Recursion is
+     not a final solution because it leads to stack overflows for large lateral and deep updates.
+     Many branches ago, I replaced every recursive call with a manual stack implementation.
+     At that point, the concept of a diff cycle was pretty basic:
 
-                          time ->
-   diff cycle:
-     |-fill-subcycle1--subcycle2--subcycle3-...-subcycleN-|
-        |
-        populate initial path for first subcycle.
+       |----fill----|----render/emit mutations----|
 
-   subcycle:
-     |-lifecycle--mutations-|
-           |          |  
-           |          synchronize effects after all computations finished
-           |            * emit ALL removals before ANY adds
-           |            * thus effects can recycle resources accross subcycles
-           |              as opposed to only accross subdiffs
+     Before implementing rebasing + sucycles, this framework didn't allow performing diffs
+     during other diffs. I always intended to make this possible since the conception of this library,
+     as being able to diff during a diff is a powerful feature that allows us to:
+       * opt-out of component tree structure
+       * create side-effects and other reactive junk without polluting the main app tree
+         * e.g. higher order components pollute the main application tree hierarchy
+         * this solution naturally allows for "sideways" data storage, dependencies, etc.
+       * encompass entire trees within other trees
+       * perform imperative, managed diffs for cases where O(N) subdiffing is undesired
+       * split state into orthogonal oscillators
+       * batch updates with managed diffs (splitting up work over diff cycles)
+       * create "portals" so that the application tree can inject components in other places
+       * schedule alternative work to override current work
+       * schedule work asynchronously in a new diff cycle
+       * rebase orthogonal work synchronously into the current diff cycle
+       * rebase work synchronously into the current cycle after flushing mutations
+       * etc.
+
+     Defining diffs during diffs is an essential aspect to this framework and allows us to create
+     a single abstraction (inner/outer diffs) for pretty much everything we would wanna do to build
+     complex applications. The basic idea is that when you call diff(...) inside of a render(...),
+     we want to seamlessly, intuitively queue the work into a diff cycle.
+
+     There is plenty of ambiguity, here. Which diff cycle do we add the work to? 
+     The current one? That would require being able to "rebase" work onto the existing diff path. 
+     The next one? That would require being able to merge diff calls on a single node properly.
+     I spent a long time thinking that only one of these solutions was necessary.
+     
+     Turns out, rebasing was nearly already implemented in the existing abstraction.
+     It's just a special case of fill(...) where the path is non-empty.
+
+     Eventually, I realized that emitting mutations during render wasn't going to work for 
+     diffs during diffs (rebasing), so I changed the diff cycle to to:
+
+       |----fill----|----render/queue mutations/rebase more renders----|----emit mutations----|
+
+     At that point, I was just blindly queueing mutations in an array and flushing the array
+     in the emit stage. This lead to potential unbounded memory usage for rebases, so I
+     had to implement a data structure (thread.js) to properly merge obsolete/redundant events,
+     guaranteeing O(N) memory regardless of how many rebases were being done.
+     
+     I spent a long time thinking subcycles were unecessary after I got rebasing working.
+     I had deprecated rendered(...) and cleanup(...) lifecycle methods beforehand so that rebasing
+     was easier to implement. Render() alone does not obviously span the set of lifecycle methods:
+       * beforeMount  (render)
+       * beforeUpdate (render)
+       * duringMount  (render)
+       * duringUpdate (render)
+       * afterMount   (rendered)
+       * afterUpdate  (rendered)
+       * willUnmount  (cleanup)
+     Eventually I'd need to re-introduce the other methods. Actually, rebasing allows us
+     to simulate rendered() and cleanup() by mounting an auxiliary frame during render(), then
+     subbing the auxiliary frame to the owner of render(). The auxliary frame's render()
+     then acts as rendered() or cleanup() depending on if the affector's temp is null.
+     We achieve these methods with purely the render() if we extend our domain to two diff cycles
+     (as scheduling the aux frame to run post-flush would end up requiring a second diff cycle).
+     This is a really hacky solution, and it never satisfied me.
+
+     Since I also wanted to implement context tracking (remembering aux parents/children), this
+     hacky solution would no longer be feasible, since auxiliary frames automatically
+     get unmounted when their environment unmounts (rendering cleanup() impossible). 
+     This automatic cleanup prevents every single frame from being
+     forced to manually cleanup their manual, unmanaged child frames on unmount.
+
+     Up until that point, I thought subcycles were completely unecessary. 
+     Turns out that in order to bring back rendered() such that it supports inner and outer diffing,
+     we could just implement subcycles. The goal is to be able to run rendered() after flush.
+     Subcycles are a natural way to do that.
+
+     And so, the diff loop as of right now makes a distinction between diffing (during a diff)
+     before (rebasing) and after (subcycles) flush. If you keep rebasing before flush,
+     you will indefinitely postpone the flush. If you keep rebasing work after flush,
+     you will allow flush to execute before the extra work is processed:
+
+                         A
+       |----fill----|----.----|----emit mutations----|----rendered/rebase----|----go to A----|
+                         |
+                         render/queue mutations/rebase/cleanup
+
+   Architecture:
+     Every diff consists of a sequence of synchronous subcycles. 
+     Each subcycle is cycle-safe only within itself.
+
+                            time ->
+     diff cycle:
+       |-fill--subcycle1--subcycle2--subcycle3-...-subcycleN-|
+          |
+          populate initial path for first subcycle.
+
+       N >= 1
+        
+     subcycle:
+       |-render--flush-|
+           |      |  
+           |      synchronize effects after all computations finished
+           |        * emit ALL removals before ANY adds
+           |        * thus effects can recycle resources at a subcycle-level
+           |          as opposed to only at the subdiff-level
            run all computations
              * queue up mounts as laggards
-             * thus every new mount is guaranteed to have latest state
-  
-    We'd like to allow diffing during a diff. To do so, we need a way of tracking
-    updates that aren't in the path, then running them in an immediate cycle.
-    This allows the managed diff pattern, which is an imperative pattern for nodes 
-    where an O(N) subdiff is simply too expensive for each update. In most cases,
-    the linear cost of a subdiff is perfectly fine. Other times, the number of nodes 
-    being updated is U, where 1 << U << N. In these cases, subdiffs may be too costly.
-    These situations justify being able to circumvent subdiff and perform managed diffs. */
+               thus every new mount is guaranteed to have latest state
+             * rebase work to extend this render phase. */
 
-// auxiliary stacks
+// auxiliary stacks/sets
 //   * lags: "laggards", accumulation of to-be-mounted nodes after the path exhausts
 //   * orph: "orphans", emphemral stack used for unmounting nodes immediately
 //   * stx:  "stack", all-purpose auxiliary stack used for re-ordering
-//   * evts: "events", accumulation of in-order mutation events
+//   * post1: "post flush initial mount", queue up rendered callbacks for first mount
+//   * postN: "post flush all subsequent mounts", queue up rendered callbacks for !== first mount
 // magic numbers
 //   global state: on in {0: not in diff, 1: in diff, can diff, 2: in diff, cannot diff}
 //   local state: node.path in {0: not in path, 1: in path, 2: will remove} 
-const lags = [], orph = [], stx = [];
+const lags = [], orph = [], stx = [], post1 = new Set, postN = new Set;
 
 // flatten and sanitize a frame's next children
 //   * ix is an optional KeyIndex
@@ -134,24 +213,37 @@ const subdiff = (p, c, next, i=new KeyIndex, n) => {
 
 let on = 0, ctx = null;
 const sidediff = (c, path=fill(on = 1), raw) => {
-  while(ctx = path.pop() || lags.pop()) {
-    if (!ctx.path) {
-      if (ctx._affs) {
-        while(c = ctx._affs[ctx.path++])
-          --c._affN || (c.path=0);
-        ctx.path = 0, ctx._affs = null;
+  do {
+    if (ctx = path.pop() || lags.pop()){
+      if (!ctx.path) {
+        if (ctx._affs) {
+          while(c = ctx._affs[ctx.path++])
+            --c._affN || (c.path=0);
+          ctx.path = 0, ctx._affs = null;
+        }
+      } else if (ctx.path > -2) {
+        if (relax(ctx), ctx.path = 0, c = ctx._affN)
+          ctx._affN = 0, ctx._affs = null;
+        raw = ctx.render(ctx.temp, ctx, !c)
+        if (ctx.path > -2){
+          if (ctx.rendered) 
+            post1.has(ctx) || (c ? postN : post1).add(ctx);
+          sib(c = ctx.next) ?
+            c.root || subdiff(ctx, c, raw) :
+            mount(ctx, clean(raw));
+        }
       }
-    } else if (ctx.path > -2) {
-      if (relax(ctx), ctx.path = 0, c = ctx._affN)
-        ctx._affN = 0, ctx._affs = null;
-      raw = ctx.render(ctx.temp, ctx, !c)
-      if (ctx.path > -2){
-        if (sib(c = ctx.next)) c.root || subdiff(ctx, c, raw);
-        else mount(ctx, clean(raw));
-      }
+    } else {
+      on = 2, thread.flush(), on = 1;
+      if (post1.size || postN.size) {
+        for (ctx of post1)
+          ctx.rendered(ctx.temp, ctx, true);
+        for (ctx of postN)
+          ctx.rendered(ctx.temp, ctx, false);
+        post1.clear(), postN.clear();
+      } else return on = 0, ctx = null;
     }
-  }
-  on = 2, thread.flush(), on = 0, ctx = null;
+  } while(1);
 }
 // temp is already normalized
 const node = (t, p, isRoot, isF=isFrame(p), effs=isF ? p.evt && p.evt.effs : p && p.effs) => {

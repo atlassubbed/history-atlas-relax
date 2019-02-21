@@ -91,6 +91,23 @@ class StemCell extends Frame {
     if (f.getNext) return f.getNext(data, next, f, isFirst);
     return data && data.copy ? copy(next) : next;
   }
+  rendered(temp, f, isFirst){
+    if (this.evt) for (let eff of toArr(this.evt.effs)) {
+      if (eff && eff.log) {
+        // XXX we aren't emitting these events, because it'd break any test who isn't expecting 
+        // them. We may decide to come back later and add these events in, but we'd have to 
+        // add stuff like {dA: 0}, {dA: 1}, etc. into all of our expect event arrays for many tests.
+        if (isFirst && f.didAdd) eff.log("dA", f, temp);
+        else if (!isFirst && f.didUpdate) eff.log("dU", f, temp);
+      }
+    }
+    isFirst ? f.didAdd && f.didAdd(f) : f.didUpdate && f.didUpdate(f);
+  }
+  // cleanup(temp, f){
+  //   if (this.evt) for (let eff of toArr(this.evt.effs))
+  //     if (eff && eff.log && f.willRemove) eff.log("wP", f, temp);
+  //   f.willRemove && f.willRemove(f)
+  // }
   static h(id, data, next){
     data = data || {}, data.id = id, data.copy = true;
     return {name: StemCell, data, next};

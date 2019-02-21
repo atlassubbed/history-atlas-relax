@@ -31,6 +31,16 @@ class Subframe extends Frame {
   }
 }
 
+// class PostFlushSubframe extends Frame {
+//   render(temp){
+//     if (RENDER_WORK) init || doWork(RENDER_WORK);
+//     return temp.next;
+//   }
+//   rendered(){
+//     // no-op, just gauging the overhead involved with tracking post-flush nodes
+//   }
+// }
+
 // updates single root
 class ManagedSubframe extends Frame {
   render({next}, node, isFirst){
@@ -81,19 +91,20 @@ const runAsync = (name, job, cb) => {
 for (let c in cases){
   const cache = cases[c];
   for (let s of SCALES){
-    const temps = [], managedFrames = [], contextFrames = [], frames = [], effects = [];
-    cache[s] = { temps, managedFrames, contextFrames, frames, effects };
+    const temps = [], frames = [];
+    cache[s] = { temps, frames };
     for (let i = 0; i < 8; i++) temps.push(factory[c](s));
-    for (let i = 0; i < 3; i++) {
-      const temp = factory[c](s-1);
-      temp.name = ContextSubframe;
-      temps.push(temp)
-    }
-    for (let i = 0; i < 3; i++) {
-      const temp = factory[c](s-1);
-      temp.name = ManagedSubframe;
-      temps.push(temp)
-    }
+    [
+      // PostFlushSubframe, 
+      ContextSubframe, 
+      ManagedSubframe
+    ].forEach(F => {
+      for (let i = 0; i < 3; i++) {
+        const temp = factory[c](s-1);
+        temp.name = F;
+        temps.push(temp)
+      }
+    })
     cache[s].entRoot = makeEntangled(factory[c](s))
     cache[s].schedRoot = diff(factory[c](s))
   }
@@ -110,10 +121,11 @@ for (let c in cases){
     for (let s of SCALES){
       subtasks.push(taskDone => {
         console.log(`  N = ${s}`);
-        const { temps, entRoot, schedRoot, managedFrames, contextFrames, frames, effects } = cases[c][s];
+        const { temps, entRoot, schedRoot, frames } = cases[c][s];
         let i = -1;
         const manTemp1 = temps.pop(), manTemp2 = temps.pop(), manTemp3 = temps.pop();
         const stdTemp1 = temps.pop(), stdTemp2 = temps.pop(), stdTemp3 = temps.pop();
+        // const posTemp1 = temps.pop(), posTemp2 = temps.pop(), posTemp3 = temps.pop();
         const temp1 = temps.pop(), temp2 = temps.pop(), temp3 = temps.pop();
         const entTemp1 = temps.pop(), entTemp2 = temps.pop();
         entTemp1.next = entTemp2.next = null;
@@ -122,15 +134,18 @@ for (let c in cases){
         const state4 = temps.pop().next;
         const state5 = temps.pop().next;
         const opts = {effs: {willRemove(){}, willAdd(){}, willMove(){}, willReceive(){}}}
-        run("mount managed", () => managedFrames[++i] = diff(manTemp1)), i = -1;
-        run("update 1 managed child", () => diff(++i%2 ? manTemp2 : manTemp3, managedFrames[0])), i = -1;
-        run("unmount managed", () => diff(null, managedFrames[++i])), i = -1;
-        run("mount standalones", () => contextFrames[++i] = diff(stdTemp1)), i = -1;
-        run("update 1 standalone child", () => diff(++i%2 ? stdTemp2 : stdTemp3, contextFrames[0])), i = -1;
-        run("unmount standalones", () => diff(null, contextFrames[++i])), i = -1;
-        run("mount effects", () => effects[++i] = diff(temp1, null, opts)), i = -1;
-        run("update effects", () => diff(++i%2 ? temp2 : temp3, effects[0])), i = -1;
-        run("unmount effects", () => diff(null, effects[++i])), i = -1;
+        run("mount managed", () => frames[++i] = diff(manTemp1)), i = -1;
+        run("update 1 managed child", () => diff(++i%2 ? manTemp2 : manTemp3, frames[0])), i = -1;
+        run("unmount managed", () => diff(null, frames[++i])), i = -1;
+        run("mount standalones", () => frames[++i] = diff(stdTemp1)), i = -1;
+        run("update 1 standalone child", () => diff(++i%2 ? stdTemp2 : stdTemp3, frames[0])), i = -1;
+        run("unmount standalones", () => diff(null, frames[++i])), i = -1;
+        run("mount effects", () => frames[++i] = diff(temp1, null, opts)), i = -1;
+        run("update effects", () => diff(++i%2 ? temp2 : temp3, frames[0])), i = -1;
+        run("unmount effects", () => diff(null, frames[++i])), i = -1;
+        // run("mount posts", () => frames[++i] = diff(posTemp1)), i = -1;
+        // run("update posts", () => diff(++i%2 ? posTemp2 : posTemp3, frames[0])), i = -1;
+        // run("unmount posts", () => diff(null, frames[++i])), i = -1;
         run("mount", () => frames[++i] = diff(temp1)), i = -1;
         run("update", () => diff(++i%2 ? temp2 : temp3, frames[0])), i = -1;
         run("update memoized", () => diff(++i%2 ? memoTemp1 : memoTemp2, frames[0])), i = -1;
@@ -161,7 +176,7 @@ serial(tasks, () => {
   for (let c in cases){
     for (let s of SCALES){
       const cur = cases[c][s];
-      const { temps, entRoot, schedRoot, managedFrames, contextFrames, frames, effects } = cur;
+      const { temps, entRoot, schedRoot, frames } = cur;
       expect(temps).to.be.empty;
       expect(count(schedRoot)).to.equal(s);
       expect(count(entRoot)).to.equal(1);
@@ -169,15 +184,9 @@ serial(tasks, () => {
       diff(null, entRoot);
       for (let i = SAMPLES; i--;) {
         expect(frames[i].temp).to.be.null
-        expect(managedFrames[i].temp).to.be.null
-        expect(contextFrames[i].temp).to.be.null
-        expect(effects[i].temp).to.be.null
         expect(count(frames[i])).to.equal(1);
-        expect(count(managedFrames[i])).to.equal(1);
-        expect(count(contextFrames[i])).to.equal(1);
-        expect(count(effects[i])).to.equal(1);
       }
-      contextFrames.length = managedFrames.length = effects.length = frames.length = 0;
+      frames.length = 0;
     }
   }
   gc();
