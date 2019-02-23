@@ -5,7 +5,10 @@
   "scripts": {
     "test-server": "mocha --colors --watch --recursive './test/**/*.test.js'",
     "test": "mocha --colors --recursive './test/**/*.test.js'",
-    "perf": "node --max_old_space_size=8192 --stack-size=1024 --expose-gc ./test/perf/perf",
+    "perf": "npm run perf-reg && npm run perf-man && npm run perf-post",
+    "perf-reg": "node --expose-gc ./test/perf/perf-reg",
+    "perf-man": "node --expose-gc ./test/perf/perf-man",
+    "perf-post": "node --expose-gc ./test/perf/perf-post",
     "evt": "node ./test/perf/event-squashing",
     "trav": "node ./test/perf/tree-traversal"
   },
