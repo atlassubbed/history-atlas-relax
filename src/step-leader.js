@@ -28,6 +28,9 @@ const fill = (f, i, ch) => {
 //   * i.e. if a parent updates and memoizes a child with pending state, the child will update early
 //   * such "premature" updates would be considered unexpected behavior
 // below we push nodes as originators to ensure they are in the physical path
-const push = f => {f.path || stx.push(f), ++f._affN}
+const push = f => {
+  // note we mustn't incr _affN for laggards
+  if ((!f.path && stx.push(f)) || f._affN) ++f._affN
+}
 
 module.exports = { fill, push }

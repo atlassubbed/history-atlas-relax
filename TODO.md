@@ -1,5 +1,16 @@
+Render and rendered:
+  1. maybe deprecate isFirst, since app-level code can use memoization and flags 
+       * this.cache = this.cache || makeBigCache()
+       * if (!this.called) this.called = !!(this.cache = makeBigCache())
+  2. make node the last argument to these functions. instead of render(temp, node, isFirst),
+     make it render(temp, isFirst, node);
+
+inner diffs (especially if deprecate isFirst arg):
+  * probably just short circuit if node is already in the path and return false (did not queue)
+  * throwing err if on > 1, (undiffable state) when error boundaries are implemented.
+
 Cleanup and flush cycle (post-order/rendered) code:
-  Once we imlement context tracking and automatic unmounting for context nodes, we will need a way for nodes to specify code to run before/after unmount so they can clean up unwanted resources (timers, caches, etc.). We have a few options:
+  Once we implement context tracking and automatic unmounting for context nodes, we will need a way for nodes to specify code to run before/after unmount so they can clean up unwanted resources (timers, caches, etc.). We have a few options:
 
     1. Export cleanup() and then() functions which queue up rendered/cleanup callbacks and run them
        after flush.

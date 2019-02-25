@@ -869,6 +869,33 @@ describe("rebasing (merging a new diff into current diff)", function(){
           {mWP: 1}, {mWP: 2}, {mWA: 8}, {mWR: 4}, {mWR: 6}, {mWR: 7}
         ])
       })
+      it("should not rebase laggard entangled affects during willAdd", function(){
+        const events = [], tracker = new Tracker(events);
+        const renderer = new LCRSRenderer, renderer2 = new LCRSRenderer, renderer3 = new LCRSRenderer;
+        const r1 = diff(h(0, null), null, {effs: [renderer, tracker]});
+        const managedRoot = diff(h(1, null, h(2)), null, r1);
+        expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1, null, h(2)))))
+        let called = 0;
+        const temp = h(8, hooks("willAdd", f => {
+          const affectedRoot1 = diff(h(3, null, h(4)), null, {effs: [renderer2, tracker]});
+          const affectedRoot2 = diff(h(5, null, [h(6), h(7)]), null, {effs: [renderer3, tracker]});
+          affectedRoot1.sub(managedRoot), affectedRoot2.sub(managedRoot.next);
+          const res = diff(null, managedRoot);
+          expect(res).to.be.true;
+          called++;
+        }));
+        diff(temp, null, {effs: [tracker]});
+        expect(called).to.equal(1);
+        expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null)))
+        expect(renderer2.tree).to.eql(renderer2.renderStatic(h(3, null, h(4))))
+        expect(renderer3.tree).to.eql(renderer3.renderStatic(h(5, null, [h(6), h(7)])))
+        expect(events).to.eql([
+          { wA: 0 }, { mWA: 0 }, 
+          {wA: 1}, {wA: 2}, {mWA: 1}, { mWA: 2 },
+          {wA: 8}, {wA: 5}, {wA: 6}, {wA: 7}, {wA: 3}, {wA: 4}, 
+          {mWP: 1}, {mWP: 2}, {mWA: 8}, {mWA: 3}, {mWA: 4}, {mWA: 5}, {mWA:6}, {mWA: 7}
+        ])
+      })
       it("should rebase all entangled affects during didAdd", function(){
         const events = [], tracker = new Tracker(events);
         const renderer = new LCRSRenderer, renderer2 = new LCRSRenderer, renderer3 = new LCRSRenderer;
@@ -923,6 +950,33 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(events).to.eql([
           {wU: 8}, {wU: 3}, {wU: 4}, {wU: 5}, {wU: 6}, {wU: 7},
           {mWP: 1}, {mWP: 2}, {mWR: 8}, {mWR: 4}, {mWR: 6}, {mWR: 7}
+        ])
+      })
+      it("should not rebase laggard entangled affects during willUpdate", function(){
+        const events = [], tracker = new Tracker(events);
+        const renderer = new LCRSRenderer, renderer2 = new LCRSRenderer, renderer3 = new LCRSRenderer;
+        const r1 = diff(h(0, null), null, {effs: [renderer, tracker]});
+        const managedRoot = diff(h(1, null, h(2)), null, r1);
+        expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1, null, h(2)))))
+        let called = 0;
+        const temp = h(8, hooks("willUpdate", f => {
+          const affectedRoot1 = diff(h(3, null, h(4)), null, {effs: [renderer2, tracker]});
+          const affectedRoot2 = diff(h(5, null, [h(6), h(7)]), null, {effs: [renderer3, tracker]});
+          affectedRoot1.sub(managedRoot), affectedRoot2.sub(managedRoot.next);
+          const res = diff(null, managedRoot);
+          expect(res).to.be.true;
+          called++;
+        }));
+        const r2 = diff(temp, null, {effs: [tracker]});
+        events.length = 0;
+        diff(copy(temp), r2);
+        expect(called).to.equal(1);
+        expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null)))
+        expect(renderer2.tree).to.eql(renderer2.renderStatic(h(3, null, h(4))))
+        expect(renderer3.tree).to.eql(renderer3.renderStatic(h(5, null, [h(6), h(7)])))
+        expect(events).to.eql([
+          {wU: 8}, {wA: 5}, {wA: 6}, {wA: 7}, {wA: 3}, {wA: 4},
+          {mWP: 1}, {mWP: 2}, {mWR: 8}, {mWA: 3}, {mWA: 4}, {mWA: 5}, {mWA: 6}, {mWA: 7}
         ])
       })
       it("should rebase all entangled affects during didUpdate", function(){
@@ -1520,6 +1574,31 @@ describe("rebasing (merging a new diff into current diff)", function(){
           {mWP: 1}, {mWP: 2}, {mWA: 8}, {mWR: 4}, {mWR: 6}, {mWR: 7}
         ])
       })
+      it("should not rebase laggard entangled affects during willAdd", function(){
+        const events = [], tracker = new Tracker(events);
+        const renderer = new LCRSRenderer, renderer2 = new LCRSRenderer, renderer3 = new LCRSRenderer;
+        const extRoot = diff(h(1, null, h(2)), null, {effs: [renderer, tracker]});
+        expect(renderer.tree).to.eql(renderer.renderStatic(h(1, null, h(2))))
+        let called = 0;
+        const temp = h(8, hooks("willAdd", f => {
+          const affectedRoot1 = diff(h(3, null, h(4)), null, {effs: [renderer2, tracker]});
+          const affectedRoot2 = diff(h(5, null, [h(6), h(7)]), null, {effs: [renderer3, tracker]});
+          affectedRoot1.sub(extRoot), affectedRoot2.sub(extRoot.next);
+          const res = diff(null, extRoot);
+          expect(res).to.be.true;
+          called++;
+        }));
+        diff(temp, null, {effs: [tracker]});
+        expect(called).to.equal(1);
+        expect(renderer.tree).to.be.null
+        expect(renderer2.tree).to.eql(renderer2.renderStatic(h(3, null, h(4))))
+        expect(renderer3.tree).to.eql(renderer3.renderStatic(h(5, null, [h(6), h(7)])))
+        expect(events).to.eql([
+          {wA: 1}, {wA: 2}, {mWA: 1}, { mWA: 2 },
+          {wA: 8}, {wA: 5}, {wA: 6}, {wA: 7}, {wA: 3}, {wA: 4}, 
+          {mWP: 1}, {mWP: 2}, {mWA: 8}, {mWA: 3}, {mWA: 4}, {mWA: 5}, {mWA:6}, {mWA: 7}
+        ])
+      })
       it("should rebase all entangled affects during didAdd", function(){
         const events = [], tracker = new Tracker(events);
         const renderer = new LCRSRenderer, renderer2 = new LCRSRenderer, renderer3 = new LCRSRenderer;
@@ -1571,6 +1650,32 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(events).to.eql([
           {wU: 8}, {wU: 3}, {wU: 4}, {wU: 5}, {wU: 6}, {wU: 7},
           {mWP: 1}, {mWP: 2}, {mWR: 8}, {mWR: 4}, {mWR: 6}, {mWR: 7}
+        ])
+      })
+      it("should not rebase laggard entangled affects during willUpdate", function(){
+        const events = [], tracker = new Tracker(events);
+        const renderer = new LCRSRenderer, renderer2 = new LCRSRenderer, renderer3 = new LCRSRenderer;
+        const extRoot = diff(h(1, null, h(2)), null, {effs: [renderer, tracker]});
+        expect(renderer.tree).to.eql(renderer.renderStatic(h(1, null, h(2))))
+        let called = 0;
+        const temp = h(8, hooks("willUpdate", f => {
+          const affectedRoot1 = diff(h(3, null, h(4)), null, {effs: [renderer2, tracker]});
+          const affectedRoot2 = diff(h(5, null, [h(6), h(7)]), null, {effs: [renderer3, tracker]});
+          affectedRoot1.sub(extRoot), affectedRoot2.sub(extRoot.next);
+          const res = diff(null, extRoot);
+          expect(res).to.be.true;
+          called++;
+        }));
+        const r2 = diff(temp, null, {effs: [tracker]});
+        events.length = 0;
+        diff(copy(temp), r2);
+        expect(called).to.equal(1);
+        expect(renderer.tree).to.be.null;
+        expect(renderer2.tree).to.eql(renderer2.renderStatic(h(3, null, h(4))))
+        expect(renderer3.tree).to.eql(renderer3.renderStatic(h(5, null, [h(6), h(7)])))
+        expect(events).to.eql([
+          {wU: 8}, {wA: 5}, {wA: 6}, {wA: 7}, {wA: 3}, {wA: 4},
+          {mWP: 1}, {mWP: 2}, {mWR: 8}, {mWA: 3}, {mWA: 4}, {mWA: 5}, {mWA: 6}, {mWA: 7}
         ])
       })
       it("should rebase all entangled affects during didUpdate", function(){
@@ -1753,6 +1858,26 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(events).to.eql([
           {wA: 0}, {mWA: 0}, {wA: 1}, {wA: 2},
           {wU: 1}, {wU: 2}, {mWA: 1}, {mWA: 2}
+        ])
+      })
+      it("should rebase its parent and itself but not laggard siblings when updating the parent during willAdd", function(){
+        let called = 0;
+        const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
+        const r = diff(h(0, null), null, {effs: [renderer, tracker]});
+        let parent;
+        const managedTemp = h(1, hooks("ctor", f => parent = f), [h(2, hooks("willAdd", f => {
+          const temp = h(1, {some: "data"}, [h(2),h(3)]);
+          const res = diff(temp, parent);
+          expect(res).to.equal(parent);
+          expect(res.temp).to.equal(temp);
+          called++;
+        })), h(3)])
+        diff(managedTemp, null, r);
+        expect(called).to.equal(1);
+        expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1, {some: "data"}, [h(2), h(3)]))));
+        expect(events).to.eql([
+          {wA: 0}, {mWA: 0}, {wA: 1}, {wA: 2},
+          {wU: 1}, {wU: 2}, {wA: 3}, {mWA: 1}, {mWA: 2}, {mWA: 3}
         ])
       })
       it("should rebase its parent and itself onto the path when updating the parent during didAdd", function(){
@@ -1983,6 +2108,31 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(events).to.eql([
           {wU: 1}, {wU: 2}, {wU: 1}, {wU: 2},
           {mWR: 1}, {mWR: 2}
+        ])
+      })
+      it("should rebase its parent and itself but not laggard siblings when updating the parent during willUpdate", function(){
+        let called = 0;
+        const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
+        const r = diff(h(0, null), null, {effs: [renderer, tracker]});
+        let parent;
+        const managedTemp = h(1, hooks("ctor", f => parent = f), [h(2, hooks("willUpdate", f => {
+          if (called) return;
+          const temp = h(1, {some: "data"}, [h(2), h(3)]);
+          const res = diff(temp, parent);
+          expect(res).to.equal(parent);
+          expect(res.temp).to.equal(temp);
+          called++;
+        }))])
+        const f = diff(managedTemp, null, r);
+        events.length = 0;
+        const temp = copy(managedTemp);
+        temp.next.push(h(3));
+        diff(temp, f);
+        expect(called).to.equal(1);
+        expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1, {some: "data"}, [h(2), h(3)]))));
+        expect(events).to.eql([
+          {wU: 1}, {wU: 2}, {wU: 1}, {wU: 2}, {wA: 3},
+          {mWR: 1}, {mWR: 2}, {mWA: 3}
         ])
       })
       it("should rebase its parent and itself onto the path when updating the parent during didUpdate", function(){
@@ -2277,7 +2427,6 @@ describe("rebasing (merging a new diff into current diff)", function(){
         const r3 = diff(temp, null, r1)
         r2.sub(r1), r3.sub(r1);
         r2.next.sub(r3);
-        console.log(called)
         events.length = 0;
         diff(h(0, null), r1);
         expect(called).to.equal(2)
@@ -2497,6 +2646,23 @@ describe("rebasing (merging a new diff into current diff)", function(){
           {mWA: 0}, {mWA: 1}
         ])
       })
+      it("should rebase its parent and itself but not laggard siblings when updating the parent during willAdd", function(){
+        let called = 0, parent;
+        const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
+        const r = diff(h(0, hooks("ctor", f => parent = f), [h(1, hooks("willAdd", f => {
+          const temp = h(0, {some: "data"}, [h(1), h(2)]);
+          const res = diff(temp, parent);
+          expect(res).to.equal(parent);
+          expect(res.temp).to.equal(temp);
+          called++;
+        })), h(2)]), null, {effs: [renderer, tracker]});
+        expect(called).to.equal(1);
+        expect(renderer.tree).to.eql(renderer.renderStatic(h(0, {some: "data"}, [h(1), h(2)])));
+        expect(events).to.eql([
+          {wA: 0}, {wA: 1}, {wU: 0}, {wU: 1}, {wA: 2},
+          {mWA: 0}, {mWA: 1}, {mWA: 2}
+        ])
+      })
       it("should rebase its parent and itself onto the path when updating the parent during didAdd", function(){
         let called = 0, parent;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
@@ -2691,6 +2857,29 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(events).to.eql([
           {wU: 0}, {wU: 1}, {wU: 0}, {wU: 1},
           {mWR: 0}, {mWR: 1}
+        ])
+      })
+      it("should rebase its parent and itself but not laggard siblings when updating the parent during willUpdate", function(){
+        let called = 0, parent;
+        const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
+        const temp = h(0, hooks("ctor", f => parent = f), [h(1, hooks("willUpdate", f => {
+          if (called) return;
+          const temp = h(0, {some: "data"}, [h(1), h(2)]);
+          const res = diff(temp, parent);
+          expect(res).to.equal(parent);
+          expect(res.temp).to.equal(temp);
+          called++;
+        }))])
+        const f = diff(temp, null, {effs: [renderer, tracker]});
+        events.length = 0;
+        const copyTemp = copy(temp);
+        copyTemp.next.push(h(2));
+        diff(copyTemp, f);
+        expect(called).to.equal(1);
+        expect(renderer.tree).to.eql(renderer.renderStatic(h(0, {some: "data"}, [h(1), h(2)])));
+        expect(events).to.eql([
+          {wU: 0}, {wU: 1}, {wU: 0}, {wU: 1}, {wA: 2},
+          {mWR: 0}, {mWR: 1}, {mWA: 2}
         ])
       })
       it("should rebase its parent and itself onto the path when updating the parent during didUpdate", function(){
@@ -3179,6 +3368,27 @@ describe("rebasing (merging a new diff into current diff)", function(){
         {mWA: 0}, {mWA: 1}
       ])
     })
+    it("should rebase its parent and itself but not laggard siblings when updating the parent during willAdd", function(){
+      let calledAdd = 0, calledUpd = 0, parent;
+      const events = [], tracker = new Tracker(events);
+      const parentHooks = {
+        ctor: f => parent = f,
+        willUpdate: f => {
+          expect(f.state).to.eql({n: 0});
+          calledUpd++;
+        }
+      }
+      diff(h(0, parentHooks, [h(1, hooks("willAdd", f => {
+        expect(parent.setState({n: 0})).to.be.true;
+        calledAdd++;
+      })), h(2)]), null, {effs: tracker});
+      expect(calledAdd).to.equal(1);
+      expect(calledUpd).to.equal(1);
+      expect(events).to.eql([
+        {wA: 0}, {wA: 1}, {wU: 0}, {wU: 1}, {wA: 2},
+        {mWA: 0}, {mWA: 1}, {mWA: 2}
+      ])
+    })
     it("should rebase its parent and itself onto the path after flush when updating the parent during didAdd", function(){
       let calledAdd = 0, calledUpd = 0, parent;
       const events = [], tracker = new Tracker(events);
@@ -3416,6 +3626,31 @@ describe("rebasing (merging a new diff into current diff)", function(){
       expect(events).to.eql([
         {wU: 0}, {wU: 1}, {wU: 0}, {wU: 1},
         {mWR: 0}, {mWR: 1}
+      ])
+    })
+    it("should rebase its parent and itself but not laggard siblings when updating the parent during willUpdate", function(){
+      let calledUpd = 0, calledUpd2 = 0, parent;
+      const events = [], tracker = new Tracker(events);
+      const parentHooks = {
+        ctor: f => parent = f,
+        willUpdate: f => {
+          expect(f.state).to.eql(calledUpd++ ? {n: 0} : null)
+        }
+      }
+      const temp = h(0, parentHooks, [h(1, hooks("willUpdate", f => {
+        if (calledUpd2++) return;
+        expect(parent.setState({n: 0})).to.be.true;
+      }))])
+      const f = diff(temp, null, {effs: tracker});
+      events.length = 0;
+      const copyTemp = copy(temp);
+      copyTemp.next.push(h(2));
+      diff(copyTemp, f);
+      expect(calledUpd).to.equal(2)
+      expect(calledUpd2).to.equal(2)
+      expect(events).to.eql([
+        {wU: 0}, {wU: 1}, {wU: 0}, {wU: 1}, {wA: 2},
+        {mWR: 0}, {mWR: 1}, {mWA: 2}
       ])
     })
     it("should rebase its parent and itself onto the path when updating the parent during didUpdate", function(){

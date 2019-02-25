@@ -135,12 +135,11 @@ const thread = require("./thread");
 //   * lags: "laggards", accumulation of to-be-mounted nodes after the path exhausts
 //   * orph: "orphans", emphemral stack used for unmounting nodes immediately
 //   * stx:  "stack", all-purpose auxiliary stack used for re-ordering
-//   * post1: "post flush initial mount", queue up rendered callbacks for first mount
-//   * postN: "post flush all subsequent mounts", queue up rendered callbacks for !== first mount
+//   * post: "post flush", queue up nodes that have rendered methods
 // magic numbers
 //   global state: on in {0: not in diff, 1: in diff, can diff, 2: in diff, cannot diff}
 //   local state: node.path in {0: not in path, 1: in path, 2: will remove} 
-const lags = [], orph = [], stx = [], post1 = new Set, postN = new Set;
+const lags = [], orph = [], stx = [], post = []
 
 // flatten and sanitize a frame's next children
 //   * ix is an optional KeyIndex
@@ -182,7 +181,7 @@ const unmount = (f, isRoot, c) => {
     //   or we could find a way to automatically clean up resources on unmount
     if (c = f.next) do orph.push(c); while(c = c.sib);
     if (c = f.next) while(c = c.prev) orph.push(c);
-    relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.next = null)
+    relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.next = f.hook = null)
   }
 }
 // mount under a node that has no current children
@@ -216,18 +215,18 @@ const sidediff = (c, path=fill(on = 1), raw) => {
   do {
     if (ctx = path.pop() || lags.pop()){
       if (!ctx.path) {
-        if (ctx._affs) {
-          while(c = ctx._affs[ctx.path++])
-            --c._affN || (c.path=0);
-          ctx.path = 0, ctx._affs = null;
+        if (c = ctx._affs) {
+          for (c of c) --c._affN || (c.path = 0);
+          ctx._affs = null;
         }
       } else if (ctx.path > -2) {
         if (relax(ctx), ctx.path = 0, c = ctx._affN)
           ctx._affN = 0, ctx._affs = null;
         raw = ctx.render(ctx.temp, ctx, !c)
         if (ctx.path > -2){
-          if (ctx.rendered) 
-            post1.has(ctx) || (c ? postN : post1).add(ctx);
+          if (ctx.rendered)
+            (ctx.hook = ctx.hook || (post.push(ctx), {f: !c})).t = ctx.temp;
+          else if (ctx.hook) ctx.hook = null;
           sib(c = ctx.next) ?
             c.root || subdiff(ctx, c, raw) :
             mount(ctx, clean(raw));
@@ -235,13 +234,9 @@ const sidediff = (c, path=fill(on = 1), raw) => {
       }
     } else {
       on = 2, thread.flush(), on = 1;
-      if (post1.size || postN.size) {
-        for (ctx of post1)
-          ctx.rendered(ctx.temp, ctx, true);
-        for (ctx of postN)
-          ctx.rendered(ctx.temp, ctx, false);
-        post1.clear(), postN.clear();
-      } else return on = 0, ctx = null;
+      if (!post.length) return on = 0, ctx = null;
+      while(ctx = post.pop()) if (c = ctx.hook)
+        ctx.hook = null, ctx.rendered(c.t, ctx, c.f);
     }
   } while(1);
 }
@@ -262,6 +257,8 @@ const node = (t, p, isRoot, isF=isFrame(p), effs=isF ? p.evt && p.evt.effs : p &
 //   use errors instead of returning false for unallowed operations
 //   requires rock-solid error handling
 const rediff = tau => () => sidediff(pop(tau, push))
+// XXX should inner diff return false if node-to-be-diffed is already in path?
+//   or, should we return true and short-circuit excite/fill?
 // instance (inner) diff (schedule updates for frames)
 Frame.prototype.diff = function(tau=-1){
   if (on > 1 || this.path < -1 || (this.path && !this._affN)) return false;
@@ -277,8 +274,8 @@ module.exports = (t, f, p=f&&f.prev, s) => {
       if (!isFrame(f) || f.path < -1){
         if (t && (!s || s.parent === p)) r = add(t, p, sib(s), 1)
       } else if (f.root){
-        if (t && t.name === f.temp.name) {    // note we mustn't incr _affN for laggards
-          if (t !== f.temp) receive(r = f, t, (f.path && !f._affN) || push(f));
+        if (t && t.name === f.temp.name) {
+          if (t !== f.temp) receive(r = f, t, push(f));
           if (sib(f) && isFrame(s = f.parent) && (!p || p.parent === s)){
             (p = sib(p)) === (s = sib(f.prev)) || move(r = f, f.parent, p, s);
           }
