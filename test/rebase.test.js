@@ -48,6 +48,20 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(copy(temp)));
         expect(events).to.eql([{wA: 0}, {mWA: 0}])
       })
+      it("should not mount nodes during cleanup", function(){
+        let called = 0;
+        const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
+        const temp = h(0, hooks("cleanup", f => {
+          const res = diff(m(1), null, f);
+          expect(res).to.be.false;
+          called++
+        }))
+        const f = diff(temp, null, {effs: [renderer, tracker]});
+        diff(null, f);
+        expect(called).to.equal(1);
+        expect(renderer.tree).to.be.null;
+        expect(events).to.eql([{wA: 0}, {mWA: 0}, {mWP: 0}])
+      })
       it("should not mount nodes during willAdd mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
@@ -228,6 +242,20 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.be.null;
         expect(events).to.be.empty
       })
+      it("should not mount nodes during cleanup", function(){
+        let called = 0;
+        const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
+        const temp = h(0, hooks("cleanup", f => {
+          const res = diff(m(1), null, {effs: [renderer, tracker]});
+          expect(res).to.be.false;
+          called++
+        }))
+        const f = diff(temp);
+        diff(null, f);
+        expect(called).to.equal(1);
+        expect(renderer.tree).to.be.null;
+        expect(events).to.be.empty
+      })
       it("should not mount nodes during willAdd mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
@@ -390,6 +418,21 @@ describe("rebasing (merging a new diff into current diff)", function(){
           expect(res).to.be.false;
           called++
         })))
+        expect(called).to.equal(1);
+        expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1))));
+        expect(events).to.eql([{wA: 0}, {mWA: 0}, {wA: 1}, {mWA: 1}])
+      })
+      it("should not unmount nodes during cleanup", function(){
+        let called = 0;
+        const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
+        const r = diff(h(0, null), null, {effs: [renderer, tracker]});
+        const managedR = diff(h(1), null, r);
+        const f = diff(h(2, hooks("cleanup", f => {
+          const res = diff(null, managedR);
+          expect(res).to.be.false;
+          called++
+        })))
+        diff(null, f);
         expect(called).to.equal(1);
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1))));
         expect(events).to.eql([{wA: 0}, {mWA: 0}, {wA: 1}, {mWA: 1}])
@@ -1017,6 +1060,20 @@ describe("rebasing (merging a new diff into current diff)", function(){
           expect(res).to.be.false;
           called++
         })))
+        expect(called).to.equal(1);
+        expect(renderer.tree).to.eql(renderer.renderStatic(h(0)));
+        expect(events).to.eql([{wA: 0}, {mWA: 0}])
+      })
+      it("should not unmount nodes during cleanup", function(){
+        let called = 0;
+        const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
+        const r = diff(h(0), null, {effs: [renderer, tracker]});
+        const f = diff(h(1, hooks("cleanup", f => {
+          const res = diff(null, r);
+          expect(res).to.be.false;
+          called++
+        })))
+        diff(null, f);
         expect(called).to.equal(1);
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0)));
         expect(events).to.eql([{wA: 0}, {mWA: 0}])
@@ -1718,6 +1775,21 @@ describe("rebasing (merging a new diff into current diff)", function(){
           expect(res).to.be.false;
           called++
         })))
+        expect(called).to.equal(1);
+        expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1))));
+        expect(events).to.eql([{wA: 0}, {mWA: 0}, {wA: 1}, {mWA: 1}])
+      })
+      it("should not update nodes during cleanup", function(){
+        let called = 0;
+        const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
+        const r = diff(h(0, null), null, {effs: [renderer, tracker]});
+        const managedR = diff(h(1), null, r);
+        const f = diff(h(1, hooks("cleanup", f => {
+          const res = diff(h(1, {some:"data"}), managedR);
+          expect(res).to.be.false;
+          called++
+        })))
+        diff(null, f);
         expect(called).to.equal(1);
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1))));
         expect(events).to.eql([{wA: 0}, {mWA: 0}, {wA: 1}, {mWA: 1}])
@@ -2542,6 +2614,20 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0)));
         expect(events).to.eql([{wA: 0}, {mWA: 0}])
       })
+      it("should not update nodes during cleanup", function(){
+        let called = 0;
+        const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
+        const r = diff(h(0), null, {effs: [renderer, tracker]});
+        const f = diff(h(1, hooks("ctor", f => {
+          const res = diff(h(0, {some: "data"}), r);
+          expect(res).to.be.false;
+          called++
+        })))
+        diff(null, f);
+        expect(called).to.equal(1);
+        expect(renderer.tree).to.eql(renderer.renderStatic(h(0)));
+        expect(events).to.eql([{wA: 0}, {mWA: 0}])
+      })
       it("should not update nodes during willAdd mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
@@ -3210,6 +3296,18 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(r.setState({n: 0})).to.be.false;
         called++
       })))
+      expect(called).to.equal(1);
+      expect(events).to.eql([{wA: 0}, {mWA: 0}])
+    })
+    it("should not update nodes during cleanup", function(){
+      let called = 0;
+      const events = [], tracker = new Tracker(events);
+      const r = diff(h(0), null, {effs: tracker});
+      const f = diff(h(1, hooks("ctor", f => {
+        expect(r.setState({n: 0})).to.be.false;
+        called++
+      })))
+      diff(null, f);
       expect(called).to.equal(1);
       expect(events).to.eql([{wA: 0}, {mWA: 0}])
     })

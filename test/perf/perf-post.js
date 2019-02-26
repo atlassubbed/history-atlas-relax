@@ -10,7 +10,8 @@ class PostFlushSubframe extends Frame {
     return temp.next;
   }
   rendered(){
-    // no-op, just gauging the overhead involved with tracking post-flush nodes
+  }
+  cleanup(){
   }
 }
 const factory = new TemplateFactory(PostFlushSubframe);
@@ -24,8 +25,8 @@ runTests(cases, (c, s, done) => {
   const { temps } = cases[c][s];
   let i = -1;
   const posTemp1 = temps.pop(), posTemp2 = temps.pop(), posTemp3 = temps.pop();
-  time("mount w/ rendered", () => frames[++i] = diff(posTemp1)), i = -1;
-  time("update w/ rendered", () => diff(++i%2 ? posTemp2 : posTemp3, frames[0])), i = -1;
-  time("unmount w/ rendered", () => diff(null, frames[++i])), i = -1;
+  time("mount w/ lifecycle", () => frames[++i] = diff(posTemp1)), i = -1;
+  time("update w/ lifecycle", () => diff(++i%2 ? posTemp2 : posTemp3, frames[0])), i = -1;
+  time("unmount w/ lifecycle", () => diff(null, frames[++i])), i = -1;
   done();
 })

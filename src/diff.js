@@ -170,10 +170,13 @@ const receive = (f, t) => {
   f.temp = t;
 }
 
+let on = 0, ctx = null;
 // unmount several queued nodes
 //   * we do this outside of the path loop since unmounts are immediate
-const unmount = (f, isRoot, c) => {
+const unmount = (f, isRoot, c, inDiff=on) => {
+  on = 2;
   while(f = orph.pop()) {
+    if (f.cleanup) f.cleanup(f.hook && f.hook.t, f);
     if (isRoot && (c = f.affs)) for (c of c) push(c);
     if (c = f.parent, f.evt) thread.remove(f, c);
     c && c.path > -2 && unlink(f, c, f.prev), f.path = -2;
@@ -183,6 +186,7 @@ const unmount = (f, isRoot, c) => {
     if (c = f.next) while(c = c.prev) orph.push(c);
     relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.next = f.hook = null)
   }
+  on = inDiff;
 }
 // mount under a node that has no current children
 const mount = (f, next, c) => {
@@ -209,8 +213,6 @@ const subdiff = (p, c, next, i=new KeyIndex, n) => {
     do orph.push(c); while(c = c.sib); unmount();
   }
 }
-
-let on = 0, ctx = null;
 const sidediff = (c, path=fill(on = 1), raw) => {
   do {
     if (ctx = path.pop() || lags.pop()){
@@ -224,9 +226,8 @@ const sidediff = (c, path=fill(on = 1), raw) => {
           ctx._affN = 0, ctx._affs = null;
         raw = ctx.render(ctx.temp, ctx, !c)
         if (ctx.path > -2){
-          if (ctx.rendered)
-            (ctx.hook = ctx.hook || (post.push(ctx), {f: !c})).t = ctx.temp;
-          else if (ctx.hook) ctx.hook = null;
+          if (ctx.cleanup || ctx.rendered)
+            (ctx.hook = ctx.hook || (ctx.rendered && post.push(ctx), {f: !c})).t = ctx.temp;
           sib(c = ctx.next) ?
             c.root || subdiff(ctx, c, raw) :
             mount(ctx, clean(raw));
@@ -236,7 +237,7 @@ const sidediff = (c, path=fill(on = 1), raw) => {
       on = 2, thread.flush(), on = 1;
       if (!post.length) return on = 0, ctx = null;
       while(ctx = post.pop()) if (c = ctx.hook)
-        ctx.hook = null, ctx.rendered(c.t, ctx, c.f);
+        ctx.hook = null, ctx.rendered && ctx.rendered(c.t, ctx, c.f);
     }
   } while(1);
 }
