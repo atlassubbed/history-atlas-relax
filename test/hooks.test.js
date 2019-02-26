@@ -213,35 +213,14 @@ describe("lifecycle methods/hooks", function(){
       diff(null, f);
       expect(calledIds).to.eql([0,2,4,3,1]);
     })
-    it("should with the latest template arg", function(){
-      let calledCleanup = 0, calledRender = 0;
-      const N = 10;
-      const Node = (temp, node, isFirst) => {
-        calledRender++;
-        if (isFirst) node.cleanup = (t, f) => {
-          calledCleanup++;
-          expect(t.data.id).to.equal(N)
-        }
-        const { name, data: { id } } = temp;
-        if (id < N){
-          diff({name, data: {id: id+1}}, node);
-        } else {
-          diff(null, node);
-        }
-      }
-      diff({name: Node, data: {id: 0}});
-      expect(calledRender).to.equal(N+1);
-      expect(calledCleanup).to.equal(1);
-    })
     it("should run with the latest template closure", function(){
       let calledCleanup = 0, calledRender = 0;
       const N = 10;
       const Node = (temp, node, isFirst) => {
         calledRender++;
-        node.cleanup = (t, f) => {
+        node.cleanup = () => {
           calledCleanup++;
           expect(temp.data.id).to.equal(N)
-          expect(t).to.eql(temp)
         }
         const { name, data: { id } } = temp;
         if (id < N){
@@ -252,33 +231,6 @@ describe("lifecycle methods/hooks", function(){
       }
       diff({name: Node, data: {id: 0}});
       expect(calledRender).to.equal(N+1);
-      expect(calledCleanup).to.equal(1);
-    })
-    it("should run with the last template arg used in render if outer-diffed post-flush", function(){
-      let calledCleanup = 0, calledRendered = 0, r;
-      const N = 10;
-      const h = (id, run, next) => ({name: Node, data: {id, run}, next})
-      const Node = (temp, f, isFirst) => {
-        if (temp.data.id === 4){
-          if (isFirst) f.rendered = t => {
-            calledRendered++;
-            diff(h("zero", [h(1), h(2, [h(3), h(4)])]), r);
-            diff(null, r)
-          }
-        } else if (!temp.data.id) {
-          if (isFirst) f.cleanup = t => {
-            calledCleanup++
-            expect(t.data.run).to.equal(N)
-          };
-          r = f;
-          if (temp.data.run < N){
-            diff(h(0, temp.data.run + 1, [h(1), 0, h(2, 0, [h(3), h(4)])]), r)
-          }
-        }
-        return temp.next;
-      }
-      diff(h(0, 0, [h(1), 0, h(2, 0, [h(3), h(4)])]))
-      expect(calledRendered).to.equal(1);
       expect(calledCleanup).to.equal(1);
     })
     it("should run with the last template closure used in render if outer-diffed post-flush", function(){
@@ -293,10 +245,9 @@ describe("lifecycle methods/hooks", function(){
             diff(null, r)
           }
         } else if (!temp.data.id) {
-          f.cleanup = t => {
+          f.cleanup = () => {
             calledCleanup++
-            expect(t).to.eql(temp);
-            expect(t.data.run).to.equal(N)
+            expect(temp.data.run).to.equal(N)
           };
           r = f;
           if (temp.data.run < N){

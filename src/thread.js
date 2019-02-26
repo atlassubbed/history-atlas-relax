@@ -120,7 +120,7 @@ const emit = (eff, type, f, p, s, ps) => {
   else eff[type] && eff[type](f, p, s, ps);   
 }
 // iterates and destroys the threads
-const flush = (c=0, f, e, p, owner) => {
+const flush = (c, f, e, p, owner) => {
   while(f = rems[c++])
     emit((e = f.evt).effs, "willRemove", f, e.next, e.prev, e.temp, f.evt = null);
   rems.length = 0;

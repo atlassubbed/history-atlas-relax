@@ -139,7 +139,7 @@ const thread = require("./thread");
 // magic numbers
 //   global state: on in {0: not in diff, 1: in diff, can diff, 2: in diff, cannot diff}
 //   local state: node.path in {0: not in path, 1: in path, 2: will remove} 
-const lags = [], orph = [], stx = [], post = []
+const lags = [], orph = [], stx = [], post = [], clear = [];
 
 // flatten and sanitize a frame's next children
 //   * ix is an optional KeyIndex
@@ -174,9 +174,8 @@ let on = 0, ctx = null;
 // unmount several queued nodes
 //   * we do this outside of the path loop since unmounts are immediate
 const unmount = (f, isRoot, c, inDiff=on) => {
-  on = 2;
   while(f = orph.pop()) {
-    if (f.cleanup) f.cleanup(f.hook && f.hook.t, f);
+    if (f.cleanup) clear.push(f);
     if (isRoot && (c = f.affs)) for (c of c) push(c);
     if (c = f.parent, f.evt) thread.remove(f, c);
     c && c.path > -2 && unlink(f, c, f.prev), f.path = -2;
@@ -186,7 +185,6 @@ const unmount = (f, isRoot, c, inDiff=on) => {
     if (c = f.next) while(c = c.prev) orph.push(c);
     relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.next = f.hook = null)
   }
-  on = inDiff;
 }
 // mount under a node that has no current children
 const mount = (f, next, c) => {
@@ -224,20 +222,24 @@ const sidediff = (c, path=fill(on = 1), raw) => {
       } else if (ctx.path > -2) {
         if (relax(ctx), ctx.path = 0, c = ctx._affN)
           ctx._affN = 0, ctx._affs = null;
+        // XXX should get a ref to the temp here instead of below as it can change during render
         raw = ctx.render(ctx.temp, ctx, !c)
         if (ctx.path > -2){
-          if (ctx.cleanup || ctx.rendered)
-            (ctx.hook = ctx.hook || (ctx.rendered && post.push(ctx), {f: !c})).t = ctx.temp;
+          if (ctx.rendered)
+            (ctx.hook = ctx.hook || (post.push(ctx), {f: !c})).t = ctx.temp;
           sib(c = ctx.next) ?
             c.root || subdiff(ctx, c, raw) :
             mount(ctx, clean(raw));
         }
       }
     } else {
-      on = 2, thread.flush(), on = 1;
-      if (!post.length) return on = 0, ctx = null;
-      while(ctx = post.pop()) if (c = ctx.hook)
-        ctx.hook = null, ctx.rendered && ctx.rendered(c.t, ctx, c.f);
+      on = 2, thread.flush(c=0);
+      if (!post.length && !clear.length) return on = 0, ctx = null;
+      while (ctx = clear[c++]) ctx.cleanup && ctx.cleanup(ctx);
+      on = 1, clear.length = 0;
+      while(ctx = post.pop()) if (c = ctx.hook) {
+        ctx.rendered && ctx.rendered(c.t, ctx, c.f), ctx.hook = null;
+      }
     }
   } while(1);
 }
@@ -259,7 +261,10 @@ const node = (t, p, isRoot, isF=isFrame(p), effs=isF ? p.evt && p.evt.effs : p &
 //   requires rock-solid error handling
 const rediff = tau => () => sidediff(pop(tau, push))
 // XXX should inner diff return false if node-to-be-diffed is already in path?
-//   or, should we return true and short-circuit excite/fill?
+//     or, should we return true and short-circuit excite/fill?
+// XXX if unmounted or in path and sync, return false, else fill/excite return true
+//     don't need to check if is mounting, should work...
+//     then, we can deprecate checking isFirst everywhere.
 // instance (inner) diff (schedule updates for frames)
 Frame.prototype.diff = function(tau=-1){
   if (on > 1 || this.path < -1 || (this.path && !this._affN)) return false;
