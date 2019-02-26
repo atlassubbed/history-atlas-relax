@@ -267,7 +267,7 @@ const rediff = tau => () => sidediff(pop(tau, push))
 //     then, we can deprecate checking isFirst everywhere.
 // instance (inner) diff (schedule updates for frames)
 Frame.prototype.diff = function(tau=-1){
-  if (on > 1 || this.path < -1 || (this.path && !this._affN)) return false;
+  if (on > 1 || this.path < -1) return false;
   tau < 0 ? (on ? fill : sidediff)(push(this)) : excite(this, tau, rediff);
   return true;
 }

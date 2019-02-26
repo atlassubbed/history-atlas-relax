@@ -3555,7 +3555,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
           calledAdd2++;
         })), null, {effs: tracker});
         calledAdd++;
-        expect(r.setState({n: 0})).to.be.false;
+        expect(r.setState({n: 0})).to.be.true;
       }))
       diff(temp, null, {effs: tracker})
       expect(calledAdd).to.equal(1);
@@ -3571,7 +3571,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
             expect(f.state).to.eql({n: 0});
             calledAdd2++;
           })), null, {effs: tracker});
-          expect(r.setState({n: 0})).to.be.false;
+          expect(r.setState({n: 0})).to.be.true;
         }
       }))
       diff(temp, null, {effs: tracker})
@@ -3822,7 +3822,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
           expect(f.state).to.eql({n: 0});
           calledAdd++
         })), null, {effs: tracker});
-        expect(r.setState({n: 0})).to.be.false;
+        expect(r.setState({n: 0})).to.be.true;
         calledUpd++
       }))
       const r1 = diff(temp, null, {effs: tracker})
@@ -3841,7 +3841,7 @@ describe("rebasing (merging a new diff into current diff)", function(){
             expect(f.state).to.eql({n: 0});
             calledAdd++
           })), null, {effs: tracker});
-          expect(r.setState({n: 0})).to.be.false;
+          expect(r.setState({n: 0})).to.be.true;
         }
       }))
       const r1 = diff(temp, null, {effs: tracker})

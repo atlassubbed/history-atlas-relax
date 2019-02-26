@@ -302,13 +302,13 @@ function buildMochaScaffold(){
         ]
       })
       scaffold.push({
-        desc: `should not reschedule but should coalesce a tau ${rel} 0 update on nodes about to be mounted`,
+        desc: `should coalesce a tau ${rel} 0 update on nodes about to be mounted`,
         task: effs => {
           let sib;
           diff(
             h(0, null, [h(1, hooks("willAdd", () => {
               const res = sib.setState({n: 0}, tau)
-              expect(res).to.be.false;
+              expect(res).to.be.true;
             })), h(2, hooks("ctor", f => sib = f))]), 
             null, {effs}
           );
@@ -417,13 +417,13 @@ function buildMochaScaffold(){
         ]
       })
       scaffold.push({
-        desc: `should not reschedule but should coalesce a tau ${rel} 0 update on nodes about to be mounted`,
+        desc: `should coalesce a tau ${rel} 0 update on nodes about to be mounted`,
         task: effs => {
           diff(
             h(0, null, h(1, hooks("didAdd", () => {
               const sib = diff(h(2), null, {effs});
               const res = sib.setState({n: 0}, tau)
-              expect(res).to.be.false;
+              expect(res).to.be.true;
             }))), 
             null, {effs}
           );
@@ -677,13 +677,13 @@ function buildMochaScaffold(){
         ]
       })
       scaffold.push({
-        desc: `should not reschedule but should coalesce a tau ${rel} 0 update on nodes about to be mounted`,
+        desc: `should coalesce a tau ${rel} 0 update on nodes about to be mounted`,
         task: effs => {
           let sib;
           const f = diff(
             h(0, null, [h(1, hooks("willUpdate", () => {
               const res = sib.setState({n: 0}, tau)
-              expect(res).to.be.false;
+              expect(res).to.be.true;
             }))]), 
             null, {effs}
           );
@@ -702,7 +702,7 @@ function buildMochaScaffold(){
         ]
       })
       scaffold.push({
-        desc: `should not reschedule but should coalesce a tau ${rel} 0 update on nodes in the path`,
+        desc: `should coalesce a tau ${rel} 0 update on nodes in the path`,
         task: effs => {
           let sib;
           const f = diff(
@@ -837,13 +837,13 @@ function buildMochaScaffold(){
         ]
       })
       scaffold.push({
-        desc: `should not reschedule but should coalesce a tau ${rel} 0 update on nodes about to be mounted`,
+        desc: `should coalesce a tau ${rel} 0 update on nodes about to be mounted`,
         task: effs => {
           const f = diff(
             h(0, null, h(1, hooks("didUpdate", () => {
               const sib = diff(h(2), null, {effs});
               const res = sib.setState({n: 0}, tau)
-              expect(res).to.be.false;
+              expect(res).to.be.true;
             }))), 
             null, {effs}
           );
@@ -861,7 +861,7 @@ function buildMochaScaffold(){
         ]
       })
       scaffold.push({
-        desc: `should not reschedule but should coalesce a tau ${rel} 0 update on nodes in the path`,
+        desc: `should coalesce a tau ${rel} 0 update on nodes in the path`,
         task: effs => {
           const sib = diff(h(2), null, {effs})
           const f = diff(
