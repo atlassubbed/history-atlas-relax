@@ -57,7 +57,7 @@ describe("diffing standalone (unordered) nodes", function(){
   describe("standalone nodes owned by another node", function(){
     it("should mount standalone nodes in the order they are diffed", function(){
       const events = [], tracker = new Tracker(events);
-      diff({name: (temp, node, isFirst) => {
+      diff({name: () => {
         const s1 = diff(h(1), null, {effs: tracker});
         const s2 = diff(h(2), null, {effs: tracker});
       }, data: {id: 0}}, null, {effs: tracker})
@@ -67,8 +67,9 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should unmount standalone nodes", function(){
       const events = [], tracker = new Tracker(events);
-      const r = diff({name: (temp, node, isFirst) => {
-        if (isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           node.s1 = diff(h(1), null, {effs: tracker});
           node.s2 = diff(h(2), null, {effs: tracker});
         } else {
@@ -85,27 +86,26 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should not move standalone nodes as they are members of an unordered set", function(){
       const events = [], tracker = new Tracker(events);
-      let called = false;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           node.s1 = diff(h(1), null, {effs: tracker});
           node.s2 = diff(h(2), null, {effs: tracker});
         } else {
-          called = true;
           const res = diff(node.s1.temp, node.s1, null);
           expect(res).to.be.false;
         }
       }, data: {id: 0}}, null, {effs: tracker})
       events.length = 0;
       diff(copy(r.temp), r);
-      expect(called).to.be.true;
+      expect(called).to.equal(2);
       expect(events).to.eql([
         {mWR: 0}
       ])
     })
     it("should automatically unmount standalone nodes when their owner unmounts", function(){
       const events = [], tracker = new Tracker(events);
-      const r = diff({name: (temp, node, isFirst) => {
+      const r = diff({name: (temp, node) => {
         node.s1 = diff(h(1), null, {effs: tracker});
         node.s2 = diff(h(2), null, {effs: tracker});
       }, data: {id: 0}}, null, {effs: tracker})
@@ -119,7 +119,7 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should automatically unmount standalone nodes when their owner unmounts even if the owner has children", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
+      const r = diff({name: (temp, node) => {
         node.one = diff(h(1), null, node);
         node.two = diff(h(2), null, node, node.one)
         node.tre = diff(h(3), null, node, node.two)
@@ -138,7 +138,7 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should automatically unmount standalone nodes when their owner unmounts if a child is added to the front", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
+      const r = diff({name: (temp, node) => {
         node.one = diff(h(1), null, node);
         node.two = diff(h(2), null, node, node.one)
         node.tre = diff(h(3), null, node, node.two)
@@ -158,7 +158,7 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should automatically unmount standalone nodes when their owner unmounts if a child has moved to the front", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
+      const r = diff({name: (temp, node) => {
         node.one = diff(h(1), null, node);
         node.two = diff(h(2), null, node, node.one)
         node.tre = diff(h(3), null, node, node.two)
@@ -178,7 +178,7 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should automatically unmount standalone nodes when their owner unmounts if a child has moved from the front", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
+      const r = diff({name: (temp, node) => {
         node.one = diff(h(1), null, node);
         node.two = diff(h(2), null, node, node.one)
         node.tre = diff(h(3), null, node, node.two)
@@ -198,7 +198,7 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should automatically unmount standalone nodes when their owner unmounts if a child is removed from the front", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
+      const r = diff({name: (temp, node) => {
         node.one = diff(h(1), null, node);
         node.two = diff(h(2), null, node, node.one)
         node.tre = diff(h(3), null, node, node.two)
@@ -221,11 +221,12 @@ describe("diffing standalone (unordered) nodes", function(){
   describe("adding managed children when there are only standalone nodes", function(){
     it("should add the child to the front of the list by default", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           diff(h(1), null, {effs: tracker});
           diff(h(2), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       diff(h(3), null, r)
       const expected = copy(r.temp);
@@ -238,11 +239,11 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should add the child to the front of the list if attempted to add after a standalone node", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let s;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!s){
           s = diff(h(1), null, {effs: tracker});
           diff(h(2), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       expect(s).to.be.an.instanceOf(Frame);
       diff(h(3), null, r, s)
@@ -257,8 +258,9 @@ describe("diffing standalone (unordered) nodes", function(){
   describe("adding direct children when there are only standalone nodes", function(){
     it("should add the child to the front of the list", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           diff(h(1), null, {effs: tracker});
           diff(h(2), null, {effs: tracker});
         } else return temp.next;
@@ -275,11 +277,12 @@ describe("diffing standalone (unordered) nodes", function(){
   describe("adding standalone nodes when there are only managed children", function(){
     it("should add the node without changing the order of the existing children", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           const first = diff(h(1), null, node);
           diff(h(2), null, node, first);
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       diff(h(3), null, {effs: tracker})
       const expected = copy(r.temp);
@@ -292,11 +295,11 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should not add the node if there is a specified after sibling", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let first;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!first){
           first = diff(h(1), null, node);
           diff(h(2), null, node, first);
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       const res = diff(h(3), null, {effs: tracker}, first)
       expect(res).to.be.false;
@@ -311,8 +314,9 @@ describe("diffing standalone (unordered) nodes", function(){
   describe("adding standalone nodes when there are only direct children", function(){
     it("should add the node without changing the order of the existing children", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           return [h(1), h(2)]
         } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
@@ -326,8 +330,9 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should not add the node if there is a specified after sibling", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           return [h(1), h(2)]
         } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
@@ -345,14 +350,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should move the last child to the front if moving after null sibling", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       diff(tre.temp, tre, null)
       const expected = copy(r.temp);
@@ -365,14 +370,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should move the last child to the front if moved after a standalone node", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre, s;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           s = diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       diff(tre.temp, tre, s)
       const expected = copy(r.temp);
@@ -385,14 +390,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should move the last child to the middle", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre, s;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           s = diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       diff(tre.temp, tre, one)
       const expected = copy(r.temp);
@@ -405,14 +410,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should move a middle child to the front if moving after null sibling", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre, s;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           s = diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       diff(two.temp, two, null)
       const expected = copy(r.temp);
@@ -425,14 +430,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should move the middle child to the front if moved after a standalone node", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre, s;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           s = diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       diff(two.temp, two, s)
       const expected = copy(r.temp);
@@ -445,14 +450,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should move a middle child to the end", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre, s;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           s = diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       diff(two.temp, two, tre)
       const expected = copy(r.temp);
@@ -465,14 +470,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should not move the first child if moving after null sibling", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre, s;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           s = diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       const res = diff(one.temp, one, null)
       expect(res).to.be.false;
@@ -486,14 +491,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should not move the first child if moved after a standalone node", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre, s;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           s = diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       const res = diff(one.temp, one, s)
       expect(res).to.be.false;
@@ -507,14 +512,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should move the first child to the middle", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre, s;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           s = diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       diff(one.temp, one, two)
       const expected = copy(r.temp);
@@ -527,14 +532,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should move the first child to the end", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre, s;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           s = diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       diff(one.temp, one, tre)
       const expected = copy(r.temp);
@@ -548,8 +553,9 @@ describe("diffing standalone (unordered) nodes", function(){
   describe("moving direct children amongst standalone nodes", function(){
     it("should move the last child to the front", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
           return [h(1), h(2), h(3)]
@@ -566,8 +572,9 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should move the last child to the middle", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
           return [h(1), h(2), h(3)]
@@ -584,8 +591,9 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should move a middle child to the front", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
           return [h(1), h(2), h(3)]
@@ -602,8 +610,9 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should move a middle child to the end", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
           return [h(1), h(2), h(3)]
@@ -620,8 +629,9 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should move the first child to the middle", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
           return [h(1), h(2), h(3)]
@@ -638,8 +648,9 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should move the first child to the end", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
           return [h(1), h(2), h(3)]
@@ -659,14 +670,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should remove the last child", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       diff(null, tre)
       const expected = copy(r.temp);
@@ -679,14 +690,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should remove a middle child", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       diff(null, two)
       const expected = copy(r.temp);
@@ -699,14 +710,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should remove the first child", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       diff(null, one)
       const expected = copy(r.temp);
@@ -720,8 +731,9 @@ describe("diffing standalone (unordered) nodes", function(){
   describe("removing direct children amongst standalone nodes", function(){
     it("should remove the last child", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
           return [h(1), h(2), h(3)]
@@ -738,8 +750,9 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should remove a middle child", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
           return [h(1), h(2), h(3)]
@@ -756,8 +769,9 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should remove the first child", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let called = 0;
+      const r = diff({name: (temp, node) => {
+        if (!called++){
           diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
           return [h(1), h(2), h(3)]
@@ -777,14 +791,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should not move standalone nodes after other standalone nodes", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre, s1, s2;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           s1 = diff(h(4), null, {effs: tracker});
           s2 = diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       let res = diff(s1.temp, s1, s2);
       expect(res).to.be.false;
@@ -800,14 +814,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should not move standalone nodes after other children", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre, s1, s2;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           s1 = diff(h(4), null, {effs: tracker});
           s2 = diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       const res = diff(s1.temp, s1, two);
       expect(res).to.be.false;
@@ -823,14 +837,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should update standalone nodes", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre, s1, s2;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           s1 = diff(h(4), null, {effs: tracker});
           s2 = diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       diff(copy(s2.temp), s2);
       diff(copy(s1.temp), s1);
@@ -845,12 +859,13 @@ describe("diffing standalone (unordered) nodes", function(){
   describe("updating standalone nodes amongst direct children", function(){
     it("should update standalone nodes", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let s1, s2;
+      const r = diff({name: (temp, node) => {
+        if (!s1){
           s1 = diff(h(4), null, {effs: tracker});
           s2 = diff(h(5), null, {effs: tracker});
           return [h(1), h(2), h(3)]
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       diff(copy(s1.temp), s1);
       diff(copy(s2.temp), s2);
@@ -865,13 +880,13 @@ describe("diffing standalone (unordered) nodes", function(){
   describe("moving standalone nodes amongst direct children", function(){
     it("should not move standalone nodes after other standalone nodes", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      let one, two, tre, s1, s2;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let s1, s2;
+      const r = diff({name: (temp, node) => {
+        if (!s1){
           s1 = diff(h(4), null, {effs: tracker});
           s2 = diff(h(5), null, {effs: tracker});
           return [h(1), h(2), h(3)]
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       let res = diff(s1.temp, s1, s2);
       expect(res).to.be.false;
@@ -886,13 +901,13 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should not move standalone nodes after other children", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      let one, two, tre, s1, s2;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let s1, s2;
+      const r = diff({name: (temp, node) => {
+        if (!s1){
           s1 = diff(h(4), null, {effs: tracker});
           s2 = diff(h(5), null, {effs: tracker});
           return [h(1), h(2), h(3)]
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       const res = diff(s1.temp, s1, r.next.sib);
       expect(res).to.be.false;
@@ -908,14 +923,14 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should remove a node without affecting the children", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
       let one, two, tre, s;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      const r = diff({name: (temp, node) => {
+        if (!one){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
           s = diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       const res = diff(null, s)
       expect(res).to.be.true;
@@ -932,13 +947,13 @@ describe("diffing standalone (unordered) nodes", function(){
   describe("removing standalone nodes amongst direct children", function(){
     it("should remove a node without affecting the children", function(){
       const events = [], tracker = new Tracker(events), renderer = new LCRSRenderer;
-      let one, two, tre, s;
-      const r = diff({name: (temp, node, isFirst) => {
-        if (Frame.isFrame(node) && isFirst){
+      let s;
+      const r = diff({name: (temp, node) => {
+        if (!s){
           s = diff(h(4), null, {effs: tracker});
           diff(h(5), null, {effs: tracker});
           return [h(1), h(2), h(3)]
-        } else if (isFirst) return temp.next;
+        } else return temp.next;
       }, data: {id: 0}}, null, {effs: [renderer, tracker]})
       const res = diff(null, s)
       expect(res).to.be.true;

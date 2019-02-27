@@ -2,7 +2,7 @@ const { describe, it } = require("mocha")
 const { expect } = require("chai")
 const { LCRSRenderer, Tracker } = require("./effects");
 const { StemCell } = require("./cases/Frames");
-const { diff } = require("../src/index");
+const { Frame, diff } = require("../src/index");
 const { prevCases, nextCases, finalCases } = require("./cases/squash");
 const { has, isFn, copy } = require("./util")
 
@@ -29,13 +29,8 @@ describe("event squashing", function(){
                 it("should not contain superfluous events", function(){
                   const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events)
                   const f = diff(t1, null, {effs: [renderer, tracker]});
-                  let called = false;
-                  diff({name: (temp, a, isFirst) => {
-                    if (!called && !isFirst){
-                      called = true;
-                      diff(t3, f);
-                    }
-                  }}).sub(f);
+                  let called = 0;
+                  diff({name: () => called++ === 1 && diff(t3, f)}).sub(f);
                   // get rid of mount-related events/counts
                   renderer.resetCounts(), events.length = 0, diff(t2, f);
                   // add, remove, update, total N, moves
@@ -91,12 +86,7 @@ describe("event squashing", function(){
                   const renderer = new LCRSRenderer;
                   const f = diff(t1, null, {effs: renderer});
                   let called = false;
-                  diff({name: (temp, a, isFirst) => {
-                    if (!called && !isFirst){
-                      called = true;
-                      diff(t3, f);
-                    }
-                  }}).sub(f);
+                  diff({name: () => called++ === 1 && diff(t3, f)}).sub(f);
                   diff(t2, f);
                   const expectedTree = renderer.renderStatic(t3)
                   expect(renderer.tree).to.deep.equal(expectedTree);
@@ -106,15 +96,12 @@ describe("event squashing", function(){
                   let called = 0, s1, s2;
                   const s1Temp = {name: "s1", data: {id: "s1"}};
                   const s2Temp = {name: "s2", data: {id: "s2"}};
-                  const f = diff({name: (temp, a, isFirst) => {
+                  const f = diff({name: () => {
                     if (!called++){
                       s1 = diff(s1Temp);
                       s2 = diff(s2Temp);
-                      return t1;
-                    } else {
-                      if (isFirst || called > 1) return t3;
-                      else return t2;
                     }
+                    return called === 1 ? t1 : called === 2 ? t2 : t3;
                   }, data: {id: "root"}}, null, {effs: [renderer, tracker]})
                   f.diff();
                   f.diff();

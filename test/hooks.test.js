@@ -10,18 +10,17 @@ const { Frame, diff } = require("../src/index");
 // * opinionated patterns may be implemented on top of these methods.
 //   e.g. useEffect(...)
 
-describe("lifecycle methods/hooks", function(){
+describe.only("lifecycle methods/hooks", function(){
   describe("rendered", function(){
     it("should run once with the latest template arg", function(){
       let calledRendered = 0, calledRender = 0;
       const N = 10;
-      const Node = (temp, node, isFirst) => {
+      const Node = (temp, node) => {
         calledRender++;
-        if (isFirst) node.rendered = (t, f, i) => {
+        node.rendered = node.rendered || ((t, f) => {
           calledRendered++;
           expect(t.data.id).to.equal(N)
-          expect(i).to.be.true;
-        }
+        })
         const { name, data: { id } } = temp;
         if (id < N){
           diff({name, data: {id: id+1}}, node);
@@ -34,13 +33,12 @@ describe("lifecycle methods/hooks", function(){
     it("should run once with the latest template closure", function(){
       let calledRendered = 0, calledRender = 0;
       const N = 10;
-      const Node = (temp, node, isFirst) => {
+      const Node = (temp, node) => {
         calledRender++;
-        node.rendered = (t, f, i) => {
+        node.rendered = (t, f) => {
           calledRendered++;
           expect(temp.data.id).to.equal(N)
           expect(t).to.eql(temp)
-          expect(i).to.be.true;
         }
         const { name, data: { id } } = temp;
         if (id < N){
@@ -59,25 +57,19 @@ describe("lifecycle methods/hooks", function(){
           {name: PostDiffNode}
         ]
       })
-      const Node = (temp, node, isFirst) => {
+      const Node = (temp, node) => {
         calledRender++;
-        if (isFirst) node.rendered = (t, f, i) => {
-          if (!calledRendered++){
-            expect(t.data.id).to.equal(0);
-            expect(i).to.be.true;
-          } else {
-            expect(t.data.id).to.equal(1);
-            expect(i).to.be.false;
-          }
-        }
+        node.rendered = node.rendered || ((t, f) => {
+          expect(t.data.id).to.equal(calledRendered++)
+        })
       }
-      const PostDiffNode = (temp, node, isFirst) => {
-        if (isFirst) node.rendered = (t, f, i) => {
+      const PostDiffNode = (temp, node) => {
+        node.rendered = node.rendered || ((t, f) => {
           if (!calledFirstRendered++){
             expect(calledRendered).to.equal(0);
             diff(h(1), node.parent);
           }
-        }
+        })
       }
       diff(h(0))
       expect(calledRender).to.equal(2);
@@ -92,26 +84,20 @@ describe("lifecycle methods/hooks", function(){
           {name: PostDiffNode}
         ]
       })
-      const Node = (temp, node, isFirst) => {
+      const Node = (temp, node) => {
         calledRender++;
-        node.rendered = (t, f, i) => {
+        node.rendered = (t, f) => {
           expect(t).to.eql(temp);
-          if (!calledRendered++){
-            expect(t.data.id).to.equal(0);
-            expect(i).to.be.true;
-          } else {
-            expect(t.data.id).to.equal(1);
-            expect(i).to.be.false;
-          }
+          expect(t.data.id).to.equal(calledRendered++);
         }
       }
-      const PostDiffNode = (temp, node, isFirst) => {
-        if (isFirst) node.rendered = () => {
+      const PostDiffNode = (temp, node) => {
+        node.rendered = node.rendered || (() => {
           if (!calledFirstRendered++){
             expect(calledRendered).to.equal(0);
             diff(h(1), node.parent);
           }
-        }
+        })
       }
       diff(h(0))
       expect(calledRender).to.equal(2);
@@ -121,7 +107,7 @@ describe("lifecycle methods/hooks", function(){
     it("should cancel the hook if unset before flush", function(){
       let calledRendered = 0, calledRender = 0;
       const upd = f => diff({name: Node, data: {id: calledRender}}, f);
-      const Node = (temp, node, isFirst) => {
+      const Node = (temp, node) => {
         expect(temp.data.id).to.equal(calledRender)
         if (!calledRender++){
           node.rendered = () => calledRendered++;
@@ -140,7 +126,7 @@ describe("lifecycle methods/hooks", function(){
     it("should cancel the hook if unset before flush even if there's a cleanup hook", function(){
       let calledRendered = 0, calledRender = 0;
       const upd = f => diff({name: Node, data: {id: calledRender}}, f);
-      const Node = (temp, node, isFirst) => {
+      const Node = (temp, node) => {
         expect(temp.data.id).to.equal(calledRender)
         if (!calledRender++){
           node.rendered = () => calledRendered++;
@@ -160,7 +146,7 @@ describe("lifecycle methods/hooks", function(){
     it("should cancel the hook after running it if unset after flush", function(){
       let calledRendered = 0, calledRender = 0;
       const upd = f => diff({name: Node, data: {id: calledRender}}, f);
-      const Node = (temp, node, isFirst) => {
+      const Node = (temp, node) => {
         expect(temp.data.id).to.equal(calledRender)
         if (!calledRender++){
           node.rendered = () => {
@@ -180,7 +166,7 @@ describe("lifecycle methods/hooks", function(){
     it("should cancel the hook after running it if unset after flush even if there's a cleanup hook", function(){
       let calledRendered = 0, calledRender = 0;
       const upd = f => diff({name: Node, data: {id: calledRender}}, f);
-      const Node = (temp, node, isFirst) => {
+      const Node = (temp, node) => {
         expect(temp.data.id).to.equal(calledRender)
         if (!calledRender++){
           node.cleanup = () => {};
@@ -216,7 +202,7 @@ describe("lifecycle methods/hooks", function(){
     it("should run with the latest template closure", function(){
       let calledCleanup = 0, calledRender = 0;
       const N = 10;
-      const Node = (temp, node, isFirst) => {
+      const Node = (temp, node) => {
         calledRender++;
         node.cleanup = () => {
           calledCleanup++;
@@ -237,13 +223,13 @@ describe("lifecycle methods/hooks", function(){
       let calledCleanup = 0, calledRendered = 0, r;
       const N = 10;
       const h = (id, run, next) => ({name: Node, data: {id, run}, next})
-      const Node = (temp, f, isFirst) => {
+      const Node = (temp, f) => {
         if (temp.data.id === 4){
-          if (isFirst) f.rendered = t => {
+          f.rendered = f.rendered || (t => {
             calledRendered++;
             diff(h(0, 0, [h(1), 0, h(2, 0, [h(3), h(4)])]), r);
             diff(null, r)
-          }
+          })
         } else if (!temp.data.id) {
           f.cleanup = () => {
             calledCleanup++
@@ -291,7 +277,7 @@ describe("lifecycle methods/hooks", function(){
     it("should cancel the hook if unset before flush", function(){
       let calledCleanup = 0, calledRender = 0;
       const upd = f => diff({name: Node, data: {id: calledRender}}, f);
-      const Node = (temp, node, isFirst) => {
+      const Node = (temp, node) => {
         expect(temp.data.id).to.equal(calledRender)
         if (!calledRender++){
           node.cleanup = () => calledCleanup++;
@@ -313,7 +299,7 @@ describe("lifecycle methods/hooks", function(){
     it("should cancel the hook if unset before flush even if there's a rendered hook", function(){
       let calledCleanup = 0, calledRender = 0;
       const upd = f => diff({name: Node, data: {id: calledRender}}, f);
-      const Node = (temp, node, isFirst) => {
+      const Node = (temp, node) => {
         expect(temp.data.id).to.equal(calledRender)
         if (!calledRender++){
           node.cleanup = () => calledCleanup++;
@@ -336,7 +322,7 @@ describe("lifecycle methods/hooks", function(){
     it("should cancel the hook if unset after flush", function(){
       let calledRendered = 0, calledCleanup = 0, calledRender = 0;
       const upd = f => diff({name: Node, data: {id: calledRender}}, f);
-      const Node = (temp, node, isFirst) => {
+      const Node = (temp, node) => {
         expect(temp.data.id).to.equal(calledRender)
         if (!calledRender++){
           node.cleanup = () => calledCleanup++;

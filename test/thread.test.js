@@ -43,18 +43,20 @@ const idsToTemp = [
 ]
 
 class ManagedRoot extends Frame {
-  render(temp, node, isFirst){
+  render(temp, node){
     // if we're doing a static render, return the expected final state
-    if (!Frame.isFrame(this)) return temp.data.expected.map(id => {
+    if (!Frame.isFrame(node)) return temp.data.expected.map(id => {
       let temp = copy(idsToTemp[id]);
       if (id === 2) temp.next = idsToTemp[8];
       return temp;
     })
-    const cache = this.cache = this.cache || [...initialIds];
-    if (isFirst){ // rendering for first time, mount everyone except Parent
+    let cache;
+    if (!this.cache){
+      cache = this.cache = [...initialIds];
       for (let i = cache.length; i--;)
         if (i !== 2) cache[i] = diff(idsToTemp[i], null, node);
-    } else { // otherwise, mount c
+    } else {
+      cache = this.cache;
       cache[2] = diff(idsToTemp[2], null, node, cache[1])
       cache[8] = diff(idsToTemp[8], null, cache[2])
       temp.data.render(node, cache)

@@ -29,8 +29,7 @@ const fill = (f, i, ch) => {
 //   * such "premature" updates would be considered unexpected behavior
 // below we push nodes as originators to ensure they are in the physical path
 const push = f => {
-  // note we mustn't incr _affN for laggards
-  if ((!f.path && stx.push(f)) || f._affN) ++f._affN
+  f.path || stx.push(f), ++f._affN
 }
 
 module.exports = { fill, push }

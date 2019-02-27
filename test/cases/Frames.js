@@ -70,6 +70,8 @@ class StemCell extends Frame {
   constructor(temp, effs){
     let data = temp.data, hooks = data && data.hooks;
     super(temp, effs);
+    this._isFirst = true;
+    this._isFirstPost = true;
     this.state = this.nextState = null;
     if (hooks){
       if (hooks.ctor) hooks.ctor.bind(this)(this);
@@ -83,15 +85,19 @@ class StemCell extends Frame {
     else this.nextState = partialState || {};
     return this.diff(tau);
   }
-  render(temp, f, isFirst){
+  render(temp, f){
+    const isFirst = f._isFirst;
+    f._isFirst = false;
     const { data, next } = temp;
     if (f.nextState) f.state = merge(f.state || {}, f.nextState), f.nextState = null;
-    if (this.evt) for (let eff of toArr(this.evt.effs)) if (eff && eff.log) eff.log(isFirst ? "wA" : "wU", f, temp);
+    if (f.evt) for (let eff of toArr(f.evt.effs)) if (eff && eff.log) eff.log(isFirst ? "wA" : "wU", f, temp);
     isFirst ? f.willAdd && f.willAdd(f) : f.willUpdate && f.willUpdate(f);
     if (f.getNext) return f.getNext(data, next, f, isFirst);
     return data && data.copy ? copy(next) : next;
   }
-  rendered(temp, f, isFirst){
+  rendered(temp, f){
+    const isFirst = f._isFirstPost;
+    f._isFirstPost = false;
     if (this.evt) for (let eff of toArr(this.evt.effs)) {
       if (eff && eff.log) {
         // XXX we aren't emitting these events, because it'd break any test who isn't expecting 

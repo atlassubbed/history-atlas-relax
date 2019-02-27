@@ -13,9 +13,9 @@ class Subframe extends Frame {
 }
 // updates single root
 class ManagedSubframe extends Frame {
-  render({next}, node, isFirst){
+  render({next}, node){
     if (RENDER_WORK) init || doWork(RENDER_WORK);
-    if (isFirst) {
+    if (!node.next) {
       if (isArr(next)) {
         let i = next.length;
         while(i--) diff(next[i], null, node)
@@ -25,9 +25,9 @@ class ManagedSubframe extends Frame {
 }
 // updates single root
 class ContextSubframe extends Frame {
-  render({next}, node, isFirst){
+  render({next}, node){
     if (RENDER_WORK) init || doWork(RENDER_WORK);
-    if (isFirst) {
+    if (!node.next) {
       if (isArr(next)) {
         let i = next.length;
         while(i--) diff(next[i])
