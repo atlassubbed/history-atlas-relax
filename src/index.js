@@ -10,7 +10,7 @@ const sib = p => p && p.root < 2 ? p : null;
 const asap = typeof Promise === "function" ? Promise.resolve().then.bind(Promise.resolve()) : false;
 const reject = e => setTimeout(() => {throw e}); // i don't like this
 
-const lags = [], orph = [], rems = [], stx = [], path = [], post = [], clear = [], field = {};
+const lags = [], orph = [], rems = [], stx = [], path = [], post = [], field = {};
 
 // flatten and sanitize a frame's next children
 //   * ix is an optional key index
@@ -39,6 +39,43 @@ const popIndex = (ix, t, k) =>
       ((ix = ix.exp) && (t = ix[k])) && (ix[k] = null, t) :
       (ix=ix.imp) && ix.pop())
 
+// not to be instantiated by caller
+const Frame = function(temp, effs){
+  if (!temp) return;
+  this.evt = effs ? {
+    effs,
+    temp: null,
+    prev: null,
+    sib: null,
+    next: null,
+    top: null,
+    bot: null,
+    upd: true
+  } : null
+  this.temp = temp;
+  this.affs = this._affs = this.next = this.parent =
+  this.sib = this.prev = this.top = this.bot = this.hook = null;
+  // this.path = {-2: unmounted, -1: in path, 0: not in path, >0: recursion step index + 1}
+  this.root = this._affN = 0, this.path = -1
+}
+Frame.prototype = {
+  constructor: Frame,
+  render(temp){
+    return temp.next;
+  },
+  // rarely called, use sets for sublinearity
+  sub(f){
+    isFrame(f) && f !== this && (f.affs = f.affs || new Set).add(this)
+  },
+  unsub(f){
+    isFrame(f) && f.affs && f.affs.delete(this) && (f.affs.size || (f.affs = null))
+  },
+  // instance (inner) diff (schedule updates for frames)
+  diff(tau=-1){
+    return on < 2 && this.path > -2 &&
+      !(tau < 0 ? (on ? rebasePath : sidediff)(pushPath(this)) : excite(this, tau))
+  }
+}
 // on = {0: not diffing, 1: diffing, 2: cannot rebase or schedule diff}
 let head, tail, on = 0, ctx = null;
 
@@ -78,8 +115,10 @@ const linkEvent = (e, f, p, s, next) => {
 }
 // empties the thread, emitting the queued events
 const flushEvents = (c, f, e, p, owner) => {
-  while(f = rems[c++])
-    emit((e = f.evt).effs, "willRemove", f, e.next, e.prev, e.temp, f.evt = null);
+  while(f = rems[c++]){
+    f.cleanup && f.cleanup(f);
+    if (e = f.evt) emit(e.effs, "willRemove", f, e.next, e.prev, e.temp, f.evt = null);
+  }
   rems.length = 0;
   if (!(f = head)) return;
   owner = f.parent;
@@ -191,45 +230,6 @@ const receive = (f, t, e=f.evt) => {
   f.temp = t;
 }
 
-
-// not to be instantiated by caller
-const Frame = function(temp, effs){
-  if (!temp) return;
-  this.evt = effs ? {
-    effs,
-    temp: null,
-    prev: null,
-    sib: null,
-    next: null,
-    top: null,
-    bot: null,
-    upd: true
-  } : null
-  this.temp = temp;
-  this.affs = this._affs = this.next = this.parent =
-  this.sib = this.prev = this.top = this.bot = this.hook = null;
-  // this.path = {-2: unmounted, -1: in path, 0: not in path, >0: recursion step index + 1}
-  this.root = this._affN = 0, this.path = -1
-}
-Frame.prototype = {
-  constructor: Frame,
-  render(temp){
-    return temp.next;
-  },
-  // rarely called, use sets for sublinearity
-  sub(f){
-    isFrame(f) && f !== this && (f.affs = f.affs || new Set).add(this)
-  },
-  unsub(f){
-    isFrame(f) && f.affs && f.affs.delete(this) && (f.affs.size || (f.affs = null))
-  },
-  // instance (inner) diff (schedule updates for frames)
-  diff(tau=-1){
-    return on < 2 && this.path > -2 &&
-      !(tau < 0 ? (on ? rebasePath : sidediff)(pushPath(this)) : excite(this, tau))
-  }
-}
-
 // PATH
 // compute a topologically ordered path to diff along
 const rebasePath = (f, i, ch) => {
@@ -248,16 +248,16 @@ const pushPath = f => {
   f.path || stx.push(f), ++f._affN
 }
 
-// DIFF
+// DIFF CYCLE
 // unmount queued orphan nodes
-const unmount = (f, isRoot, c, inDiff=on) => {
+const unmount = (f, isRoot, c) => {
   while(f = orph.pop()) {
-    if (f.cleanup) clear.push(f);
     if (isRoot && (c = f.affs)) for (c of c) pushPath(c);
-    if (c = f.parent, e = f.evt) {
+    c = f.parent, e = f.evt;
+    if (f.cleanup || (e && (!e.upd || e.temp))) rems.push(f);
+    if (e) {
       if (!e.upd || e.temp){
         e.temp = e.temp || f.temp;
-        rems.push(f);
         if (e.next = sib(f) && c) 
           c.path > -2 && unlinkEvent(e, c.evt);
       }
@@ -314,10 +314,8 @@ const sidediff = (c, raw=rebasePath(on=1)) => {
       }
     } else {
       on = 2, flushEvents(c=0);
-      if (!post.length && !clear.length) return on = 0, ctx = null;
-      while (ctx = clear[c++]) ctx.cleanup && ctx.cleanup(ctx);
-      on = 1, clear.length = 0;
-      while(ctx = post.pop()) if (c = ctx.hook) {
+      if (!post.length) return on = 0, ctx = null;
+      on = 1; while(ctx = post.pop()) if (c = ctx.hook) {
         ctx.rendered && ctx.rendered(c, ctx), ctx.hook = null;
       }
     }
