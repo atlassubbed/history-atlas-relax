@@ -253,17 +253,16 @@ const pushPath = f => {
 const unmount = (f, isRoot, c) => {
   while(f = orph.pop()) {
     if (isRoot && (c = f.affs)) for (c of c) pushPath(c);
-    c = f.parent, e = f.evt;
-    if (f.cleanup || (e && (!e.upd || e.temp))) rems.push(f);
-    if (e) {
+    if (c = f.parent, e = f.evt) {
       if (!e.upd || e.temp){
+        rems.push(f)
         e.temp = e.temp || f.temp;
         if (e.next = sib(f) && c) 
           c.path > -2 && unlinkEvent(e, c.evt);
-      }
+      } else if (f.cleanup) rems.push(f)
       sib(f) ? isAdd(c) || dequeue(f, sib(f.prev)) : e.upd && popLeader(f);
       e.upd = false;
-    }
+    } else if (f.cleanup) rems.push(f);
     c && c.path > -2 && unlinkNode(f, c, f.prev), f.path = -2;
     if (c = f.next) do orph.push(c); while(c = c.sib);
     if (c = f.next) while(c = c.prev) orph.push(c);
