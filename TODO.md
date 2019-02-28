@@ -231,3 +231,12 @@ Application-level considerations (things that can be built without changing the 
 10. Implement "jsx" template literal operator/function which makes it easy to not use JSX.
     * like an html`` template operator
 
+dupe key index implementation:
+  * use map to avoid using function name strings
+  * use memoized toLowercase to support arbitrary irreducible name casing
+  * cons:
+    * nested maps may have perf implications
+    * supporting dupe keys has perf implications, might wanna unsupport it
+      while still maintaining graceful handling.
+
+use errors instead of return false for inner/outer diffs

@@ -10,7 +10,7 @@ const { Frame, diff } = require("../src/index");
 // * opinionated patterns may be implemented on top of these methods.
 //   e.g. useEffect(...)
 
-describe.only("lifecycle methods/hooks", function(){
+describe("lifecycle methods/hooks", function(){
   describe("rendered", function(){
     it("should run once with the latest template arg", function(){
       let calledRendered = 0, calledRender = 0;

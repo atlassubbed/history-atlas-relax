@@ -45,7 +45,7 @@ const idsToTemp = [
 class ManagedRoot extends Frame {
   render(temp, node){
     // if we're doing a static render, return the expected final state
-    if (!Frame.isFrame(node)) return temp.data.expected.map(id => {
+    if (!node.render) return temp.data.expected.map(id => {
       let temp = copy(idsToTemp[id]);
       if (id === 2) temp.next = idsToTemp[8];
       return temp;

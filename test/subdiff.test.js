@@ -24,15 +24,10 @@ const forTwoSequenceIndexCombination = (N, P, cb) => {
     for (let p2 = p1 + 1; p2 < P; p2++)
       for (let n1 = 0; n1 < N; n1++)
         for (let n2 = n1 + 1; n2 < N; n2++)
-          cb([n1, n2, p1, p2]);
+          cb([n1, n2, p1, p2]); // note n1 < n2, p1 < p2
 }
 const insert = (arr, i, el) => arr.splice(i, 0, el)
 
-// XXX explicit and implicit keys tests are nearly identical
-//   However, for now, we won't remove the 2x code duplication below.
-//   Nodes are categorized as either explicit (keyed) or implicit (unkeyed),
-//   and there is unlikely to be further classification when it comes to matching nodes
-//   so this duplication appears to be tolerable.
 describe("subdiff", function(){
   describe("implicit, stable matching regardless of index and density", function(){
     const makePrev = () => [
@@ -52,7 +47,7 @@ describe("subdiff", function(){
         const N = makeNext(makePrev).length, P = makePrev().length;
         forTwoSequenceIndexCombination(N, P, ([n1, n2, p1, p2]) => {
           const prev = makePrev(), next = makeNext(makePrev);
-          let didR1 = 0, didR2 = 0, didU1 = 0, didU2 = 0;
+          let didR1 = 0, didR2 = 0;
           const t1 = m(1), t2 = m(2);
           const pt1 = m(1, {
             willUpdate: f => {
@@ -76,7 +71,7 @@ describe("subdiff", function(){
       })
     })
   })
-  describe("explicit, stable key matching regardless of index and density", function(){
+  describe("explicit first key matching regardless of index and density", function(){
     const makePrev = () => [
       {name: StemCell},
       {name: StemCell},
@@ -90,22 +85,27 @@ describe("subdiff", function(){
       {name: "p", key: "k4"}
     ]
     matchingCases.forEach(({condition, makeNext}) => {
-      it(`should update matching prev nodes if ${condition}`, function(){
+      it(`should update matching prev nodes if ${condition} and unmount superfluous prev matching nodes`, function(){
         const N = makeNext(makePrev).length, P = makePrev().length;
         forTwoSequenceIndexCombination(N, P, ([n1, n2, p1, p2]) => {
           const prev = makePrev(), next = makeNext(makePrev);
-          let didR1 = 0, didR2 = 0, didU1 = 0, didU2 = 0;
+          let didR1 = 0, didR2 = 0, didC1 = 0, didC2 = 0;
           const t1 = m(1), t2 = m(2);
           const pt1 = m(1, {
             willUpdate: f => {
-              didR1++
+              didR1++;
               expect(f.temp).to.equal(t1)
+            },
+            cleanup: f => {
+              didC1++;
             }
           })
           const pt2 = m(2, {
             willUpdate: f => {
-              didR2++
-              expect(f.temp).to.equal(t2)
+              didR2++;
+            },
+            cleanup: f => {
+              didC2++;
             }
           })
           t1.key = t2.key = pt1.key = pt2.key = "k1";
@@ -114,7 +114,10 @@ describe("subdiff", function(){
           insert(prev, p1, pt1)
           insert(prev, p2, pt2)
           diff(h(next), diff(h(prev), null))
-          expect(didR1).to.equal(didR2).to.equal(1);
+          expect(didR1).to.equal(1);
+          expect(didR2).to.equal(0);
+          expect(didC1).to.equal(0);
+          expect(didC2).to.equal(1);
         })
       })
     })

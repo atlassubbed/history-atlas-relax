@@ -30,18 +30,6 @@ describe("Frame", function(){
       expect(f2.temp).to.equal(temp2)
     })
   })
-  describe("static isFrame", function(){
-    it("should return true for objects with a diff method", function(){
-      const f = new Frame({});
-      class Subframe extends Frame {};
-      const s = new Subframe({});
-      expect(Frame.isFrame(f)).to.be.true;
-      expect(Frame.isFrame(s)).to.be.true;
-    })
-    it("should return false otherwise", function(){
-      expect(Frame.isFrame(() => {})).to.be.false
-    })
-  })
   describe("sub", function(){
     it("should be idempotent", function(){
       const nodes = ["p","p","p"].map(name => diff({name}));
