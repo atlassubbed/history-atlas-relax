@@ -1,15 +1,12 @@
 // util functions
 const isArr = Array.isArray;
 const isFn = f => typeof f === "function";
-const name = t => isFn(t=t.name) ? t.name : t;
+const name = t => isFn(t) ? t.name : t;
 const norm = t => t != null && t !== true && t !== false && 
   (typeof t === "object" ? t : {name: null, data: String(t)});
 const isFrame = f => f && isFn(f.render);
 const isAdd = f => (f = f && f.evt) && f.upd && !f.temp;
 const sib = p => p && p.root < 2 ? p : null;
-const asap = typeof Promise === "function" ? Promise.resolve().then.bind(Promise.resolve()) : false;
-const reject = e => setTimeout(() => {throw e}); // i don't like this
-
 const lags = [], orph = [], rems = [], stx = [], path = [], post = [], field = {};
 
 // flatten and sanitize a frame's next children
@@ -28,13 +25,13 @@ const emit = (eff, type, f, p, s, ps) => {
 }
 // indexes explicit and implicit keys in LIFO order
 const pushIndex = (ix, t, k) => {
-  ix = ix[k = name(t)] = ix[k] || {};
+  ix = ix[k = name(t.name)] = ix[k] || {};
   (k = t.key) ?
     ((ix = ix.exp = ix.exp || {})[k] = t) :
     (ix.imp = ix.imp || []).push(t);
 }
 const popIndex = (ix, t, k) => 
-  (ix = ix[name(t)]) &&
+  (ix = ix[name(t.name)]) &&
     ((k = t.key) ?
       ((ix = ix.exp) && (t = ix[k])) && (ix[k] = null, t) :
       (ix=ix.imp) && ix.pop())
@@ -73,7 +70,9 @@ Frame.prototype = {
   // instance (inner) diff (schedule updates for frames)
   diff(tau=-1){
     return on < 2 && this.path > -2 &&
-      !(tau < 0 ? (on ? rebasePath : sidediff)(pushPath(this)) : excite(this, tau))
+      !(!isFn(tau) && tau < 0 ?
+        (on ? rebasePath : sidediff)(pushPath(this)) :
+        excite(this, name(tau), isFn(tau) && tau))
   }
 }
 // on = {0: not diffing, 1: diffing, 2: cannot rebase or schedule diff}
@@ -157,22 +156,20 @@ const relax = (f, tau, t) => {
   if (t = f.top){
     if (t.bot = f.bot) f.bot.top = t;
     else if (t === field[t.tau] && t.tau !== tau)
-      field[t.tau] = t.timer && clearTimeout(t.timer);
+      field[t.tau] = (t.clear || clearTimeout)(t.timer)
     f.top = f.bot = null;
   }
 }
 // add/move a node to an oscillator
-const excite = (f, tau, t, cb) => {
+const excite = (f, tau, timer, t) => {
   relax(f, tau);
   if (t = field[tau]){
     if (t.bot) (f.bot = t.bot).top = f;
   } else {
-    t = field[tau] = {tau};
-    cb = () => {
+    (t = field[tau] = {tau}).timer = (timer || setTimeout)(() => {
       while(t = t.bot) pushPath(t);
       sidediff(field[tau]=null);
-    }
-    t.timer = tau || !asap ? setTimeout(cb, tau) : !asap(cb).catch(reject);
+    }, tau, t);
   }
   (f.top = t).bot = f;
 }

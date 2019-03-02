@@ -1,4 +1,4 @@
-const { toArr, copy, isFn, merge } = require("../util");
+const { toArr, copy, isFn, merge, asap } = require("../util");
 const { Frame } = require("../../src/index");
 
 // Frame classification:
@@ -83,6 +83,7 @@ class StemCell extends Frame {
   setState(partialState, tau){
     if (this.nextState) merge(this.nextState, partialState);
     else this.nextState = partialState || {};
+    if (tau === 0) tau = asap; // integration test queueing functions 
     return this.diff(tau);
   }
   render(temp, f){

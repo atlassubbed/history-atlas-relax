@@ -85,7 +85,7 @@ describe("subdiff", function(){
       {name: "p", key: "k4"}
     ]
     matchingCases.forEach(({condition, makeNext}) => {
-      it(`should update matching prev nodes if ${condition} and unmount superfluous prev matching nodes`, function(){
+      it(`should match first prev key and unmount dupe if ${condition}`, function(){
         const N = makeNext(makePrev).length, P = makePrev().length;
         forTwoSequenceIndexCombination(N, P, ([n1, n2, p1, p2]) => {
           const prev = makePrev(), next = makeNext(makePrev);

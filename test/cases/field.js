@@ -107,6 +107,17 @@ const getMicrostates = (ids, possibleValues) => {
   9 H: parent async immediate, child async
   10 I: parent async, child async immediate 
 
+  ASIDE: There is a distinction between "async immediate" and "async" because there are two ways to schedule
+    async work: microtask queue and macrotask queue. Before, inner diffs were limited to using timeouts
+    and would automatically turn tau === 0 inner diffs into microtasks. This behavior is oddly specific.
+    It makes more sense for the relaxation strategy to be functional, so that the application has the power
+    to specify exactly how a batch is triggered:
+      * node.diff(Number > 0) uses timeouts, as before.
+      * node.diff(0) uses timeouts instead of resolved promises (asap).
+      * node.diff() defaults to node.diff(-1) which is synchronous, as before.
+      * now, to batch diffs into the a microtask, you would use node.diff(asap)
+      * now, you can do stuff like node.diff(rAF)
+
   Our test system is comprised of 2 nodes and 1-2 photons (updates); the nodes alone comprise a two-node system. 
   When photons hit the nodes, the nodes move from one of the above 11 phases into any other one.
   This means there are 121 possible transitions. */

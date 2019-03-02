@@ -47,7 +47,7 @@ runTests(cases, (c, s, done) => {
   time("schedule monocolor", () => schedRoot.setState(state4, ++i === SAMPLES ? -1 : 1)), i = -1;
   time("schedule immediate", () => schedRoot.setState(state5, ++i === SAMPLES ? -1 : 0)), i = -1;
   time("update async", done => {
-    schedRoot.setState(++i%2 ? state4 : state3, 0)
+    schedRoot.setState(++i%2 ? state4 : state3, asap)
     asap(done)
   }, () => done())
 })
