@@ -23,22 +23,20 @@ const emit = (eff, type, f, p, s, ps) => {
   else eff[type] && eff[type](f, p, s, ps);   
 }
 
-// set fields on frame or light frame
-const init = (f, temp, effs) => {
+// // set fields on frame or light frame
+const init = (f, temp=null) => {
   f.next = f.sib = f.prev = f.top = f.bot = null;
   f.path = -1;
   if (f.temp = temp){
-    effs = effs && init({}, null, effs);
     f.affs = f._affs = f.parent = f.hook = null;
     f.root = f._affN = 0;
   }
-  f.evt = effs;
   return f;
 }
-
 // not to be instantiated by caller
-const Frame = function(temp, effs){
-  init(this, temp, effs);
+const Frame = function(temp, evt){
+  this.evt = evt ? init({evt}) : null;
+  init(this, temp);
 }
 Frame.prototype = {
   constructor: Frame,
