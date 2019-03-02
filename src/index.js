@@ -7,7 +7,7 @@ const norm = t => t != null && t !== true && t !== false &&
 const isFrame = f => f && isFn(f.render);
 const isAdd = f => (f = f && f.evt) && f.upd && !f.temp;
 const sib = p => p && p.root < 2 ? p : null;
-const lags = [], orph = [], rems = [], stx = [], path = [], post = [], field = {};
+const lags = [], orph = [], rems = [], stx = [], path = [], post = [], field = new Map;
 
 // flatten and sanitize a frame's next children
 //   * ix is an optional key index
@@ -72,7 +72,7 @@ Frame.prototype = {
     return on < 2 && this.path > -2 &&
       !(!isFn(tau) && tau < 0 ?
         (on ? rebasePath : sidediff)(pushPath(this)) :
-        excite(this, name(tau), isFn(tau) && tau))
+        excite(this, tau, isFn(tau) && tau))
   }
 }
 // on = {0: not diffing, 1: diffing, 2: cannot rebase or schedule diff}
@@ -155,20 +155,21 @@ const flushEvents = (c, f, e, p, owner) => {
 const relax = (f, tau, t) => {
   if (t = f.top){
     if (t.bot = f.bot) f.bot.top = t;
-    else if (t === field[t.tau] && t.tau !== tau)
-      field[t.tau] = (t.clear || clearTimeout)(t.timer)
+    else if (t.tau !== tau && t === field.get(t.tau))
+      (t.clear || clearTimeout)(t.timer), field.delete(t.tau);
     f.top = f.bot = null;
   }
 }
 // add/move a node to an oscillator
-const excite = (f, tau, timer, t) => {
+const excite = (f, tau, cb, t) => {
   relax(f, tau);
-  if (t = field[tau]){
+  if (t = field.get(tau)){
     if (t.bot) (f.bot = t.bot).top = f;
   } else {
-    (t = field[tau] = {tau}).timer = (timer || setTimeout)(() => {
+    field.set(tau, t = {tau});
+    t.timer = (cb || setTimeout)(() => {
       while(t = t.bot) pushPath(t);
-      sidediff(field[tau]=null);
+      sidediff(field.delete(tau));
     }, tau, t);
   }
   (f.top = t).bot = f;
