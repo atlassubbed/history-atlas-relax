@@ -1,7 +1,6 @@
 // util functions
 const isArr = Array.isArray;
 const isFn = f => typeof f === "function";
-const name = t => isFn(t) ? t.name : t;
 const norm = t => t != null && t !== true && t !== false && 
   (typeof t === "object" ? t : {name: null, data: String(t)});
 const isFrame = f => f && isFn(f.render);
@@ -10,12 +9,12 @@ const sib = p => p && p.root < 2 ? p : null;
 const lags = [], orph = [], rems = [], stx = [], path = [], post = [], field = new Map;
 
 // flatten and sanitize a frame's next children
-//   * ix is an optional key index
+//   * if ix then index the nodes' implicit/explicit keys
 const clean = (t, ix, next=[]) => {
   stx.push(t);
   while(stx.length) if (t = norm(stx.pop()))
     if (isArr(t)) for (t of t) stx.push(t);
-    else next.push(t), ix && pushIndex(ix, t)
+    else next.push(t), ix && pushIndex(t)
   return next
 }
 // emit mutation event to plugins
@@ -23,18 +22,6 @@ const emit = (eff, type, f, p, s, ps) => {
   if (isArr(eff)) for (eff of eff) eff[type] && eff[type](f, p, s, ps);
   else eff[type] && eff[type](f, p, s, ps);   
 }
-// indexes explicit and implicit keys in LIFO order
-const pushIndex = (ix, t, k) => {
-  ix = ix[k = name(t.name)] = ix[k] || {};
-  (k = t.key) ?
-    ((ix = ix.exp = ix.exp || {})[k] = t) :
-    (ix.imp = ix.imp || []).push(t);
-}
-const popIndex = (ix, t, k) => 
-  (ix = ix[name(t.name)]) &&
-    ((k = t.key) ?
-      ((ix = ix.exp) && (t = ix[k])) && (ix[k] = null, t) :
-      (ix=ix.imp) && ix.pop())
 
 // not to be instantiated by caller
 const Frame = function(temp, effs){
@@ -75,8 +62,23 @@ Frame.prototype = {
         excite(this, tau, isFn(tau) && tau))
   }
 }
+
 // on = {0: not diffing, 1: diffing, 2: cannot rebase or schedule diff}
-let head, tail, on = 0, ctx = null;
+let head, tail, on = 0, ctx = null, keys = new Map;
+
+// KEY INDEXER
+// indexes explicit and implicit keys in LIFO order
+const pushIndex = (t, ix, k) => {
+  (ix = keys.get(k = t.name)) || keys.set(k, ix = {});
+  (k = t.key) ?
+    ((ix = ix.exp = ix.exp || {})[k] = t) :
+    (ix.imp = ix.imp || []).push(t);
+}
+const popIndex = (t, ix, k) =>
+  (ix = keys.get(t.name)) &&
+    ((k = t.key) ?
+      ((ix = ix.exp) && (t = ix[k])) && (ix[k] = null, t) :
+      (ix=ix.imp) && ix.pop())
 
 // THREAD
 // add leader node to thread
@@ -275,7 +277,7 @@ const mount = (f, next, c) => {
 // diff "downwards" from a node
 const subdiff = (p, c, next, i, n) => {
   if (next.length){
-    do (n = popIndex(i, c.temp)) ?
+    do (n = popIndex(c.temp)) ?
       n === (n.p = c).temp ? --c._affN || (c.path=0) : receive(c, n) :
       orph.push(c); while(c = c.sib); unmount();
     for(i = p.next; i && (n = next.pop());)
@@ -284,7 +286,7 @@ const subdiff = (p, c, next, i, n) => {
           (i = i.sib) :
           move(c, p, sib(i.prev)) :
         add(n, p, sib(i.prev));
-    mount(p, next, c);
+    mount(p, next, c), keys = new Map;
   } else {
     do orph.push(c); while(c = c.sib); unmount();
   }
@@ -305,7 +307,7 @@ const sidediff = (c, raw=rebasePath(on=1)) => {
           if (ctx.rendered)
             ctx.hook || post.push(ctx), ctx.hook = c;
           sib(c = ctx.next) ?
-            c.root || subdiff(ctx, c, clean(raw, c = {}), c) :
+            c.root || subdiff(ctx, c, clean(raw, 1)) :
             mount(ctx, clean(raw));
         }
       }
