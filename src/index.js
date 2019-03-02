@@ -54,7 +54,7 @@ Frame.prototype = {
   },
   // instance (inner) diff (schedule updates for frames)
   diff(tau=-1){
-    return on < 2 && this.path > -2 &&
+    return on < 2 && !!this.temp &&
       !(!isFn(tau) && tau < 0 ?
         (on ? rebasePath : sidediff)(pushPath(this)) :
         excite(this, tau, isFn(tau) && tau))
@@ -234,7 +234,7 @@ const rebasePath = (f, i, ch) => {
   while(i = stx.length) if (!((f = stx[i-1]).path < 0 && stx.pop())) {
     if (!f.path && (((i = f.next) && !i.root) || f.affs)){
       if (ch = f._affs = [], i && !i.root) do ch.push(i); while(i = i.sib);
-      if (i = f.affs) for (i of i) i.path > -2 ? ch.push(i) : i.unsub(f);
+      if (i = f.affs) for (i of i) i.temp ? ch.push(i) : i.unsub(f);
       f.path = ch.length+1;
     }
     if (--f.path <= 0) stx.pop().path = -1, path.push(f);
@@ -256,12 +256,12 @@ const unmount = (f, isRoot, c) => {
         rems.push(f)
         e.temp = e.temp || f.temp;
         if (e.next = sib(f) && c) 
-          c.path > -2 && unlinkEvent(e, c.evt);
+          c.temp && unlinkEvent(e, c.evt);
       } else if (f.cleanup) rems.push(f)
       sib(f) ? isAdd(c) || dequeue(f, sib(f.prev)) : e.path && popLeader(f);
       e.path++;
     } else if (f.cleanup) rems.push(f);
-    c && c.path > -2 && unlinkNode(f, c, f.prev), f.path = -2;
+    c && c.temp && unlinkNode(f, c, f.prev), f.path = -1;
     if (c = f.next) do orph.push(c); while(c = c.sib);
     if (c = f.next) while(c = c.prev) orph.push(c);
     relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.next = f.hook = null)
@@ -298,10 +298,10 @@ const sidediff = (c, raw=rebasePath(on=1)) => {
           for (c of c) --c._affN || (c.path = 0);
           ctx._affs = null;
         }
-      } else if (ctx.path > -2) {
+      } else if (c = ctx.temp) {
         relax(ctx), ctx.path = ctx._affN = 0, ctx._affs = null;
-        raw = ctx.render(c = ctx.temp, ctx)
-        if (ctx.path > -2){
+        raw = ctx.render(c, ctx)
+        if (ctx.temp){
           if (ctx.rendered)
             ctx.hook || post.push(ctx), ctx.hook = c;
           sib(c = ctx.next) ?
@@ -323,7 +323,7 @@ const diff = (t, f, p=f&&f.prev, s) => {
   let r = false, inDiff = on, context = ctx;
   if (inDiff < 2) try {
     if (!isArr(t = norm(t))){
-      if (!isFrame(f) || f.path < -1){
+      if (!isFrame(f) || !f.temp){
         if (t && (!s || s.parent === p)) r = add(t, p, sib(s), 1)
       } else if (f.root){
         if (t && t.name === f.temp.name) {
