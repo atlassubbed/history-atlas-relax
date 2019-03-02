@@ -49,7 +49,7 @@ function buildMochaScaffold(){
           diff(h(id, hooks("ctor", f => {
             const res = f.setState({n: 0}, tau);
             expect(res).to.be.false;
-          })), null, {effs});
+          })), null, effs);
         },
         result: [
           {wA: id, dt: -1, state: {n: 0}}
@@ -58,11 +58,11 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should not schedule a tau ${rel} 0 update on other nodes`,
         task: effs => {
-          const r = diff(h(1), null, {effs});
+          const r = diff(h(1), null, effs);
           diff(h(id, hooks("ctor", () => {
             const res = r.setState({n: 0}, tau);
             expect(res).to.be.false;
-          })), null, {effs});
+          })), null, effs);
         },
         result: [
           {wA: 1, dt: -1, state: null},
@@ -77,7 +77,7 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should not schedule a tau ${rel} 0 update on nodes that have been unmounted`,
         task: effs => {
-          const r = diff(h(0), null, {effs});
+          const r = diff(h(0), null, effs);
           expect(diff(null, r)).to.be.true;
           expect(r.setState({n: 0}, tau)).to.be.false;
         },
@@ -89,12 +89,12 @@ function buildMochaScaffold(){
         desc: `should not schedule a tau ${rel} 0 update on nodes that are being unmounted`,
         task: effs => {
           let called = 0;
-          const r = diff(h(0), null, {effs});
+          const r = diff(h(0), null, effs);
           diff(h(1, hooks("willAdd", f => {
             expect(diff(null, r)).to.be.true;
             expect(r.setState({n: 0}, tau)).to.be.false;
             called++
-          })), null, {effs})
+          })), null, effs)
           expect(called).to.equal(1);
         },
         result: [
@@ -111,12 +111,12 @@ function buildMochaScaffold(){
         desc: `should not schedule a tau ${rel} 0 update during willAdd event`,
         task: effs => {
           let called = 0;
-          const r = diff(h(0), null, {effs});
-          diff(h(1), null, {effs: [{willAdd: f => {
+          const r = diff(h(0), null, effs);
+          diff(h(1), null, {willAdd: f => {
             const res = r.setState({n: 0})
             expect(res).to.be.false;
             called++
-          }}]})
+          }})
           expect(called).to.equal(1);
         },
         result: [
@@ -127,12 +127,12 @@ function buildMochaScaffold(){
         desc: `should not schedule a tau ${rel} 0 update during willRemove event`,
         task: effs => {
           let called = 0;
-          const r = diff(h(0), null, {effs});
-          const f = diff(h(1), null, {effs: [{willRemove: f => {
+          const r = diff(h(0), null, effs);
+          const f = diff(h(1), null, {willRemove: f => {
             const res = r.setState({n: 0})
             expect(res).to.be.false;
             called++
-          }}]})
+          }})
           diff(null, f);
           expect(called).to.equal(1);
         },
@@ -144,12 +144,12 @@ function buildMochaScaffold(){
         desc: `should not schedule a tau ${rel} 0 update during willReceive event`,
         task: effs => {
           let called = 0;
-          const r = diff(h(0), null, {effs});
-          const f = diff(h(1), null, {effs: [{willReceive: f => {
+          const r = diff(h(0), null, effs);
+          const f = diff(h(1), null, {willReceive: f => {
             const res = r.setState({n: 0})
             expect(res).to.be.false;
             called++
-          }}]})
+          }})
           diff(h(1), f)
           expect(called).to.equal(1);
         },
@@ -161,14 +161,14 @@ function buildMochaScaffold(){
         desc: `should not schedule a tau ${rel} 0 update during willMove event`,
         task: effs => {
           let called = 0;
-          const r = diff(h(0), null, {effs});
-          const f = diff(h(1, null, [k(2), k(3)]), null, {effs: [{willMove: f => {
+          const r = diff(h(0), null, effs);
+          const f = diff(h(1, null, [k(2), k(3)]), null, {willMove: f => {
             if (f.temp.data.id === 3){
               const res = r.setState({n: 0})
               expect(res).to.be.false;
               called++
             }
-          }}]})
+          }})
           diff(h(1, null, [k(3), k(2)]), f);
           expect(called).to.equal(1);
         },
@@ -187,7 +187,7 @@ function buildMochaScaffold(){
           diff(h(id, hooks("willAdd", f => {
             const res = f.setState({n: 0}, tau)
             expect(res).to.be.true;
-          })), null, {effs})
+          })), null, effs)
         },
         result: [
           {wA: id, dt: -1, state: null},
@@ -202,7 +202,7 @@ function buildMochaScaffold(){
             expect(res).to.be.true;
             const res2 = f.setState({n: 1});
             expect(res2).to.be.true;
-          })), null, {effs})
+          })), null, effs)
         },
         result: [
           {wA: id, dt: -1, state: null},
@@ -219,7 +219,7 @@ function buildMochaScaffold(){
               expect(res).to.be.true;
               const res2 = f.setState({n: 1}, newTau);
               expect(res2).to.be.true;
-            })), null, {effs})
+            })), null, effs)
           },
           result: [
             {wA: id, dt: -1, state: null},
@@ -238,7 +238,7 @@ function buildMochaScaffold(){
           diff(h(id, hooks("didAdd", f => {
             const res = f.setState({n: 0}, tau)
             expect(res).to.be.true;
-          })), null, {effs})
+          })), null, effs)
         },
         result: [
           {wA: id, dt: -1, state: null},
@@ -254,7 +254,7 @@ function buildMochaScaffold(){
             expect(res).to.be.true;
             const res2 = f.setState({n: 1});
             expect(res2).to.be.true;
-          })), null, {effs})
+          })), null, effs)
         },
         result: [
           {wA: id, dt: -1, state: null},
@@ -272,7 +272,7 @@ function buildMochaScaffold(){
               expect(res).to.be.true;
               const res2 = f.setState({n: 1}, newTau);
               expect(res2).to.be.true;
-            })), null, {effs})
+            })), null, effs)
           },
           result: [
             {wA: id, dt: -1, state: null},
@@ -289,11 +289,11 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should schedule a tau ${rel} 0 update on nodes not in the path`,
         task: effs => {
-          const r = diff(h(1), null, {effs});
+          const r = diff(h(1), null, effs);
           diff(h(id, hooks("willAdd", () => {
             const res = r.setState({n: 0}, tau)
             expect(res).to.be.true;
-          })), null, {effs})
+          })), null, effs)
         },
         result: [
           {wA: 1, dt: -1, state: null},
@@ -310,7 +310,7 @@ function buildMochaScaffold(){
               const res = sib.setState({n: 0}, tau)
               expect(res).to.be.true;
             })), h(2, hooks("ctor", f => sib = f))]), 
-            null, {effs}
+            null, effs
           );
         },
         result: [
@@ -322,13 +322,13 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should rebase a previously scheduled tau ${rel} 0 update when hit with a sync update`,
         task: effs => {
-          const r = diff(h(1), null, {effs});
+          const r = diff(h(1), null, effs);
           diff(h(id, hooks("willAdd", f => {
             const res = r.setState({n: 0}, tau);
             expect(res).to.be.true;
             const res2 = r.setState({n: 1});
             expect(res2).to.be.true;
-          })), null, {effs})
+          })), null, effs)
         },
         result: [
           {wA: 1, dt: -1, state: null},
@@ -341,13 +341,13 @@ function buildMochaScaffold(){
         scaffold.push({
           desc: `should coalesce an initial tau ${rel} 0 update into a new tau ${newRel} 0 update on the same node`,
           task: effs => {
-            const r = diff(h(1), null, {effs});
+            const r = diff(h(1), null, effs);
             diff(h(id, hooks("willAdd", f => {
               const res = r.setState({n: 0}, tau)
               expect(res).to.be.true;
               const res2 = r.setState({n: 1}, newTau);
               expect(res2).to.be.true;
-            })), null, {effs})
+            })), null, effs)
           },
           result: [
             {wA: 1, dt: -1, state: null},
@@ -358,14 +358,14 @@ function buildMochaScaffold(){
         if (tau === newTau) scaffold.push({
           desc: `should schedule two tau ${rel} 0 updates on different nodes in the same cycle`,
           task: effs => {
-            const r1 = diff(h(1), null, {effs});
-            const r2 = diff(h(2), null, {effs});
+            const r1 = diff(h(1), null, effs);
+            const r2 = diff(h(2), null, effs);
             diff(h(id, hooks("willAdd", f => {
               const res = r1.setState({n: 0}, tau)
               expect(res).to.be.true;
               const res2 = r2.setState({n: 1}, tau);
               expect(res2).to.be.true;
-            })), null, {effs})
+            })), null, effs)
           },
           result: [
             {wA: 1, dt: -1, state: null},
@@ -377,14 +377,14 @@ function buildMochaScaffold(){
         }); else scaffold.push({
           desc: `should schedule a tau ${rel} 0 and a tau ${newRel} 0 update on different nodes in different cycles`,
           task: effs => {
-            const r1 = diff(h(1), null, {effs});
-            const r2 = diff(h(2), null, {effs});
+            const r1 = diff(h(1), null, effs);
+            const r2 = diff(h(2), null, effs);
             diff(h(id, hooks("willAdd", f => {
               const res = r1.setState({n: 0}, tau)
               expect(res).to.be.true;
               const res2 = r2.setState({n: 1}, newTau);
               expect(res2).to.be.true;
-            })), null, {effs})
+            })), null, effs)
           },
           result: [
             {wA: 1, dt: -1, state: null},
@@ -403,11 +403,11 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should schedule a tau ${rel} 0 update on nodes not in the path`,
         task: effs => {
-          const r = diff(h(1), null, {effs});
+          const r = diff(h(1), null, effs);
           diff(h(id, hooks("didAdd", () => {
             const res = r.setState({n: 0}, tau)
             expect(res).to.be.true;
-          })), null, {effs})
+          })), null, effs)
         },
         result: [
           {wA: 1, dt: -1, state: null},
@@ -421,11 +421,11 @@ function buildMochaScaffold(){
         task: effs => {
           diff(
             h(0, null, h(1, hooks("didAdd", () => {
-              const sib = diff(h(2), null, {effs});
+              const sib = diff(h(2), null, effs);
               const res = sib.setState({n: 0}, tau)
               expect(res).to.be.true;
             }))), 
-            null, {effs}
+            null, effs
           );
         },
         result: [
@@ -438,13 +438,13 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should rebase a previously scheduled tau ${rel} 0 update when hit with a sync update`,
         task: effs => {
-          const r = diff(h(1), null, {effs});
+          const r = diff(h(1), null, effs);
           diff(h(id, hooks("didAdd", f => {
             const res = r.setState({n: 0}, tau);
             expect(res).to.be.true;
             const res2 = r.setState({n: 1});
             expect(res2).to.be.true;
-          })), null, {effs})
+          })), null, effs)
         },
         result: [
           {wA: 1, dt: -1, state: null},
@@ -458,13 +458,13 @@ function buildMochaScaffold(){
         scaffold.push({
           desc: `should coalesce an initial tau ${rel} 0 update into a new tau ${newRel} 0 update on the same node`,
           task: effs => {
-            const r = diff(h(1), null, {effs});
+            const r = diff(h(1), null, effs);
             diff(h(id, hooks("didAdd", f => {
               const res = r.setState({n: 0}, tau)
               expect(res).to.be.true;
               const res2 = r.setState({n: 1}, newTau);
               expect(res2).to.be.true;
-            })), null, {effs})
+            })), null, effs)
           },
           result: [
             {wA: 1, dt: -1, state: null},
@@ -476,14 +476,14 @@ function buildMochaScaffold(){
         if (tau === newTau) scaffold.push({
           desc: `should schedule two tau ${rel} 0 updates on different nodes in the same cycle`,
           task: effs => {
-            const r1 = diff(h(1), null, {effs});
-            const r2 = diff(h(2), null, {effs});
+            const r1 = diff(h(1), null, effs);
+            const r2 = diff(h(2), null, effs);
             diff(h(id, hooks("didAdd", f => {
               const res = r1.setState({n: 0}, tau)
               expect(res).to.be.true;
               const res2 = r2.setState({n: 1}, tau);
               expect(res2).to.be.true;
-            })), null, {effs})
+            })), null, effs)
           },
           result: [
             {wA: 1, dt: -1, state: null},
@@ -496,14 +496,14 @@ function buildMochaScaffold(){
         }); else scaffold.push({
           desc: `should schedule a tau ${rel} 0 and a tau ${newRel} 0 update on different nodes in different cycles`,
           task: effs => {
-            const r1 = diff(h(1), null, {effs});
-            const r2 = diff(h(2), null, {effs});
+            const r1 = diff(h(1), null, effs);
+            const r2 = diff(h(2), null, effs);
             diff(h(id, hooks("didAdd", f => {
               const res = r1.setState({n: 0}, tau)
               expect(res).to.be.true;
               const res2 = r2.setState({n: 1}, newTau);
               expect(res2).to.be.true;
-            })), null, {effs})
+            })), null, effs)
           },
           result: [
             {wA: 1, dt: -1, state: null},
@@ -528,7 +528,7 @@ function buildMochaScaffold(){
             if (called) return;
             const res = f.setState({n: called++}, tau)
             expect(res).to.be.true;
-          })), null, {effs});
+          })), null, effs);
           diff(copy(f.temp), f);
         },
         result: [
@@ -548,7 +548,7 @@ function buildMochaScaffold(){
             expect(res).to.be.true;
             const res2 = f.setState({n: called++});
             expect(res2).to.be.true;
-          })), null, {effs});
+          })), null, effs);
           diff(copy(f.temp), f);
         },
         result: [
@@ -570,7 +570,7 @@ function buildMochaScaffold(){
               expect(res).to.be.true;
               const res2 = f.setState({n: called++}, newTau);
               expect(res2).to.be.true;
-            })), null, {effs});
+            })), null, effs);
             diff(copy(f.temp), f);
           },
           result: [
@@ -594,7 +594,7 @@ function buildMochaScaffold(){
             if (called) return;
             const res = f.setState({n: called++}, tau)
             expect(res).to.be.true;
-          })), null, {effs});
+          })), null, effs);
           diff(copy(f.temp), f);
         },
         result: [
@@ -616,7 +616,7 @@ function buildMochaScaffold(){
             expect(res).to.be.true;
             const res2 = f.setState({n: called++});
             expect(res2).to.be.true;
-          })), null, {effs});
+          })), null, effs);
           diff(copy(f.temp), f);
         },
         result: [
@@ -640,7 +640,7 @@ function buildMochaScaffold(){
               expect(res).to.be.true;
               const res2 = f.setState({n: called++}, newTau);
               expect(res2).to.be.true;
-            })), null, {effs});
+            })), null, effs);
             diff(copy(f.temp), f);
           },
           result: [
@@ -661,11 +661,11 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should schedule a tau ${rel} 0 update on nodes not in the path`,
         task: effs => {
-          const r = diff(h(1), null, {effs});
+          const r = diff(h(1), null, effs);
           const f = diff(h(id, hooks("willUpdate", () => {
             const res = r.setState({n: 0}, tau)
             expect(res).to.be.true;
-          })), null, {effs})
+          })), null, effs)
           diff(copy(f.temp), f);
         },
         result: [
@@ -685,7 +685,7 @@ function buildMochaScaffold(){
               const res = sib.setState({n: 0}, tau)
               expect(res).to.be.true;
             }))]), 
-            null, {effs}
+            null, effs
           );
           const newTemp = copy(f.temp);
           newTemp.next.push(h(2, hooks("ctor", f => sib = f)))
@@ -709,7 +709,7 @@ function buildMochaScaffold(){
             h(0, null, [h(1, hooks("willUpdate", () => {
               const res = sib.setState({n: 0}, tau)
               expect(res).to.be.true;
-            })), h(2, hooks("ctor", f => sib = f))]), null, {effs});
+            })), h(2, hooks("ctor", f => sib = f))]), null, effs);
           diff(copy(f.temp), f);
         },
         result: [
@@ -727,13 +727,13 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should rebase a previously scheduled tau ${rel} 0 update when hit with a sync update`,
         task: effs => {
-          const r = diff(h(1), null, {effs});
+          const r = diff(h(1), null, effs);
           const f = diff(h(id, hooks("willUpdate", f => {
             const res = r.setState({n: 0}, tau);
             expect(res).to.be.true;
             const res2 = r.setState({n: 1});
             expect(res2).to.be.true;
-          })), null, {effs});
+          })), null, effs);
           diff(copy(f.temp), f);
         },
         result: [
@@ -749,13 +749,13 @@ function buildMochaScaffold(){
         scaffold.push({
           desc: `should coalesce an initial tau ${rel} 0 update into a new tau ${newRel} 0 update on the same node`,
           task: effs => {
-            const r = diff(h(1), null, {effs});
+            const r = diff(h(1), null, effs);
             const f = diff(h(id, hooks("willUpdate", f => {
               const res = r.setState({n: 0}, tau)
               expect(res).to.be.true;
               const res2 = r.setState({n: 1}, newTau);
               expect(res2).to.be.true;
-            })), null, {effs});
+            })), null, effs);
             diff(copy(f.temp), f);
           },
           result: [
@@ -769,14 +769,14 @@ function buildMochaScaffold(){
         if (tau === newTau) scaffold.push({
           desc: `should schedule two tau ${rel} 0 updates on different nodes in the same cycle`,
           task: effs => {
-            const r1 = diff(h(1), null, {effs});
-            const r2 = diff(h(2), null, {effs});
+            const r1 = diff(h(1), null, effs);
+            const r2 = diff(h(2), null, effs);
             const f = diff(h(id, hooks("willUpdate", f => {
               const res = r1.setState({n: 0}, tau)
               expect(res).to.be.true;
               const res2 = r2.setState({n: 1}, tau);
               expect(res2).to.be.true;
-            })), null, {effs})
+            })), null, effs)
             diff(copy(f.temp), f);
           },
           result: [
@@ -791,14 +791,14 @@ function buildMochaScaffold(){
         }); else scaffold.push({
           desc: `should schedule a tau ${rel} 0 and a tau ${newRel} 0 update on different nodes in different cycles`,
           task: effs => {
-            const r1 = diff(h(1), null, {effs});
-            const r2 = diff(h(2), null, {effs});
+            const r1 = diff(h(1), null, effs);
+            const r2 = diff(h(2), null, effs);
             const f = diff(h(id, hooks("willUpdate", f => {
               const res = r1.setState({n: 0}, tau)
               expect(res).to.be.true;
               const res2 = r2.setState({n: 1}, newTau);
               expect(res2).to.be.true;
-            })), null, {effs});
+            })), null, effs);
             diff(copy(f.temp), f);
           },
           result: [
@@ -820,11 +820,11 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should schedule a tau ${rel} 0 update on nodes not in the path`,
         task: effs => {
-          const r = diff(h(1), null, {effs});
+          const r = diff(h(1), null, effs);
           const f = diff(h(id, hooks("didUpdate", () => {
             const res = r.setState({n: 0}, tau)
             expect(res).to.be.true;
-          })), null, {effs})
+          })), null, effs)
           diff(copy(f.temp), f);
         },
         result: [
@@ -841,11 +841,11 @@ function buildMochaScaffold(){
         task: effs => {
           const f = diff(
             h(0, null, h(1, hooks("didUpdate", () => {
-              const sib = diff(h(2), null, {effs});
+              const sib = diff(h(2), null, effs);
               const res = sib.setState({n: 0}, tau)
               expect(res).to.be.true;
             }))), 
-            null, {effs}
+            null, effs
           );
           diff(copy(f.temp), f);
         },
@@ -863,13 +863,13 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should coalesce a tau ${rel} 0 update on nodes in the path`,
         task: effs => {
-          const sib = diff(h(2), null, {effs})
+          const sib = diff(h(2), null, effs)
           const f = diff(
             h(0, null, h(1, hooks("didUpdate", () => {
               diff(copy(sib.temp), sib);
               const res = sib.setState({n: 0}, tau)
               expect(res).to.be.true;
-            }))), null, {effs});
+            }))), null, effs);
           diff(copy(f.temp), f);
         },
         result: [
@@ -888,13 +888,13 @@ function buildMochaScaffold(){
       scaffold.push({
         desc: `should rebase a previously scheduled tau ${rel} 0 update when hit with a sync update`,
         task: effs => {
-          const r = diff(h(1), null, {effs});
+          const r = diff(h(1), null, effs);
           const f = diff(h(id, hooks("didUpdate", f => {
             const res = r.setState({n: 0}, tau);
             expect(res).to.be.true;
             const res2 = r.setState({n: 1});
             expect(res2).to.be.true;
-          })), null, {effs});
+          })), null, effs);
           diff(copy(f.temp), f);
         },
         result: [
@@ -911,13 +911,13 @@ function buildMochaScaffold(){
         scaffold.push({
           desc: `should coalesce an initial tau ${rel} 0 update into a new tau ${newRel} 0 update on the same node`,
           task: effs => {
-            const r = diff(h(1), null, {effs});
+            const r = diff(h(1), null, effs);
             const f = diff(h(id, hooks("didUpdate", f => {
               const res = r.setState({n: 0}, tau)
               expect(res).to.be.true;
               const res2 = r.setState({n: 1}, newTau);
               expect(res2).to.be.true;
-            })), null, {effs});
+            })), null, effs);
             diff(copy(f.temp), f);
           },
           result: [
@@ -932,14 +932,14 @@ function buildMochaScaffold(){
         if (tau === newTau) scaffold.push({
           desc: `should schedule two tau ${rel} 0 updates on different nodes in the same cycle`,
           task: effs => {
-            const r1 = diff(h(1), null, {effs});
-            const r2 = diff(h(2), null, {effs});
+            const r1 = diff(h(1), null, effs);
+            const r2 = diff(h(2), null, effs);
             const f = diff(h(id, hooks("didUpdate", f => {
               const res = r1.setState({n: 0}, tau)
               expect(res).to.be.true;
               const res2 = r2.setState({n: 1}, tau);
               expect(res2).to.be.true;
-            })), null, {effs})
+            })), null, effs)
             diff(copy(f.temp), f);
           },
           result: [
@@ -955,14 +955,14 @@ function buildMochaScaffold(){
         }); else scaffold.push({
           desc: `should schedule a tau ${rel} 0 and a tau ${newRel} 0 update on different nodes in different cycles`,
           task: effs => {
-            const r1 = diff(h(1), null, {effs});
-            const r2 = diff(h(2), null, {effs});
+            const r1 = diff(h(1), null, effs);
+            const r2 = diff(h(2), null, effs);
             const f = diff(h(id, hooks("didUpdate", f => {
               const res = r1.setState({n: 0}, tau)
               expect(res).to.be.true;
               const res2 = r2.setState({n: 1}, newTau);
               expect(res2).to.be.true;
-            })), null, {effs});
+            })), null, effs);
             diff(copy(f.temp), f);
           },
           result: [

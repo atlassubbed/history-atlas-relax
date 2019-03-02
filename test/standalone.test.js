@@ -26,16 +26,16 @@ describe("diffing standalone (unordered) nodes", function(){
   describe("top level standalone nodes", function(){
     it("should mount standalone nodes in the order they are diffed", function(){
       const events = [], tracker = new Tracker(events);
-      const s1 = diff(h(0), null, {effs: tracker});
-      const s2 = diff(h(1), null, {effs: tracker});
+      const s1 = diff(h(0), null, tracker);
+      const s2 = diff(h(1), null, tracker);
       expect(events).to.eql([
         {mWA: 0}, {mWA: 1}
       ])
     })
     it("should unmount standalone nodes", function(){
       const events = [], tracker = new Tracker(events);
-      const s1 = diff(h(0), null, {effs: tracker});
-      const s2 = diff(h(1), null, {effs: tracker});
+      const s1 = diff(h(0), null, tracker);
+      const s2 = diff(h(1), null, tracker);
       events.length = 0;
       diff(null, s1), diff(null, s2);
       expect(events).to.eql([
@@ -46,8 +46,8 @@ describe("diffing standalone (unordered) nodes", function(){
     })
     it("should not move standalone nodes as they are members of an unordered set", function(){
       const events = [], tracker = new Tracker(events);
-      const s1 = diff(h(0), null, {effs: tracker});
-      const s2 = diff(h(1), null, {effs: tracker});
+      const s1 = diff(h(0), null, tracker);
+      const s2 = diff(h(1), null, tracker);
       events.length = 0;
       const res = diff(s1.temp, s1, s2)
       expect(res).to.be.false;
@@ -58,9 +58,9 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should mount standalone nodes in the order they are diffed", function(){
       const events = [], tracker = new Tracker(events);
       diff({name: () => {
-        const s1 = diff(h(1), null, {effs: tracker});
-        const s2 = diff(h(2), null, {effs: tracker});
-      }, data: {id: 0}}, null, {effs: tracker})
+        const s1 = diff(h(1), null, tracker);
+        const s2 = diff(h(2), null, tracker);
+      }, data: {id: 0}}, null, tracker)
       expect(events).to.eql([
         {mWA: 0}, {mWA: 1}, {mWA: 2}
       ])
@@ -70,12 +70,12 @@ describe("diffing standalone (unordered) nodes", function(){
       let called = 0;
       const r = diff({name: (temp, node) => {
         if (!called++){
-          node.s1 = diff(h(1), null, {effs: tracker});
-          node.s2 = diff(h(2), null, {effs: tracker});
+          node.s1 = diff(h(1), null, tracker);
+          node.s2 = diff(h(2), null, tracker);
         } else {
           diff(null, node.s1), diff(null, node.s2);
         }
-      }, data: {id: 0}}, null, {effs: tracker})
+      }, data: {id: 0}}, null, tracker)
       events.length = 0;
       diff(copy(r.temp), r);
       expect(events).to.eql([
@@ -89,13 +89,13 @@ describe("diffing standalone (unordered) nodes", function(){
       let called = 0;
       const r = diff({name: (temp, node) => {
         if (!called++){
-          node.s1 = diff(h(1), null, {effs: tracker});
-          node.s2 = diff(h(2), null, {effs: tracker});
+          node.s1 = diff(h(1), null, tracker);
+          node.s2 = diff(h(2), null, tracker);
         } else {
           const res = diff(node.s1.temp, node.s1, null);
           expect(res).to.be.false;
         }
-      }, data: {id: 0}}, null, {effs: tracker})
+      }, data: {id: 0}}, null, tracker)
       events.length = 0;
       diff(copy(r.temp), r);
       expect(called).to.equal(2);
@@ -106,9 +106,9 @@ describe("diffing standalone (unordered) nodes", function(){
     it("should automatically unmount standalone nodes when their owner unmounts", function(){
       const events = [], tracker = new Tracker(events);
       const r = diff({name: (temp, node) => {
-        node.s1 = diff(h(1), null, {effs: tracker});
-        node.s2 = diff(h(2), null, {effs: tracker});
-      }, data: {id: 0}}, null, {effs: tracker})
+        node.s1 = diff(h(1), null, tracker);
+        node.s2 = diff(h(2), null, tracker);
+      }, data: {id: 0}}, null, tracker)
       events.length = 0;
       diff(null, r);
       expect(events).to.eql([
@@ -123,9 +123,9 @@ describe("diffing standalone (unordered) nodes", function(){
         node.one = diff(h(1), null, node);
         node.two = diff(h(2), null, node, node.one)
         node.tre = diff(h(3), null, node, node.two)
-        node.s1 = diff(h(4), null, {effs: tracker});
-        node.s2 = diff(h(5), null, {effs: tracker});
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+        node.s1 = diff(h(4), null, tracker);
+        node.s2 = diff(h(5), null, tracker);
+      }, data: {id: 0}}, null, [renderer, tracker])
       events.length = 0;
       diff(null, r);
       expect(renderer.tree).to.be.null;
@@ -142,9 +142,9 @@ describe("diffing standalone (unordered) nodes", function(){
         node.one = diff(h(1), null, node);
         node.two = diff(h(2), null, node, node.one)
         node.tre = diff(h(3), null, node, node.two)
-        node.s1 = diff(h(4), null, {effs: tracker});
-        node.s2 = diff(h(5), null, {effs: tracker});
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+        node.s1 = diff(h(4), null, tracker);
+        node.s2 = diff(h(5), null, tracker);
+      }, data: {id: 0}}, null, [renderer, tracker])
       events.length = 0;
       const added = diff(h(6), null, r)
       diff(null, r);
@@ -162,9 +162,9 @@ describe("diffing standalone (unordered) nodes", function(){
         node.one = diff(h(1), null, node);
         node.two = diff(h(2), null, node, node.one)
         node.tre = diff(h(3), null, node, node.two)
-        node.s1 = diff(h(4), null, {effs: tracker});
-        node.s2 = diff(h(5), null, {effs: tracker});
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+        node.s1 = diff(h(4), null, tracker);
+        node.s2 = diff(h(5), null, tracker);
+      }, data: {id: 0}}, null, [renderer, tracker])
       events.length = 0;
       diff(r.tre.temp, r.tre, null)
       diff(null, r);
@@ -182,9 +182,9 @@ describe("diffing standalone (unordered) nodes", function(){
         node.one = diff(h(1), null, node);
         node.two = diff(h(2), null, node, node.one)
         node.tre = diff(h(3), null, node, node.two)
-        node.s1 = diff(h(4), null, {effs: tracker});
-        node.s2 = diff(h(5), null, {effs: tracker});
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+        node.s1 = diff(h(4), null, tracker);
+        node.s2 = diff(h(5), null, tracker);
+      }, data: {id: 0}}, null, [renderer, tracker])
       events.length = 0;
       diff(r.one.temp, r.one, r.tre)
       diff(null, r);
@@ -202,9 +202,9 @@ describe("diffing standalone (unordered) nodes", function(){
         node.one = diff(h(1), null, node);
         node.two = diff(h(2), null, node, node.one)
         node.tre = diff(h(3), null, node, node.two)
-        node.s1 = diff(h(4), null, {effs: tracker});
-        node.s2 = diff(h(5), null, {effs: tracker});
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+        node.s1 = diff(h(4), null, tracker);
+        node.s2 = diff(h(5), null, tracker);
+      }, data: {id: 0}}, null, [renderer, tracker])
       events.length = 0;
       const res = diff(null, r.one)
       expect(res).to.be.true;
@@ -224,10 +224,10 @@ describe("diffing standalone (unordered) nodes", function(){
       let called = 0;
       const r = diff({name: (temp, node) => {
         if (!called++){
-          diff(h(1), null, {effs: tracker});
-          diff(h(2), null, {effs: tracker});
+          diff(h(1), null, tracker);
+          diff(h(2), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       diff(h(3), null, r)
       const expected = copy(r.temp);
       expected.next = h(3);
@@ -241,10 +241,10 @@ describe("diffing standalone (unordered) nodes", function(){
       let s;
       const r = diff({name: (temp, node) => {
         if (!s){
-          s = diff(h(1), null, {effs: tracker});
-          diff(h(2), null, {effs: tracker});
+          s = diff(h(1), null, tracker);
+          diff(h(2), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       expect(s).to.be.an.instanceOf(Frame);
       diff(h(3), null, r, s)
       const expected = copy(r.temp);
@@ -261,10 +261,10 @@ describe("diffing standalone (unordered) nodes", function(){
       let called = 0;
       const r = diff({name: (temp, node) => {
         if (!called++){
-          diff(h(1), null, {effs: tracker});
-          diff(h(2), null, {effs: tracker});
+          diff(h(1), null, tracker);
+          diff(h(2), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const expected = copy(r.temp);
       expected.next = h(3);
       diff(expected, r);
@@ -283,8 +283,8 @@ describe("diffing standalone (unordered) nodes", function(){
           const first = diff(h(1), null, node);
           diff(h(2), null, node, first);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
-      diff(h(3), null, {effs: tracker})
+      }, data: {id: 0}}, null, [renderer, tracker])
+      diff(h(3), null, tracker)
       const expected = copy(r.temp);
       expected.next = [h(1), h(2)]
       expect(renderer.tree).to.eql(renderer.renderStatic(expected))
@@ -300,8 +300,8 @@ describe("diffing standalone (unordered) nodes", function(){
           first = diff(h(1), null, node);
           diff(h(2), null, node, first);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
-      const res = diff(h(3), null, {effs: tracker}, first)
+      }, data: {id: 0}}, null, [renderer, tracker])
+      const res = diff(h(3), null, tracker, first)
       expect(res).to.be.false;
       const expected = copy(r.temp);
       expected.next = [h(1), h(2)]
@@ -319,8 +319,8 @@ describe("diffing standalone (unordered) nodes", function(){
         if (!called++){
           return [h(1), h(2)]
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
-      diff(h(3), null, {effs: tracker})
+      }, data: {id: 0}}, null, [renderer, tracker])
+      diff(h(3), null, tracker)
       const expected = copy(r.temp);
       expected.next = [h(1), h(2)]
       expect(renderer.tree).to.eql(renderer.renderStatic(expected))
@@ -335,8 +335,8 @@ describe("diffing standalone (unordered) nodes", function(){
         if (!called++){
           return [h(1), h(2)]
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
-      const res = diff(h(3), null, {effs: tracker}, r.next)
+      }, data: {id: 0}}, null, [renderer, tracker])
+      const res = diff(h(3), null, tracker, r.next)
       expect(res).to.be.false;
       const expected = copy(r.temp);
       expected.next = [h(1), h(2)]
@@ -355,10 +355,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       diff(tre.temp, tre, null)
       const expected = copy(r.temp);
       expected.next = [h(3), h(1), h(2)];
@@ -375,10 +375,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          s = diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          s = diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       diff(tre.temp, tre, s)
       const expected = copy(r.temp);
       expected.next = [h(3), h(1), h(2)];
@@ -395,10 +395,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          s = diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          s = diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       diff(tre.temp, tre, one)
       const expected = copy(r.temp);
       expected.next = [h(1), h(3), h(2)];
@@ -415,10 +415,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          s = diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          s = diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       diff(two.temp, two, null)
       const expected = copy(r.temp);
       expected.next = [h(2), h(1), h(3)];
@@ -435,10 +435,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          s = diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          s = diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       diff(two.temp, two, s)
       const expected = copy(r.temp);
       expected.next = [h(2), h(1), h(3)];
@@ -455,10 +455,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          s = diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          s = diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       diff(two.temp, two, tre)
       const expected = copy(r.temp);
       expected.next = [h(1), h(3), h(2)];
@@ -475,10 +475,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          s = diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          s = diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const res = diff(one.temp, one, null)
       expect(res).to.be.false;
       const expected = copy(r.temp);
@@ -496,10 +496,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          s = diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          s = diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const res = diff(one.temp, one, s)
       expect(res).to.be.false;
       const expected = copy(r.temp);
@@ -517,10 +517,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          s = diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          s = diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       diff(one.temp, one, two)
       const expected = copy(r.temp);
       expected.next = [h(2), h(1), h(3)];
@@ -537,10 +537,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          s = diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          s = diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       diff(one.temp, one, tre)
       const expected = copy(r.temp);
       expected.next = [h(2), h(3), h(1)];
@@ -556,11 +556,11 @@ describe("diffing standalone (unordered) nodes", function(){
       let called = 0;
       const r = diff({name: (temp, node) => {
         if (!called++){
-          diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
           return [h(1), h(2), h(3)]
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const expected = copy(r.temp);
       expected.next = [h(3), h(1), h(2)];
       diff(expected, r);
@@ -575,11 +575,11 @@ describe("diffing standalone (unordered) nodes", function(){
       let called = 0;
       const r = diff({name: (temp, node) => {
         if (!called++){
-          diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
           return [h(1), h(2), h(3)]
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const expected = copy(r.temp);
       expected.next = [h(1), h(3), h(2)];
       diff(expected, r);
@@ -594,11 +594,11 @@ describe("diffing standalone (unordered) nodes", function(){
       let called = 0;
       const r = diff({name: (temp, node) => {
         if (!called++){
-          diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
           return [h(1), h(2), h(3)]
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const expected = copy(r.temp);
       expected.next = [h(2), h(1), h(3)];
       diff(expected, r);
@@ -613,11 +613,11 @@ describe("diffing standalone (unordered) nodes", function(){
       let called = 0;
       const r = diff({name: (temp, node) => {
         if (!called++){
-          diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
           return [h(1), h(2), h(3)]
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const expected = copy(r.temp);
       expected.next = [h(1), h(3), h(2)];
       diff(expected, r);
@@ -632,11 +632,11 @@ describe("diffing standalone (unordered) nodes", function(){
       let called = 0;
       const r = diff({name: (temp, node) => {
         if (!called++){
-          diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
           return [h(1), h(2), h(3)]
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const expected = copy(r.temp);
       expected.next = [h(2), h(1), h(3)];
       diff(expected, r);
@@ -651,11 +651,11 @@ describe("diffing standalone (unordered) nodes", function(){
       let called = 0;
       const r = diff({name: (temp, node) => {
         if (!called++){
-          diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
           return [h(1), h(2), h(3)]
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const expected = copy(r.temp);
       expected.next = [h(2), h(3), h(1)];
       diff(expected, r);
@@ -675,10 +675,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       diff(null, tre)
       const expected = copy(r.temp);
       expected.next = [h(1), h(2)];
@@ -695,10 +695,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       diff(null, two)
       const expected = copy(r.temp);
       expected.next = [h(1), h(3)];
@@ -715,10 +715,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       diff(null, one)
       const expected = copy(r.temp);
       expected.next = [h(2), h(3)];
@@ -734,11 +734,11 @@ describe("diffing standalone (unordered) nodes", function(){
       let called = 0;
       const r = diff({name: (temp, node) => {
         if (!called++){
-          diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
           return [h(1), h(2), h(3)]
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const expected = copy(r.temp);
       expected.next = [h(1), h(2)];
       diff(expected, r)
@@ -753,11 +753,11 @@ describe("diffing standalone (unordered) nodes", function(){
       let called = 0;
       const r = diff({name: (temp, node) => {
         if (!called++){
-          diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
           return [h(1), h(2), h(3)]
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const expected = copy(r.temp);
       expected.next = [h(1), h(3)];
       diff(expected, r);
@@ -772,11 +772,11 @@ describe("diffing standalone (unordered) nodes", function(){
       let called = 0;
       const r = diff({name: (temp, node) => {
         if (!called++){
-          diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
           return [h(1), h(2), h(3)]
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const expected = copy(r.temp);
       expected.next = [h(2), h(3)];
       diff(expected, r);
@@ -796,10 +796,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          s1 = diff(h(4), null, {effs: tracker});
-          s2 = diff(h(5), null, {effs: tracker});
+          s1 = diff(h(4), null, tracker);
+          s2 = diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       let res = diff(s1.temp, s1, s2);
       expect(res).to.be.false;
       res = diff(s2.temp, s2, s1);
@@ -819,10 +819,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          s1 = diff(h(4), null, {effs: tracker});
-          s2 = diff(h(5), null, {effs: tracker});
+          s1 = diff(h(4), null, tracker);
+          s2 = diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const res = diff(s1.temp, s1, two);
       expect(res).to.be.false;
       const expected = copy(r.temp);
@@ -842,10 +842,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          s1 = diff(h(4), null, {effs: tracker});
-          s2 = diff(h(5), null, {effs: tracker});
+          s1 = diff(h(4), null, tracker);
+          s2 = diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       diff(copy(s2.temp), s2);
       diff(copy(s1.temp), s1);
       const expected = copy(r.temp);
@@ -862,11 +862,11 @@ describe("diffing standalone (unordered) nodes", function(){
       let s1, s2;
       const r = diff({name: (temp, node) => {
         if (!s1){
-          s1 = diff(h(4), null, {effs: tracker});
-          s2 = diff(h(5), null, {effs: tracker});
+          s1 = diff(h(4), null, tracker);
+          s2 = diff(h(5), null, tracker);
           return [h(1), h(2), h(3)]
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       diff(copy(s1.temp), s1);
       diff(copy(s2.temp), s2);
       const expected = copy(r.temp);
@@ -883,11 +883,11 @@ describe("diffing standalone (unordered) nodes", function(){
       let s1, s2;
       const r = diff({name: (temp, node) => {
         if (!s1){
-          s1 = diff(h(4), null, {effs: tracker});
-          s2 = diff(h(5), null, {effs: tracker});
+          s1 = diff(h(4), null, tracker);
+          s2 = diff(h(5), null, tracker);
           return [h(1), h(2), h(3)]
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       let res = diff(s1.temp, s1, s2);
       expect(res).to.be.false;
       res = diff(s2.temp, s2, s1);
@@ -904,11 +904,11 @@ describe("diffing standalone (unordered) nodes", function(){
       let s1, s2;
       const r = diff({name: (temp, node) => {
         if (!s1){
-          s1 = diff(h(4), null, {effs: tracker});
-          s2 = diff(h(5), null, {effs: tracker});
+          s1 = diff(h(4), null, tracker);
+          s2 = diff(h(5), null, tracker);
           return [h(1), h(2), h(3)]
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const res = diff(s1.temp, s1, r.next.sib);
       expect(res).to.be.false;
       const expected = copy(r.temp);
@@ -928,10 +928,10 @@ describe("diffing standalone (unordered) nodes", function(){
           one = diff(h(1), null, node);
           two = diff(h(2), null, node, one);
           tre = diff(h(3), null, node, two);
-          s = diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          s = diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const res = diff(null, s)
       expect(res).to.be.true;
       s._node = null;
@@ -950,11 +950,11 @@ describe("diffing standalone (unordered) nodes", function(){
       let s;
       const r = diff({name: (temp, node) => {
         if (!s){
-          s = diff(h(4), null, {effs: tracker});
-          diff(h(5), null, {effs: tracker});
+          s = diff(h(4), null, tracker);
+          diff(h(5), null, tracker);
           return [h(1), h(2), h(3)]
         } else return temp.next;
-      }, data: {id: 0}}, null, {effs: [renderer, tracker]})
+      }, data: {id: 0}}, null, [renderer, tracker])
       const res = diff(null, s)
       expect(res).to.be.true;
       s._node = null;

@@ -91,7 +91,7 @@ class StemCell extends Frame {
     f._isFirst = false;
     const { data, next } = temp;
     if (f.nextState) f.state = merge(f.state || {}, f.nextState), f.nextState = null;
-    if (f.evt) for (let eff of toArr(f.evt.effs)) if (eff && eff.log) eff.log(isFirst ? "wA" : "wU", f, temp);
+    if (f.evt) for (let eff of toArr(f.evt.evt)) if (eff && eff.log) eff.log(isFirst ? "wA" : "wU", f, temp);
     isFirst ? f.willAdd && f.willAdd(f) : f.willUpdate && f.willUpdate(f);
     if (f.getNext) return f.getNext(data, next, f, isFirst);
     return data && data.copy ? copy(next) : next;
@@ -99,7 +99,7 @@ class StemCell extends Frame {
   rendered(temp, f){
     const isFirst = f._isFirstPost;
     f._isFirstPost = false;
-    if (this.evt) for (let eff of toArr(this.evt.effs)) {
+    if (this.evt) for (let eff of toArr(this.evt.evt)) {
       if (eff && eff.log) {
         // XXX we aren't emitting these events, because it'd break any test who isn't expecting 
         // them. We may decide to come back later and add these events in, but we'd have to 
@@ -111,7 +111,7 @@ class StemCell extends Frame {
     isFirst ? f.didAdd && f.didAdd(f) : f.didUpdate && f.didUpdate(f);
   }
   // cleanup(temp, f){
-  //   if (this.evt) for (let eff of toArr(this.evt.effs))
+  //   if (this.evt) for (let eff of toArr(this.evt.evt))
   //     if (eff && eff.log && f.willRemove) eff.log("wP", f, temp);
   //   f.willRemove && f.willRemove(f)
   // }

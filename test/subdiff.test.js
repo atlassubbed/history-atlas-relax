@@ -132,7 +132,7 @@ describe("subdiff", function(){
             describe(`LCRS rendered to next [${next.map(tag)}]`, function(){
               it("should not contain superfluous events", function(){
                 const renderer = new LCRSRenderer;
-                const f = diff(t1, null, {effs: renderer});
+                const f = diff(t1, null, renderer);
                 const { a: mA, r: mR, u: mU, s: mS } = renderer.counts;
                 renderer.resetCounts(), diff(t2, f);
                 const expectedTree = renderer.renderStatic(t2)
@@ -151,7 +151,7 @@ describe("subdiff", function(){
               })
               it("should edit prev to match next", function(){
                 const renderer = new LCRSRenderer;
-                const f = diff(t1, null, {effs: renderer});
+                const f = diff(t1, null, renderer);
                 diff(t2, f);
                 const expectedTree = renderer.renderStatic(t2)
                 expect(renderer.tree).to.deep.equal(renderer.renderStatic(t2));

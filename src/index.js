@@ -4,7 +4,7 @@ const isFn = f => typeof f === "function";
 const norm = t => t != null && t !== true && t !== false && 
   (typeof t === "object" ? t : {name: null, data: String(t)});
 const isFrame = f => f && isFn(f.render);
-const isAdd = f => (f = f && f.evt) && f.upd && !f.temp;
+const isAdd = f => (f = f && f.evt) && f.path && !f.temp;
 const sib = p => p && p.root < 2 ? p : null;
 const lags = [], orph = [], rems = [], stx = [], path = [], post = [], field = new Map;
 
@@ -23,24 +23,22 @@ const emit = (eff, type, f, p, s, ps) => {
   else eff[type] && eff[type](f, p, s, ps);   
 }
 
+// set fields on frame or light frame
+const init = (f, temp, effs) => {
+  f.next = f.sib = f.prev = f.top = f.bot = null;
+  f.path = -1;
+  if (f.temp = temp){
+    effs = effs && init({}, null, effs);
+    f.affs = f._affs = f.parent = f.hook = null;
+    f.root = f._affN = 0;
+  }
+  f.evt = effs;
+  return f;
+}
+
 // not to be instantiated by caller
 const Frame = function(temp, effs){
-  if (!temp) return;
-  this.evt = effs ? {
-    effs,
-    temp: null,
-    prev: null,
-    sib: null,
-    next: null,
-    top: null,
-    bot: null,
-    upd: true
-  } : null
-  this.temp = temp;
-  this.affs = this._affs = this.next = this.parent =
-  this.sib = this.prev = this.top = this.bot = this.hook = null;
-  // this.path = {-2: unmounted, -1: in path, 0: not in path, >0: recursion step index + 1}
-  this.root = this._affN = 0, this.path = -1
+  init(this, temp, effs);
 }
 Frame.prototype = {
   constructor: Frame,
@@ -94,15 +92,15 @@ const popLeader = (ns, f, e=ns.evt, b=e.bot, t=e.top) => {
   else tail = f || b;
 }
 const queue = (f, s, ns) => {
-  if (!s || !s.evt.upd){
-    if (!ns || !ns.evt.upd) pushLeader(f);
+  if (!s || !s.evt.path){
+    if (!ns || !ns.evt.path) pushLeader(f);
     else popLeader(ns, f);
   }
 }
 const dequeue = (f, s, ns=f.sib) => {
-  if (f.evt.upd){
-    if (!s || !s.evt.upd) popLeader(f, ns && ns.evt.upd && ns)
-  } else if (s && s.evt.upd && ns && ns.evt.upd) popLeader(ns);
+  if (f.evt.path){
+    if (!s || !s.evt.path) popLeader(f, ns && ns.evt.path && ns)
+  } else if (s && s.evt.path && ns && ns.evt.path) popLeader(ns);
 }
 // detach event f after sibling s
 const unlinkEvent = (f, p, s=f.prev, next) => {
@@ -118,34 +116,34 @@ const linkEvent = (e, f, p, s, next) => {
 const flushEvents = (c, f, e, p, owner) => {
   while(f = rems[c++]){
     f.cleanup && f.cleanup(f);
-    if (e = f.evt) emit(e.effs, "willRemove", f, e.next, e.prev, e.temp, f.evt = null);
+    if (e = f.evt) emit(e.evt, "willRemove", f, e.next, e.prev, e.temp, f.evt = null);
   }
   rems.length = 0;
   if (!(f = head)) return;
   owner = f.parent;
   while(f) {
     p = f.parent;
-    if ((e = f.evt).upd){
-      e.upd = false;
+    if ((e = f.evt).path){
+      e.path++;
       if (!e.temp){
         c = sib(f);
-        emit(e.effs, "willAdd", f, c && p, c && f.prev, f.temp);
+        emit(e.evt, "willAdd", f, c && p, c && f.prev, f.temp);
         if (c && p) linkEvent(e, f, p.evt, sib(f.prev));
         if (sib(f.next)){
           f = f.next;
           continue;
         }
       } else {
-        if (f.temp !== e.temp) emit(e.effs, "willReceive", f, f.temp);
+        if (f.temp !== e.temp) emit(e.evt, "willReceive", f, f.temp);
         if ((c = sib(f.prev)) !== e.prev){
-          emit(e.effs, "willMove", f, p, e.prev, c);
+          emit(e.evt, "willMove", f, p, e.prev, c);
           unlinkEvent(e, p.evt), linkEvent(e, f, p.evt, c);
         }
         e.temp = null;
       }
     }
     if (p !== owner) f = f.sib || p;
-    else if (!sib(f) || !(f = f.sib) || !f.evt.upd){
+    else if (!sib(f) || !(f = f.sib) || !f.evt.path){
       popLeader(head);
       if (f = head) owner = f.parent;
     }
@@ -198,7 +196,7 @@ const unlinkNode = (f, p, s=null, n=f.sib) => {
 // MUTATIONS
 const add = (t, p, s, isRoot, isF, effs) => {
   if (t){
-    isF = isFrame(p), effs = isF ? p.evt && p.evt.effs : p && p.effs, on = 2;
+    isF = isFrame(p), effs = isF ? p.evt && p.evt.evt : p, on = 2;
     if (!isFn(t.name)) t = new Frame(t, effs);
     else {
       const Sub = t.name;
@@ -216,16 +214,16 @@ const add = (t, p, s, isRoot, isF, effs) => {
 const move = (f, p, s, ps=sib(f.prev), e=f.evt) => {
   if (e){
     isAdd(p) || dequeue(f, ps);
-    if (!e.upd) e.temp = f.temp, e.upd = true;
+    if (!e.path) e.temp = f.temp, e.path--;
     isAdd(p) || queue(f, s, s ? s.sib : sib(p && p.next));
   }
   unlinkNode(f, p, f.prev), linkNode(f, p, s);
 }
 const receive = (f, t, e=f.evt) => {
-  if (e && !e.upd){
+  if (e && !e.path){
     sib(f) ? queue(f, sib(f.prev), f.sib) : pushLeader(f)
     e.temp = f.temp;
-    e.upd = true
+    e.path--
   }
   f.temp = t;
 }
@@ -254,14 +252,14 @@ const unmount = (f, isRoot, c) => {
   while(f = orph.pop()) {
     if (isRoot && (c = f.affs)) for (c of c) pushPath(c);
     if (c = f.parent, e = f.evt) {
-      if (!e.upd || e.temp){
+      if (!e.path || e.temp){
         rems.push(f)
         e.temp = e.temp || f.temp;
         if (e.next = sib(f) && c) 
           c.path > -2 && unlinkEvent(e, c.evt);
       } else if (f.cleanup) rems.push(f)
-      sib(f) ? isAdd(c) || dequeue(f, sib(f.prev)) : e.upd && popLeader(f);
-      e.upd = false;
+      sib(f) ? isAdd(c) || dequeue(f, sib(f.prev)) : e.path && popLeader(f);
+      e.path++;
     } else if (f.cleanup) rems.push(f);
     c && c.path > -2 && unlinkNode(f, c, f.prev), f.path = -2;
     if (c = f.next) do orph.push(c); while(c = c.sib);

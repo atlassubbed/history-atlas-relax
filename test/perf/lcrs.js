@@ -23,7 +23,7 @@ nextChildren.splice(int(nextChildren.length), 0, {name: "div", key: "child"});
 const temp = {name: "div", key: "parent", next: children};
 const nextTemp = {name: "div", key: "parent", next: nextChildren};
 
-const f = diff(temp, null, {effs: [renderer, cache]});
+const f = diff(temp, null, [renderer, cache]);
 console.log(assertList(f))
 assertTree(renderer, temp);
 print(f)

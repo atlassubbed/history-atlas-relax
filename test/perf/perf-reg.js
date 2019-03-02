@@ -33,7 +33,7 @@ runTests(cases, (c, s, done) => {
   const state3 = temps.pop().next;
   const state4 = temps.pop().next;
   const state5 = temps.pop().next;
-  const opts = {effs: {willRemove(){}, willAdd(){}, willMove(){}, willReceive(){}}}
+  const opts = {willRemove(){}, willAdd(){}, willMove(){}, willReceive(){}}
   time("mount effects", () => frames[++i] = diff(temp1, null, opts)), i = -1;
   time("update effects", () => diff(++i%2 ? temp2 : temp3, frames[0])), i = -1;
   time("unmount effects", () => diff(null, frames[++i])), i = -1;

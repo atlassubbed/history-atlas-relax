@@ -5,29 +5,18 @@ const { StemCell } = require("./cases/Frames");
 
 describe("Frame", function(){
   describe("constructor", function(){
-    it("should not set instance fields if instantiated with no template", function(){
-      expect(Object.keys(new Frame)).to.be.empty;
-    })
-    it("should set cache-related properties to their initial value", function(){
-      const f = new Frame({});
-      expect(f.affs).to.equal
-        (f._affs).to.equal
-        (f.next).to.equal
-        (f.prev).to.equal
-        (f.sib).to.equal
-      expect(f._affN).to.equal(0)
-      expect(f.evt).to.be.null;
-      expect(f.path).to.equal(-1);
-    })
-    it("should set template and effects and tau getter onto the instance", function(){
+    it("should set template and effects onto the instance", function(){
       const name = 1, data = 2, next = 3, key = 4, effs = [5]
       const temp = {name, data, next, key}, temp2 = {};
       const f = new Frame(temp, effs);
       const f2 = new Frame(temp2, effs[0])
+      const f3 = new Frame(temp2, null);
       expect(f.temp).to.equal(temp)
-      expect(f.evt.effs).to.equal(effs);
-      expect(f2.evt.effs).to.equal(5)
+      expect(f.evt.evt).to.equal(effs);
+      expect(f2.evt.evt).to.equal(5)
       expect(f2.temp).to.equal(temp2)
+      expect(f3.evt).to.be.null;
+      expect(f3.temp).to.equal(temp2)
     })
   })
   describe("sub", function(){

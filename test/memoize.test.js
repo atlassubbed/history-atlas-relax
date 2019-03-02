@@ -9,7 +9,7 @@ describe("memoization and immutability support", function(){
   describe("updating root frames with new template === old template", function(){
     it("should not update", function(){
       const events = [], tracker = new Tracker(events);
-      const t = m(0, null, m(1)), f1 = diff(t, null, {effs: tracker});
+      const t = m(0, null, m(1)), f1 = diff(t, null, tracker);
       events.length = 0;
       const result = diff(t, f1);
       expect(result).to.be.false;
@@ -17,7 +17,7 @@ describe("memoization and immutability support", function(){
     })
     it("should not update even if old template has been mutated", function(){
       const events = [], tracker = new Tracker(events);
-      const t = m(0, null, m(1)), f1 = diff(t, null, {effs: tracker});
+      const t = m(0, null, m(1)), f1 = diff(t, null, tracker);
       events.length = 0, t.next = null;
       const result = diff(t, f1);
       expect(result).to.be.false;
@@ -25,7 +25,7 @@ describe("memoization and immutability support", function(){
     })
     it("should not update entangled roots", function(){
       const events = [], t1 = new Tracker(events), t2 = new Tracker(events);
-      const t = m(0), f1 = diff(t, null, {effs: t1}), f2 = diff(m(0), null, {effs: t1});
+      const t = m(0), f1 = diff(t, null, t1), f2 = diff(m(0), null, t1);
       events.length = 0;
       f2.sub(f1);
       const result = diff(t, f1);
@@ -36,7 +36,7 @@ describe("memoization and immutability support", function(){
   describe("updating subframes (children) that receive new template === old template", function(){
     it("should not update any children which don't also own the current diff cycle", function(){
       const events = [], tracker = new Tracker(events);
-      const m1 = m(1), m2 = m(2), f1 = diff(m(0,null,[m1, m2]), null, {effs: tracker});
+      const m1 = m(1), m2 = m(2), f1 = diff(m(0,null,[m1, m2]), null, tracker);
       events.length = 0;
       const result = diff(m(0, null, [m1, m2]), f1);
       expect(result).to.be.an.instanceOf(Frame);
@@ -46,7 +46,7 @@ describe("memoization and immutability support", function(){
     })
     it("should update children if they receive new templates", function(){
       const events = [], tracker = new Tracker(events);
-      const m1 = m(1), m2 = m(2), f1 = diff(m(0,null,[m1, m2]), null, {effs: tracker});
+      const m1 = m(1), m2 = m(2), f1 = diff(m(0,null,[m1, m2]), null, tracker);
       events.length = 0;
       const result = diff(m(0,null,[m1, m(2)]), f1);
       expect(result).to.be.an.instanceOf(Frame);
@@ -57,7 +57,7 @@ describe("memoization and immutability support", function(){
     it("should not update children which receive old templates even if the child owns a future diff cycle", function(done){
       const events = [], tracker = new Tracker(events);
       const m1 = m(1), m2 = m(2);
-      const f1 = diff(m(0, null, [m1, m2]), null, {effs: tracker});
+      const f1 = diff(m(0, null, [m1, m2]), null, tracker);
       events.length = 0;
       f1.next.sib.setState({id: 2}, 0)
       const result = diff(m(0, null, [m1, m2]), f1)
@@ -71,7 +71,7 @@ describe("memoization and immutability support", function(){
       const events = [], tracker = new Tracker(events);
       const willUpdate = () => done();
       const t = m(0, null, [m(1), m(2, {hooks: {willUpdate}})])
-      const f1 = diff(t, null, {effs: tracker});
+      const f1 = diff(t, null, tracker);
       events.length = 0;
       f1.next.sib.setState({}, 0)
       f1.setState({}, 0);
@@ -91,7 +91,7 @@ describe("memoization and immutability support", function(){
       nodes[0].getNext = function(data, next){
         return this.next.temp
       }
-      const disjointRoot = diff(m(9), null, {effs: new Tracker(events)});
+      const disjointRoot = diff(m(9), null, new Tracker(events));
       events.length = 0;
       nodes[1].sub(disjointRoot)
       nodes[0].setState();
@@ -119,7 +119,7 @@ describe("memoization and immutability support", function(){
       const willUpdate = () => r2.setState(), ctor = f => {r2 = f};
       const m1 = m(1, {hooks: {willUpdate}})
       const m2 = m(2, {hooks: {ctor}})
-      const f1 = diff(m(0,null,[m1, m2]), null, {effs: tracker});
+      const f1 = diff(m(0,null,[m1, m2]), null, tracker);
       events.length = 0;
       const result = diff(m(0, null, [m(1), m2]), f1);
       expect(result).to.be.an.instanceOf(Frame);
@@ -130,11 +130,11 @@ describe("memoization and immutability support", function(){
     it("should re-add a memoized child to the path if outer-diffed back into the current diff cycle", function(){
       const events = [], tracker = new Tracker(events);
       let r2;
-      const a1 = diff(m(0), null, {effs: tracker});
+      const a1 = diff(m(0), null, tracker);
       const willUpdate = () => diff(m(0), a1), ctor = f => {(r2 = f).sub(a1)};
       const m1 = m(2, {hooks: {willUpdate}})
       const m2 = m(3, {hooks: {ctor}})
-      const f1 = diff(m(1, null, [m1, m2]), null, {effs: tracker});
+      const f1 = diff(m(1, null, [m1, m2]), null, tracker);
       events.length = 0;
       const result = diff(m(1, null, [m(2), m2]), f1);
       expect(result).to.be.an.instanceOf(Frame);
@@ -148,7 +148,7 @@ describe("memoization and immutability support", function(){
       const willUpdate = () => r2.setState({}, 0), ctor = f => {r2 = f};
       const m1 = m(1, {hooks: {willUpdate}})
       const m2 = m(2, {hooks: {ctor}})
-      const f1 = diff(m(0,null,[m1, m2]), null, {effs: tracker});
+      const f1 = diff(m(0,null,[m1, m2]), null, tracker);
       events.length = 0;
       const result = diff(m(0, null, [m(1), m2]), f1);
       expect(result).to.be.an.instanceOf(Frame);
@@ -159,8 +159,8 @@ describe("memoization and immutability support", function(){
     })
     it("should always update nodes who are downstream from removed affectors, even if their direct parent memoizes them", function(){
       const events = [], t = new Tracker(events)
-      const f1 = diff(m(1), null, {effs: t})
-      const f2 = diff(m(2, {hooks: {willUpdate: () => diff(null, f1)}}, m(3)), null, {effs: t})
+      const f1 = diff(m(1), null, t)
+      const f2 = diff(m(2, {hooks: {willUpdate: () => diff(null, f1)}}, m(3)), null, t)
       f2.getNext = function(data, next){
         return this.next.temp;
       }
@@ -173,8 +173,8 @@ describe("memoization and immutability support", function(){
     })
     it("should always update nodes who are downstream from affectors who get memoized if they are updated via outer-diff", function(){
       const events = [], t = new Tracker(events)
-      const f1 = diff(m(1), null, {effs: t})
-      const f2 = diff(m(2, {hooks: {willUpdate: () => diff(m(1), f1)}}, m(3)), null, {effs: t})
+      const f1 = diff(m(1), null, t)
+      const f2 = diff(m(2, {hooks: {willUpdate: () => diff(m(1), f1)}}, m(3)), null, t)
       f2.getNext = function(data, next){
         return this.next.temp;
       }

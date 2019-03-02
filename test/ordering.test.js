@@ -20,7 +20,7 @@ const t = h(0, [
 
 const N = 7;
 
-const mount = events => diff(t, null, {effs: new Tracker(events)})
+const mount = events => diff(t, null, new Tracker(events))
 
 // forward order means "child 1 before child 2"
 // reverse order means "child 2 before child 1"

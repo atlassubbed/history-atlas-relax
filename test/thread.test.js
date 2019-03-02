@@ -68,7 +68,7 @@ const test = (expected, render) => {
   const events = [];
   const renderer = new LCRSRenderer, tracker = new Tracker(events);
   const temp = {name: ManagedRoot, data: {id: "root", expected, render}};
-  const r = diff(temp, null, {effs: [renderer, tracker]})
+  const r = diff(temp, null, [renderer, tracker])
   events.length = 0;
   r.diff();
   expect(renderer.tree).to.eql(renderer.renderStatic(temp))

@@ -28,7 +28,7 @@ describe("event squashing", function(){
                 // don't do separate tests for minimal stdout, use descriptive errors instead
                 it("should not contain superfluous events", function(){
                   const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events)
-                  const f = diff(t1, null, {effs: [renderer, tracker]});
+                  const f = diff(t1, null, [renderer, tracker]);
                   let called = 0;
                   diff({name: () => called++ === 1 && diff(t3, f)}).sub(f);
                   // get rid of mount-related events/counts
@@ -84,7 +84,7 @@ describe("event squashing", function(){
                 })
                 it("should edit prev to match next", function(){
                   const renderer = new LCRSRenderer;
-                  const f = diff(t1, null, {effs: renderer});
+                  const f = diff(t1, null, renderer);
                   let called = false;
                   diff({name: () => called++ === 1 && diff(t3, f)}).sub(f);
                   diff(t2, f);
@@ -102,7 +102,7 @@ describe("event squashing", function(){
                       s2 = diff(s2Temp);
                     }
                     return called === 1 ? t1 : called === 2 ? t2 : t3;
-                  }, data: {id: "root"}}, null, {effs: [renderer, tracker]})
+                  }, data: {id: "root"}}, null, [renderer, tracker])
                   f.diff();
                   f.diff();
                   expect(s1.temp).to.equal(s1Temp);

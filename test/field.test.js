@@ -29,7 +29,7 @@ const { ALLOW, CHECK, taus, verify } = require("./time");
 
 const h = StemCell.h;
 
-const getEffs = events => ({effs: new Timer(events)})
+const getEffs = events => new Timer(events)
 
 const mountTree = events => {
   const frame = diff(h(0, null, h(1)), null, getEffs(events));

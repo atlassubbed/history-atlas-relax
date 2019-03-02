@@ -5,7 +5,7 @@ const { diff: rawDiff } = require("../src/index");
 const { rootCase, treeCase, p, a } = require("./cases/entangle");
 const { has } = require("./util");
 
-const diff = (t, f, eff) => rawDiff(t, f, {effs: eff});
+const diff = (t, f, eff) => rawDiff(t, f, eff);
 
 // willAdd is the first render, willUpdate is every other render
 // using arrays here due to legacy; we used to have more events. good riddance.
