@@ -29,7 +29,7 @@ describe("entanglement", function(){
       const events = [], t1 = new Tracker(events), t2 = new Tracker(events); 
       const r1 = diff(p(0), null, t1), r2 = diff(p(0), null, t2);
       r1.sub(r2), r2.sub(r1), events.length = 0;
-      expect(() => diff(p(0), r1)).to.throw("cyclic entanglement")
+      expect(() => diff(p(0), r1)).to.throw("cycle")
       expect(events).to.be.empty;
     })
     it("should clean up unmounted entangled affects by the end of the next cycle", function(){
@@ -49,11 +49,11 @@ describe("entanglement", function(){
         r2.sub(r1), events.length = 0;
         const update = () => diff(p(1), r2);
         if (has(addHooks, hook)){
-          expect(update).to.throw("cyclic entanglement")
+          expect(update).to.throw("cycle")
         } else {
           expect(update).to.not.throw()
           events.length = 0;
-          expect(update).to.throw("cyclic entanglement")
+          expect(update).to.throw("cycle")
         }        
         expect(events).to.be.empty;
       })
@@ -138,7 +138,7 @@ describe("entanglement", function(){
       const events = [], t = new Tracker(events);
       const r = diff(p(0, null, [p(1), p(2)]), null, t), c = r.next;
       c.sub(c.sib), c.sib.sub(c), events.length = 0;
-      expect(() => diff(p(0, null, [p(1), p(2)]), r)).to.throw("cyclic entanglement")
+      expect(() => diff(p(0, null, [p(1), p(2)]), r)).to.throw("cycle")
       expect(events).to.be.empty;
     })
     it("should clean up unmounted entangled affects by the end of the next cycle", function(){
@@ -164,11 +164,11 @@ describe("entanglement", function(){
         events.length = 0;
         const update = () => diff(p(0, null, [p(1), p(2)]), r)
         if (has(addHooks, hook)){
-          expect(update).to.throw("cyclic entanglement")
+          expect(update).to.throw("cycle")
         } else {
           expect(update).to.not.throw();
           events.length = 0;
-          expect(update).to.throw("cyclic entanglement")
+          expect(update).to.throw("cycle")
         }
         expect(events).to.be.empty;
       })

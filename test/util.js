@@ -12,7 +12,6 @@ const assertDeleted = f => {
   expect(f.bot).to.be.null;
   expect(f.hook).to.be.null;
   expect(f.evt).to.be.null;
-  expect(f.path).to.equal(-1);
 }
 
 const isArr = Array.isArray;

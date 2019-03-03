@@ -1,11 +1,31 @@
+// node states
+const IS_CHLD = 1;
+const IS_CTXL = 2;
+const HAS_EVT = 4;
+const IN_PATH = 8;
+
+// number of microstates metadata since state, s, doubles as counter
+// we need to increment the count by 0 Z-16 if we want to not affect our state values
+// this amounts to changing all of the bits that aren't the first 4.
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXSSSS
+//                X (counting bits)            S (state bits)
+const ORDER = 16;
+
+// query bitmasks
+const isCtx = f => f.ph & IS_CTXL;
+const isCh = f => f.ph & IS_CHLD;
+const inPath = f => f.ph & IN_PATH;
+const isUpd = f => f.ph & HAS_EVT;
+
 // util functions
-const isArr = Array.isArray;
 const isFn = f => typeof f === "function";
 const norm = t => t != null && t !== true && t !== false && 
   (typeof t === "object" ? t : {name: null, data: String(t)});
 const isFrame = f => f && isFn(f.render);
-const isAdd = f => (f = f && f.evt) && f.path && !f.temp;
-const sib = p => p && p.root < 2 ? p : null;
+const isAdd = f => f && isUpd(f) && !f.evt.temp;
+const sib = p => p && !isCtx(p) ? p : null;
+
+// aux data structures
 const lags = [], orph = [], rems = [], stx = [], path = [], post = [], field = new Map;
 
 // flatten and sanitize a frame's next children
@@ -13,24 +33,21 @@ const lags = [], orph = [], rems = [], stx = [], path = [], post = [], field = n
 const clean = (t, ix, next=[]) => {
   stx.push(t);
   while(stx.length) if (t = norm(stx.pop()))
-    if (isArr(t)) for (t of t) stx.push(t);
+    if (Array.isArray(t)) for (t of t) stx.push(t);
     else next.push(t), ix && pushIndex(t)
   return next
 }
 // emit mutation event to plugins
 const emit = (eff, type, f, p, s, ps) => {
-  if (isArr(eff)) for (eff of eff) eff[type] && eff[type](f, p, s, ps);
+  if (Array.isArray(eff)) for (eff of eff) eff[type] && eff[type](f, p, s, ps);
   else eff[type] && eff[type](f, p, s, ps);   
 }
 
-// // set fields on frame or light frame
+// set fields on frame or light frame
 const init = (f, temp=null) => {
-  f.next = f.sib = f.prev = f.top = f.bot = null;
-  f.path = -1;
-  if (f.temp = temp){
+  if (f.temp = temp)
     f.affs = f._affs = f.parent = f.hook = null;
-    f.root = f._affN = 0;
-  }
+  f.next = f.sib = f.prev = f.top = f.bot = null;
   return f;
 }
 // not to be instantiated by caller
@@ -90,15 +107,15 @@ const popLeader = (ns, f, e=ns.evt, b=e.bot, t=e.top) => {
   else tail = f || b;
 }
 const queue = (f, s, ns) => {
-  if (!s || !s.evt.path){
-    if (!ns || !ns.evt.path) pushLeader(f);
+  if (!s || !isUpd(s)){
+    if (!ns || !isUpd(ns)) pushLeader(f);
     else popLeader(ns, f);
   }
 }
 const dequeue = (f, s, ns=f.sib) => {
-  if (f.evt.path){
-    if (!s || !s.evt.path) popLeader(f, ns && ns.evt.path && ns)
-  } else if (s && s.evt.path && ns && ns.evt.path) popLeader(ns);
+  if (isUpd(f)){
+    if (!s || !isUpd(s)) popLeader(f, ns && isUpd(ns) && ns)
+  } else if (s && isUpd(s) && ns && isUpd(ns)) popLeader(ns);
 }
 // detach event f after sibling s
 const unlinkEvent = (f, p, s=f.prev, next) => {
@@ -121,8 +138,8 @@ const flushEvents = (c, f, e, p, owner) => {
   owner = f.parent;
   while(f) {
     p = f.parent;
-    if ((e = f.evt).path){
-      e.path++;
+    if (isUpd(f)){
+      f.ph &= ~HAS_EVT, e = f.evt;
       if (!e.temp){
         c = sib(f);
         emit(e.evt, "willAdd", f, c && p, c && f.prev, f.temp);
@@ -141,7 +158,7 @@ const flushEvents = (c, f, e, p, owner) => {
       }
     }
     if (p !== owner) f = f.sib || p;
-    else if (!sib(f) || !(f = f.sib) || !f.evt.path){
+    else if (!sib(f) || !(f = f.sib) || !isUpd(f)){
       popLeader(head);
       if (f = head) owner = f.parent;
     }
@@ -180,9 +197,9 @@ const linkNodeBefore = (f, s, n=s.prev) =>
   (((f.sib = s).prev = f).prev = n) && (n.sib = f);
 // attach node f into seg-list p after sibling s
 const linkNode = (f, p, s=null) => {
-  if (f.root < 2 && s) return linkNodeAfter(f, s);
-  if (s = p.next) (s.root < 2 ? linkNodeBefore : linkNodeAfter)(f, s);
-  if (f.root < 2 || !s || s.root > 1) p.next = f;
+  if (!isCtx(f) && s) return linkNodeAfter(f, s);
+  if (s = p.next) (isCtx(s) ? linkNodeAfter : linkNodeBefore)(f, s);
+  if (!isCtx(f) || !s || isCtx(s)) p.next = f;
 }
 // detach node f from seg-list p after sibling s
 const unlinkNode = (f, p, s=null, n=f.sib) => {
@@ -201,7 +218,10 @@ const add = (t, p, s, isRoot, isF, effs) => {
       if (isFrame(Sub.prototype)) t = new Sub(t, effs);
       else t = new Frame(t, effs), t.render = Sub;
     }
-    if (isRoot) t.root = 1 + !isF;
+    // step counter
+    t.st = 0;
+    // phase and in degree counter
+    t.ph = IN_PATH | (effs ? HAS_EVT : 0) | (isRoot ? (!isF && IS_CTXL) : IS_CHLD)
     p = t.parent = isF ? p : ctx, on = 1;
     if (t.evt) sib(t) ? isAdd(p) || queue(t, s, s ? s.sib : sib(p && p.next)) : pushLeader(t);
     p && linkNode(t, p, s);
@@ -212,36 +232,42 @@ const add = (t, p, s, isRoot, isF, effs) => {
 const move = (f, p, s, ps=sib(f.prev), e=f.evt) => {
   if (e){
     isAdd(p) || dequeue(f, ps);
-    if (!e.path) e.temp = f.temp, e.path--;
+    if (!isUpd(f)) e.temp = f.temp, f.ph |= HAS_EVT;
     isAdd(p) || queue(f, s, s ? s.sib : sib(p && p.next));
   }
   unlinkNode(f, p, f.prev), linkNode(f, p, s);
 }
 const receive = (f, t, e=f.evt) => {
-  if (e && !e.path){
+  if (e && !isUpd(f)){
     sib(f) ? queue(f, sib(f.prev), f.sib) : pushLeader(f)
-    e.temp = f.temp;
-    e.path--
+    e.temp = f.temp, f.ph |= HAS_EVT;
   }
   f.temp = t;
 }
 
-// PATH
+// PATH (working, smaller)
 // compute a topologically ordered path to diff along
 const rebasePath = (f, i, ch) => {
-  while(i = stx.length) if (!((f = stx[i-1]).path < 0 && stx.pop())) {
-    if (!f.path && (((i = f.next) && !i.root) || f.affs)){
-      if (ch = f._affs = [], i && !i.root) do ch.push(i); while(i = i.sib);
-      if (i = f.affs) for (i of i) i.temp ? ch.push(i) : i.unsub(f);
-      f.path = ch.length+1;
+  while(i = stx.length)
+    if (inPath(f = stx[i-1])) stx.pop();
+    else if (f.st){
+      if (i = --f.st) {
+        if ((i = f._affs[i-1]).st)
+          throw new Error("cycle")
+        pushPath(i);
+      } else f.ph |= IN_PATH, path.push(stx.pop());
+    } else {
+      if (((i = f.next) && isCh(i)) || f.affs){
+        if (ch = f._affs = [], i && isCh(i))
+          do ch.push(i); while(i = i.sib);
+        if (i = f.affs) for (i of i)
+          i.temp ? ch.push(i) : i.unsub(f);
+        f.st = ch.length + 1;
+      } else f.st = 1;
     }
-    if (--f.path <= 0) stx.pop().path = -1, path.push(f);
-    else if ((i = f._affs[f.path-1]).path <= 0) pushPath(i)
-    else throw new Error("cyclic entanglement");
-  }
 }
 const pushPath = f => {
-  f.path || stx.push(f), ++f._affN
+  inPath(f) || stx.push(f), f.ph+=ORDER
 }
 
 // DIFF CYCLE
@@ -250,16 +276,16 @@ const unmount = (f, isRoot, c) => {
   while(f = orph.pop()) {
     if (isRoot && (c = f.affs)) for (c of c) pushPath(c);
     if (c = f.parent, e = f.evt) {
-      if (!e.path || e.temp){
+      if (!isUpd(f) || e.temp){
         rems.push(f)
         e.temp = e.temp || f.temp;
         if (e.next = sib(f) && c) 
           c.temp && unlinkEvent(e, c.evt);
       } else if (f.cleanup) rems.push(f)
-      sib(f) ? isAdd(c) || dequeue(f, sib(f.prev)) : e.path && popLeader(f);
-      e.path++;
+      sib(f) ? isAdd(c) || dequeue(f, sib(f.prev)) : isUpd(f) && popLeader(f);
+      f.ph &= ~HAS_EVT
     } else if (f.cleanup) rems.push(f);
-    c && c.temp && unlinkNode(f, c, f.prev), f.path = -1;
+    c && c.temp && unlinkNode(f, c, f.prev), f.ph |= IN_PATH;
     if (c = f.next) do orph.push(c); while(c = c.sib);
     if (c = f.next) while(c = c.prev) orph.push(c);
     relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.next = f.hook = null)
@@ -274,7 +300,7 @@ const mount = (f, next, c) => {
 const subdiff = (p, c, next, i, n) => {
   if (next.length){
     do (n = popIndex(c.temp)) ?
-      n === (n.p = c).temp ? --c._affN || (c.path=0) : receive(c, n) :
+      n === (n.p = c).temp ? ((c.ph-=ORDER) < ORDER) && (c.ph &= ~IN_PATH) : receive(c, n) :
       orph.push(c); while(c = c.sib); unmount();
     for(i = p.next; i && (n = next.pop());)
       (c = n.p) ?
@@ -291,19 +317,21 @@ const subdiff = (p, c, next, i, n) => {
 const sidediff = (c, raw=rebasePath(on=1)) => {
   do {
     if (ctx = path.pop() || lags.pop()){
-      if (!ctx.path) {
+      if (!inPath(ctx)) {
         if (c = ctx._affs) {
-          for (c of c) --c._affN || (c.path = 0);
+          for (c of c) ((c.ph-=ORDER) < ORDER) && (c.ph &= ~IN_PATH);
           ctx._affs = null;
         }
       } else if (c = ctx.temp) {
-        relax(ctx), ctx.path = ctx._affN = 0, ctx._affs = null;
+        relax(ctx);
+        ctx.ph &= IS_CHLD | IS_CTXL | HAS_EVT;
+        ctx._affs = null;
         raw = ctx.render(c, ctx)
         if (ctx.temp){
           if (ctx.rendered)
             ctx.hook || post.push(ctx), ctx.hook = c;
           sib(c = ctx.next) ?
-            c.root || subdiff(ctx, c, clean(raw, 1)) :
+            isCh(c) && subdiff(ctx, c, clean(raw, 1)) :
             mount(ctx, clean(raw));
         }
       }
@@ -320,10 +348,10 @@ const sidediff = (c, raw=rebasePath(on=1)) => {
 const diff = (t, f, p=f&&f.prev, s) => {
   let r = false, inDiff = on, context = ctx;
   if (inDiff < 2) try {
-    if (!isArr(t = norm(t))){
+    if (!Array.isArray(t = norm(t))){
       if (!isFrame(f) || !f.temp){
         if (t && (!s || s.parent === p)) r = add(t, p, sib(s), 1)
-      } else if (f.root){
+      } else if (!isCh(f)){
         if (t && t.name === f.temp.name) {
           if (t !== f.temp) receive(r = f, t, pushPath(f));
           if (sib(f) && isFrame(s = f.parent) && (!p || p.parent === s)){

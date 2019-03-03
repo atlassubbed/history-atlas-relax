@@ -5,25 +5,14 @@
 
 //                                step count       state
 //                      --------------C------------|-S-|
-//                      00000000000000000000000000000001    isChild       1  // these flags waste
-//                      00000000000000000000000000000010    isContextual  2  // entropy 
-//                      00000000000000000000000000000100    hasEvent      4  // total entropy = 5 bits
-//                      00000000000000000000000000001000    isUnmounted   8
-//                      00000000000000000000000000010000    inPath        16
-// 00000000000000000000000000000000000000000000000000000
+//                      00000000000000000000000000000001    isChild       1
+//                      00000000000000000000000000000010    isContextual  2
+//                      00000000000000000000000000000100    hasEvent      4  
+//                      00000000000000000000000000001000    inPath        16
+// 000000000000000000000XXXXXXXXXXXXXXXXXXXXXXXXXXXX0000    X bits are reserved for a counter
 
-
-// root 3 states
-// path -2 
-
-// removing x root type                 = 1 x 3 +
 // in path x root type x has event      = 2 x 3 x 2
-//                                      = 3 + 12 = 15
-
-// states:
-// removed, child
-// removed, root
-// removed, context
+// list of states:
 // in path, child, no event
 // in path, child, event
 // in path, root, no event
