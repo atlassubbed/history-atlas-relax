@@ -257,13 +257,13 @@ const rebasePath = (f, i, ch) => {
         pushPath(i);
       } else f.ph |= IN_PATH, path.push(stx.pop());
     } else {
-      if (((i = f.next) && isCh(i)) || f.affs){
+      if (f.st++, ((i = f.next) && isCh(i)) || f.affs){
         if (ch = f._affs = [], i && isCh(i))
           do ch.push(i); while(i = i.sib);
         if (i = f.affs) for (i of i)
           i.temp ? ch.push(i) : i.unsub(f);
-        f.st = ch.length + 1;
-      } else f.st = 1;
+        f.st += ch.length;
+      }
     }
 }
 const pushPath = f => {
