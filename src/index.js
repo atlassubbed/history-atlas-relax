@@ -38,9 +38,9 @@ const clean = (t, ix, next=[]) => {
   return next
 }
 // emit mutation event to plugins
-const emit = (eff, type, f, p, s, ps) => {
-  if (Array.isArray(eff)) for (eff of eff) eff[type] && eff[type](f, p, s, ps);
-  else eff[type] && eff[type](f, p, s, ps);   
+const emit = (evt, type, f, p, s, ps) => {
+  if (Array.isArray(evt)) for (evt of evt) evt[type] && evt[type](f, p, s, ps);
+  else evt[type] && evt[type](f, p, s, ps);   
 }
 
 // set fields on frame or light frame
@@ -209,19 +209,19 @@ const unlinkNode = (f, p, s=null, n=f.sib) => {
 }
 
 // MUTATIONS
-const add = (t, p, s, isRoot, isF, effs) => {
+const add = (t, p, s, isRoot, isF, evt) => {
   if (t){
-    isF = isFrame(p), effs = isF ? p.evt && p.evt.evt : p, on = 2;
-    if (!isFn(t.name)) t = new Frame(t, effs);
+    isF = isFrame(p), evt = isF ? p.evt && p.evt.evt : p, on = 2;
+    if (!isFn(t.name)) t = new Frame(t, evt);
     else {
       const Sub = t.name;
-      if (isFrame(Sub.prototype)) t = new Sub(t, effs);
-      else t = new Frame(t, effs), t.render = Sub;
+      if (isFrame(Sub.prototype)) t = new Sub(t, evt);
+      else t = new Frame(t, evt), t.render = Sub;
     }
     // step counter
     t.st = 0;
     // phase and in degree counter
-    t.ph = IN_PATH | (effs ? HAS_EVT : 0) | (isRoot ? (!isF && IS_CTXL) : IS_CHLD)
+    t.ph = IN_PATH | (evt ? HAS_EVT : 0) | (isRoot ? (!isF && IS_CTXL) : IS_CHLD)
     p = t.parent = isF ? p : ctx, on = 1;
     if (t.evt) sib(t) ? isAdd(p) || queue(t, s, s ? s.sib : sib(p && p.next)) : pushLeader(t);
     p && linkNode(t, p, s);
