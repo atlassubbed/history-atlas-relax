@@ -5,7 +5,7 @@ const { Timer } = require("./effects");
 const { diff } = require("../src/index");
 const { StemCell } = require("./cases/Frames");
 const { getMicrostates, getExpectedResult } = require("./cases/field");
-const { ALLOW, CHECK, taus, verify } = require("./time");
+const { ALLOW, CHECK, T, taus, verify } = require("./time");
 
 /* There are nine 2-photon-2-node systems to test (we'll explain more in the code):
      g  means photon
@@ -128,6 +128,14 @@ const makeCase = (mount, state, perturb, system) => {
     actual: actualEvents
   }
 }
+const makeGenCase = (name, test, check) => {
+  const data = {events: []};
+  return {
+    name, 
+    run: () => test(data), 
+    check: () => check(data), 
+  }
+}
 
 // XXX without the hideous code below, these tests take three orders of magnitude longer to execute
 //   * all of these tests are time consuming and independent of each other
@@ -144,6 +152,98 @@ const buildMochaScaffold = () => {
   const childPhotonStates = getMicrostates(["tau_gc", "tau_p", "tau_c"], taus);
   const parentPhotonStates = getMicrostates(["tau_gp", "tau_p", "tau_c"], taus);
   const dualPhotonStates = getMicrostates(["tau_gp", "tau_gc", "tau_p", "tau_c"], taus);
+  scaffold.describe("functional tau", function(){
+    scaffold.push(makeGenCase(
+      "should not cancel an oscillator if there is no cancellation function specified",
+      data => {
+        const f = diff(h(0), null, getEffs(data.events));
+        data.events.length = 0;
+        f.diff((start, tau, node) => {
+          const t = setTimeout(() => {
+            data.calledOscillator = true;
+            start()
+          }, T)
+        })
+        diff(null, f);
+      },
+      ({events, calledOscillator}) => {
+        expect(calledOscillator).to.be.true;
+        verify(events, [])
+      }
+    ))
+    scaffold.push(makeGenCase(
+      "should cancel an oscillator if there is a cancellation function specified",
+      data => {
+        const f = diff(h(0), null, getEffs(data.events));
+        data.events.length = 0;
+        f.diff((start, tau, node) => {
+          const t = setTimeout(() => {
+            data.calledOscillator = true;
+            start()
+          }, T)
+          node.clear = () => clearTimeout(t);
+        })
+        diff(null, f);
+      },
+      ({events, calledOscillator}) => {
+        expect(calledOscillator).to.be.undefined;
+        verify(events, [])
+      }
+    ))
+    scaffold.describe("decoherence", function(){
+      scaffold.push(makeGenCase(
+        "should batch === taus together",
+        data => {
+          data.calledOscillator = 0;
+          const tau = (start, tau, node) => {
+            const t = setTimeout(() => {
+              data.calledOscillator++;
+              start()
+            }, T)
+          }
+          const tau2 = tau;
+          const f = diff(h(0), null, getEffs(data.events));
+          const f2 = diff(h(1), null, getEffs(data.events));
+          data.events.length = 0;
+          f.diff(tau);
+          setTimeout(() => f2.diff(tau2), T/2)
+        },
+        ({events, calledOscillator}) => {
+          expect(calledOscillator).to.equal(1);
+          verify(events, [{wU: 1, dt: T, state:null}, {wU: 0, dt: T, state:null}])
+        }
+      ))
+      scaffold.push(makeGenCase(
+        "should not batch !== taus together",
+        data => {
+          data.calledOscillator = 0;
+          const t1 = {tau: (start, tau, node) => {
+            const t = setTimeout(() => {
+              data.calledOscillator++;
+              start()
+            }, T)
+          }}
+          const t2 = {tau: (start, tau, node) => {
+            const t = setTimeout(() => {
+              data.calledOscillator++;
+              start()
+            }, T)
+          }}
+          expect(t1.tau.name).to.equal(t2.tau.name);
+          expect(t1.tau).to.not.equal(t2.tau);
+          const f = diff(h(0), null, getEffs(data.events));
+          const f2 = diff(h(1), null, getEffs(data.events));
+          data.events.length = 0;
+          f.diff(t1.tau);
+          f2.diff(t2.tau)
+        },
+        ({events, calledOscillator}) => {
+          expect(calledOscillator).to.equal(2);
+          verify(events, [{wU: 0, dt: T, state:null}, {wU: 1, dt: T, state:null}, ])
+        }
+      ))
+    })
+  })
   systems.forEach(s => {
     /* There are three ways we can perturb a two-node system:
          1. An update (photon) can hit P (1,0)
@@ -197,7 +297,8 @@ describe("scheduling in a 2-node system", function(){
   })
   tests.forEach(testCase => {
     it(testCase.name, function(){
-      verify(testCase.actual, testCase.expected)
+      if (testCase.check) testCase.check();
+      else verify(testCase.actual, testCase.expected)
     })
   }, describe)
 })

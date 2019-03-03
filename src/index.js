@@ -1,14 +1,13 @@
 // node states
-const IS_CHLD = 1;
-const IS_CTXL = 2;
-const HAS_EVT = 4;
-const IN_PATH = 8;
-
-// number of microstates metadata since state, s, doubles as counter
+// ORDER is needed since state, ph, doubles as counter
 // we need to increment the count by 0 Z-16 if we want to not affect our state values
 // this amounts to changing all of the bits that aren't the first 4.
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXSSSS
 //                X (counting bits)            S (state bits)
+const IS_CHLD = 1;
+const IS_CTXL = 2;
+const HAS_EVT = 4;
+const IN_PATH = 8;
 const ORDER = 16;
 
 // query bitmasks
@@ -38,9 +37,10 @@ const clean = (t, ix, next=[]) => {
   return next
 }
 // emit mutation event to plugins
-const emit = (eff, type, f, p, s, ps) => {
-  if (Array.isArray(eff)) for (eff of eff) eff[type] && eff[type](f, p, s, ps);
-  else eff[type] && eff[type](f, p, s, ps);   
+const emit = (evt, type, f, p, s, ps) => {
+  if (Array.isArray(evt)) for (evt of evt)
+    evt[type] && evt[type](f, p, s, ps);
+  else evt[type] && evt[type](f, p, s, ps);   
 }
 
 // set fields on frame or light frame
@@ -209,19 +209,19 @@ const unlinkNode = (f, p, s=null, n=f.sib) => {
 }
 
 // MUTATIONS
-const add = (t, p, s, isRoot, isF, effs) => {
+const add = (t, p, s, isRoot, isF, evt) => {
   if (t){
-    isF = isFrame(p), effs = isF ? p.evt && p.evt.evt : p, on = 2;
-    if (!isFn(t.name)) t = new Frame(t, effs);
+    isF = isFrame(p), evt = isF ? p.evt && p.evt.evt : p, on = 2;
+    if (!isFn(t.name)) t = new Frame(t, evt);
     else {
       const Sub = t.name;
-      if (isFrame(Sub.prototype)) t = new Sub(t, effs);
-      else t = new Frame(t, effs), t.render = Sub;
+      if (isFrame(Sub.prototype)) t = new Sub(t, evt);
+      else t = new Frame(t, evt), t.render = Sub;
     }
     // step counter
     t.st = 0;
     // phase and in degree counter
-    t.ph = IN_PATH | (effs ? HAS_EVT : 0) | (isRoot ? (!isF && IS_CTXL) : IS_CHLD)
+    t.ph = IN_PATH | (evt ? HAS_EVT : 0) | (isRoot ? (!isF && IS_CTXL) : IS_CHLD)
     p = t.parent = isF ? p : ctx, on = 1;
     if (t.evt) sib(t) ? isAdd(p) || queue(t, s, s ? s.sib : sib(p && p.next)) : pushLeader(t);
     p && linkNode(t, p, s);
@@ -257,13 +257,13 @@ const rebasePath = (f, i, ch) => {
         pushPath(i);
       } else f.ph |= IN_PATH, path.push(stx.pop());
     } else {
-      if (((i = f.next) && isCh(i)) || f.affs){
+      if (f.st++, ((i = f.next) && isCh(i)) || f.affs){
         if (ch = f._affs = [], i && isCh(i))
           do ch.push(i); while(i = i.sib);
         if (i = f.affs) for (i of i)
           i.temp ? ch.push(i) : i.unsub(f);
-        f.st = ch.length + 1;
-      } else f.st = 1;
+        f.st += ch.length;
+      }
     }
 }
 const pushPath = f => {
