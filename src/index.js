@@ -1,9 +1,4 @@
 // node states
-// ORDER is needed since state, ph, doubles as counter
-// we need to increment the count by ORDER if we want to not affect our state values
-// this amounts to changing all of the bits that aren't the first 4.
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXSSSSS
-//                X (counting bits)            S (state bits)
 const IS_CHLD = 1;
 const IS_CTXL = 2;
 const HAS_EVT = 4;
@@ -140,7 +135,7 @@ const flushEvents = (c, f, e, p, owner) => {
   while(f) {
     p = f.parent;
     if (isUpd(f)){
-      f.ph &= ~HAS_EVT, e = f.evt;
+      f.ph -= HAS_EVT, e = f.evt;
       if (!e.temp){
         c = sib(f);
         emit(e.evt, "willAdd", f, c && p, c && f.prev, f.temp);
@@ -233,7 +228,7 @@ const add = (t, p, s, isRoot, isF, evt) => {
 const move = (f, p, s, ps=sib(f.prev), e=f.evt) => {
   if (e){
     isAdd(p) || dequeue(f, ps);
-    if (!isUpd(f)) e.temp = f.temp, f.ph |= HAS_EVT;
+    if (!isUpd(f)) e.temp = f.temp, f.ph += HAS_EVT;
     isAdd(p) || queue(f, s, s ? s.sib : sib(p && p.next));
   }
   unlinkNode(f, p, f.prev), linkNode(f, p, s);
@@ -241,7 +236,7 @@ const move = (f, p, s, ps=sib(f.prev), e=f.evt) => {
 const receive = (f, t, e=f.evt) => {
   if (e && !isUpd(f)){
     sib(f) ? queue(f, sib(f.prev), f.sib) : pushLeader(f)
-    e.temp = f.temp, f.ph |= HAS_EVT;
+    e.temp = f.temp, f.ph += HAS_EVT;
   }
   f.temp = t;
 }
@@ -256,7 +251,7 @@ const rebasePath = (f, i, ch) => {
         if ((i = f._affs[i-1]).st)
           throw new Error("cycle")
         pushPath(i);
-      } else f.ph |= IN_PATH, path.push(stx.pop());
+      } else f.ph += IN_PATH, path.push(stx.pop());
     } else {
       if (f.st++, ((i = f.next) && isCh(i)) || f.affs){
         if (ch = f._affs = [], i && isCh(i))
@@ -284,9 +279,10 @@ const unmount = (f, isRoot, c) => {
           c.temp && unlinkEvent(e, c.evt);
       } else if (f.cleanup) rems.push(f)
       sib(f) ? isAdd(c) || dequeue(f, sib(f.prev)) : isUpd(f) && popLeader(f);
-      f.ph &= ~HAS_EVT
+      if (isUpd(f)) f.ph -= HAS_EVT
     } else if (f.cleanup) rems.push(f);
-    c && c.temp && unlinkNode(f, c, f.prev), f.ph |= IN_PATH;
+    c && c.temp && unlinkNode(f, c, f.prev);
+    if (!inPath(f)) f.ph += IN_PATH
     if (c = f.next) do orph.push(c); while(c = c.sib);
     if (c = f.next) while(c = c.prev) orph.push(c);
     relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.next = null)
@@ -301,7 +297,7 @@ const mount = (f, next, c) => {
 const subdiff = (p, c, next, i, n) => {
   if (next.length){
     do (n = popIndex(c.temp)) ?
-      n === (n.p = c).temp ? ((c.ph-=ORDER) < ORDER) && (c.ph &= ~IN_PATH) : receive(c, n) :
+      n === (n.p = c).temp ? ((c.ph-=ORDER) < ORDER) && (c.ph -= IN_PATH) : receive(c, n) :
       orph.push(c); while(c = c.sib); unmount();
     for(i = p.next; i && (n = next.pop());)
       (c = n.p) ?
@@ -320,17 +316,17 @@ const sidediff = (c, raw=rebasePath(on=1)) => {
     if (ctx = path.pop() || lags.pop()){
       if (!inPath(ctx)) {
         if (c = ctx._affs) {
-          for (c of c) ((c.ph-=ORDER) < ORDER) && (c.ph &= ~IN_PATH);
+          for (c of c) ((c.ph-=ORDER) < ORDER) && (c.ph -= IN_PATH);
           ctx._affs = null;
         }
       } else if (c = ctx.temp) {
         relax(ctx);
-        ctx.ph &= IS_CHLD | IS_CTXL | HAS_EVT | IS_POST;
+        ctx.ph &= (ORDER-IN_PATH-1)
         ctx._affs = null;
         raw = ctx.render(c, ctx)
         if (ctx.temp){
           if (ctx.rendered && !(ctx.ph & IS_POST)){
-            ctx.ph |= IS_POST;
+            ctx.ph += IS_POST;
             post.push(ctx);
           }
           sib(c = ctx.next) ?
@@ -342,7 +338,7 @@ const sidediff = (c, raw=rebasePath(on=1)) => {
       on = 2, flushEvents(0);
       if (!post.length) return on = 0, ctx = null;
       on = 1; while(ctx = post.pop()) if (ctx.temp){
-        ctx.rendered && ctx.rendered(ctx), ctx.ph &= ~IS_POST
+        ctx.rendered && ctx.rendered(ctx), ctx.ph -= IS_POST
       }
     }
   } while(1);

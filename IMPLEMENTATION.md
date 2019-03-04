@@ -71,6 +71,36 @@ Supporting Data Structures:
       5. unmounts are processed immediately
       6. subtree mounts are processed before the next sibling
 
+  Bit vectors:
+    Most algorithms that act on data keep track of state. Sometimes, you have lots of state:
+
+      states {
+        isUpdating: true,
+        inPath: true,
+        isChild: false,
+        isContextualRoot: true,
+        isRenderingAgain: false
+      }
+
+    Using N fields in an object to keep track of boolean states is not efficient. The next best thing you can do is to condense the states into a single integer, and give each possible state a value. This forces you to do a lot of manual bookkeeping because the number of possible states is exponential for flags. For example IsUpdAndInPathAndNotChildAndIsCtxAndNotRenderingAgain is distinct from IsUpdAndInPathAndIsChildAndNotCtxAndRenderingAgain. You would need to enumerate all of them. Enums are better when your fundamental states are mutually exclusive. Flags are often not.
+
+    The third approach is to use bit vectors, and it is a more natural way to keep track of boolean states, since we can use bitwise operations to update values without interfering with other values. Adding more flag states to a bit vector is trivial compared to adding more enums. We can use the first N bits of an integer and assign each bit to a boolean flag. For example, we have 5 flags so we'd use a 32 bit integer that looks like:
+
+       XXXXXXXXXXXXXXXXXXXXXXXXXXXSSSSS N = 5 bits for state, ORDER = 2^5 = 32.
+
+    If the 4th bit is 1, isContextualRoot is true. If the 4th bit is 0, it's false. The orthogonal components in a bit vector are given by powers of two. 1, 2, 4, 8, etc. are all orthogonal basis vectors and can be used as flags. The size of the state space, ORDER, is given by 2^N where N is the number of flags.
+
+    In the example above, we have 27 "wasted" bits (denoted by X). We use those for a counter to avoid making an extra counter integer. Because of this, we must be careful when dealing with bit operations:
+      * we mustn't coerce state into 32 bits
+        * since we lose ~21 bits of entropy for our counter bits
+        * Setting bits via state |= BIT is not allowed
+        * Unsetting bits via state &= ~BIT is not allowed
+        * Resetting counter via state &= ORDER-1 is allowed
+        * Querying state via state & BIT is allowed
+      * we mustn't increment counters by anything other than the ORDER of the state space
+        * since ORDER = 0 (mod ORDER), incrementing the state variable by ORDER does not
+          interfere with the state values (first log2(ORDER) bits are unchanged)
+
 How the Engine Works:
   
   Preface: Whether you're building a reactive database like Minimongo, something like Meteor's Tracker, a reactive observer framework like MobX, or a view engine like React, you will be dealing with data flow across dynamic graphs. At the end of the day, all of those libraries have that in common. This library lets you build frameworks and applications that rely on data flow along dynamic DAGs.
