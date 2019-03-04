@@ -336,7 +336,7 @@ const sidediff = (c, raw=rebasePath(on=1)) => {
         }
       }
     } else {
-      on = 2, flushEvents(c=0);
+      on = 2, flushEvents(0);
       if (!post.length) return on = 0, ctx = null;
       on = 1; while(ctx = post.pop()) if (c = ctx.hook) {
         ctx.rendered && ctx.rendered(c, ctx), ctx.hook = null;
