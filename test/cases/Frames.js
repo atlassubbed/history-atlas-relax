@@ -89,15 +89,16 @@ class StemCell extends Frame {
   render(temp, f){
     const isFirst = f._isFirst;
     f._isFirst = false;
-    const { data, next } = temp;
+    const { data, next } = f._latestTemp = temp;
     if (f.nextState) f.state = merge(f.state || {}, f.nextState), f.nextState = null;
     if (f.evt) for (let eff of toArr(f.evt.evt)) if (eff && eff.log) eff.log(isFirst ? "wA" : "wU", f, temp);
     isFirst ? f.willAdd && f.willAdd(f) : f.willUpdate && f.willUpdate(f);
     if (f.getNext) return f.getNext(data, next, f, isFirst);
     return data && data.copy ? copy(next) : next;
   }
-  rendered(temp, f){
+  rendered(f){
     const isFirst = f._isFirstPost;
+    const temp = f._latestTemp;
     f._isFirstPost = false;
     if (this.evt) for (let eff of toArr(this.evt.evt)) {
       if (eff && eff.log) {

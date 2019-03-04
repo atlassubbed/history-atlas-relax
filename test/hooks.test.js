@@ -12,98 +12,6 @@ const { Frame, diff } = require("../src/index");
 
 describe("lifecycle methods/hooks", function(){
   describe("rendered", function(){
-    it("should run once with the latest template arg", function(){
-      let calledRendered = 0, calledRender = 0;
-      const N = 10;
-      const Node = (temp, node) => {
-        calledRender++;
-        node.rendered = node.rendered || ((t, f) => {
-          calledRendered++;
-          expect(t.data.id).to.equal(N)
-        })
-        const { name, data: { id } } = temp;
-        if (id < N){
-          diff({name, data: {id: id+1}}, node);
-        }
-      }
-      diff({name: Node, data: {id: 0}});
-      expect(calledRender).to.equal(N+1);
-      expect(calledRendered).to.equal(1);
-    })
-    it("should run once with the latest template closure", function(){
-      let calledRendered = 0, calledRender = 0;
-      const N = 10;
-      const Node = (temp, node) => {
-        calledRender++;
-        node.rendered = (t, f) => {
-          calledRendered++;
-          expect(temp.data.id).to.equal(N)
-          expect(t).to.eql(temp)
-        }
-        const { name, data: { id } } = temp;
-        if (id < N){
-          diff({name, data: {id: id+1}}, node);
-        }
-      }
-      diff({name: Node, data: {id: 0}});
-      expect(calledRender).to.equal(N+1);
-      expect(calledRendered).to.equal(1);
-    })
-    it("should run with the last template arg used in render if outer-diffed post-flush before its rendered is called", function(){
-      let calledRendered = 0, calledRender = 0, calledFirstRendered = 0;
-      const h = id => ({
-        name: "root", next: [
-          {name: Node, data: {id}},
-          {name: PostDiffNode}
-        ]
-      })
-      const Node = (temp, node) => {
-        calledRender++;
-        node.rendered = node.rendered || ((t, f) => {
-          expect(t.data.id).to.equal(calledRendered++)
-        })
-      }
-      const PostDiffNode = (temp, node) => {
-        node.rendered = node.rendered || ((t, f) => {
-          if (!calledFirstRendered++){
-            expect(calledRendered).to.equal(0);
-            diff(h(1), node.parent);
-          }
-        })
-      }
-      diff(h(0))
-      expect(calledRender).to.equal(2);
-      expect(calledRendered).to.equal(2);
-      expect(calledFirstRendered).to.equal(2);
-    })
-    it("should run with the last template closure used in render if outer-diffed post-flush before its rendered is called", function(){
-      let calledRendered = 0, calledRender = 0, calledFirstRendered = 0;
-      const h = id => ({
-        name: "root", next: [
-          {name: Node, data: {id}},
-          {name: PostDiffNode}
-        ]
-      })
-      const Node = (temp, node) => {
-        calledRender++;
-        node.rendered = (t, f) => {
-          expect(t).to.eql(temp);
-          expect(t.data.id).to.equal(calledRendered++);
-        }
-      }
-      const PostDiffNode = (temp, node) => {
-        node.rendered = node.rendered || (() => {
-          if (!calledFirstRendered++){
-            expect(calledRendered).to.equal(0);
-            diff(h(1), node.parent);
-          }
-        })
-      }
-      diff(h(0))
-      expect(calledRender).to.equal(2);
-      expect(calledRendered).to.equal(2);
-      expect(calledFirstRendered).to.equal(2);
-    })
     it("should cancel the hook if unset before flush", function(){
       let calledRendered = 0, calledRender = 0;
       const upd = f => diff({name: Node, data: {id: calledRender}}, f);
@@ -225,7 +133,7 @@ describe("lifecycle methods/hooks", function(){
       const h = (id, run, next) => ({name: Node, data: {id, run}, next})
       const Node = (temp, f) => {
         if (temp.data.id === 4){
-          f.rendered = f.rendered || (t => {
+          f.rendered = f.rendered || (() => {
             calledRendered++;
             diff(h(0, 0, [h(1), 0, h(2, 0, [h(3), h(4)])]), r);
             diff(null, r)
@@ -266,7 +174,7 @@ describe("lifecycle methods/hooks", function(){
         f.cleanup = () => {};
         f.rendered = t => {
           calledRendered++;
-          if (t.data.id === 4) diff(null, r)
+          if (temp.data.id === 4) diff(null, r)
         }
         if (!temp.data.id) r = f;
         return temp.next;

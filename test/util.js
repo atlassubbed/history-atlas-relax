@@ -10,7 +10,6 @@ const assertDeleted = f => {
   expect(f.prev).to.be.null;
   expect(f.top).to.be.null;
   expect(f.bot).to.be.null;
-  expect(f.hook).to.be.null;
   expect(f.evt).to.be.null;
 }
 

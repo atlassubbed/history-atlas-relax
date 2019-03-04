@@ -1,14 +1,15 @@
 // node states
 // ORDER is needed since state, ph, doubles as counter
-// we need to increment the count by 0 Z-16 if we want to not affect our state values
+// we need to increment the count by ORDER if we want to not affect our state values
 // this amounts to changing all of the bits that aren't the first 4.
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXSSSS
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXSSSSS
 //                X (counting bits)            S (state bits)
 const IS_CHLD = 1;
 const IS_CTXL = 2;
 const HAS_EVT = 4;
 const IN_PATH = 8;
-const ORDER = 16;
+const IS_POST = 16
+const ORDER = 32;
 
 // query bitmasks
 const isCtx = f => f.ph & IS_CTXL;
@@ -46,7 +47,7 @@ const emit = (evt, type, f, p, s, ps) => {
 // set fields on frame or light frame
 const init = (f, temp=null) => {
   if (f.temp = temp)
-    f.affs = f._affs = f.parent = f.hook = null;
+    f.affs = f._affs = f.parent = null;
   f.next = f.sib = f.prev = f.top = f.bot = null;
   return f;
 }
@@ -288,7 +289,7 @@ const unmount = (f, isRoot, c) => {
     c && c.temp && unlinkNode(f, c, f.prev), f.ph |= IN_PATH;
     if (c = f.next) do orph.push(c); while(c = c.sib);
     if (c = f.next) while(c = c.prev) orph.push(c);
-    relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.next = f.hook = null)
+    relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.next = null)
   }
 }
 // mount under a node that has no children
@@ -324,12 +325,14 @@ const sidediff = (c, raw=rebasePath(on=1)) => {
         }
       } else if (c = ctx.temp) {
         relax(ctx);
-        ctx.ph &= IS_CHLD | IS_CTXL | HAS_EVT;
+        ctx.ph &= IS_CHLD | IS_CTXL | HAS_EVT | IS_POST;
         ctx._affs = null;
         raw = ctx.render(c, ctx)
         if (ctx.temp){
-          if (ctx.rendered)
-            ctx.hook || post.push(ctx), ctx.hook = c;
+          if (ctx.rendered && !(ctx.ph & IS_POST)){
+            ctx.ph |= IS_POST;
+            post.push(ctx);
+          }
           sib(c = ctx.next) ?
             isCh(c) && subdiff(ctx, c, clean(raw, 1)) :
             mount(ctx, clean(raw));
@@ -338,8 +341,8 @@ const sidediff = (c, raw=rebasePath(on=1)) => {
     } else {
       on = 2, flushEvents(0);
       if (!post.length) return on = 0, ctx = null;
-      on = 1; while(ctx = post.pop()) if (c = ctx.hook) {
-        ctx.rendered && ctx.rendered(c, ctx), ctx.hook = null;
+      on = 1; while(ctx = post.pop()) if (ctx.temp){
+        ctx.rendered && ctx.rendered(ctx), ctx.ph &= ~IS_POST
       }
     }
   } while(1);
