@@ -39,17 +39,20 @@ const emit = (evt, type, f, p, s, ps) => {
   else evt[type] && evt[type](f, p, s, ps);   
 }
 
-// set fields on frame or light frame
-const init = (f, temp=null) => {
-  if (f.temp = temp)
-    f.affs = f._affs = f.parent = null;
-  f.next = f.sib = f.prev = f.top = f.bot = null;
-  return f;
-}
 // not to be instantiated by caller
 const Frame = function(temp, evt){
-  this.evt = evt ? init({evt}) : null;
-  init(this, temp);
+  this.evt = evt ? {
+    evt,
+    temp: null,
+    next: null,
+    sib: null,
+    prev: null,
+    top: null,
+    bot: null
+  } : null;
+  this.affs = this._affs = this.parent =
+  this.next = this.sib = this.prev = this.top = this.bot = null;
+  this.temp = temp;
 }
 Frame.prototype = {
   constructor: Frame,
@@ -125,11 +128,13 @@ const linkEvent = (e, f, p, s, next) => {
 }
 // empties the thread, emitting the queued events
 const flushEvents = (c, f, e, p, owner) => {
-  while(f = rems[c++]){
-    f.cleanup && f.cleanup(f);
-    if (e = f.evt) emit(e.evt, "willRemove", f, e.next, e.prev, e.temp, f.evt = null);
+  if (rems.length) {
+    while(f = rems[c++]){
+      f.cleanup && f.cleanup(f);
+      if (e = f.evt) emit(e.evt, "willRemove", f, e.next, e.prev, e.temp, f.evt = null);
+    }
+    rems.length = 0;
   }
-  rems.length = 0;
   if (!(f = head)) return;
   owner = f.parent;
   while(f) {
@@ -358,7 +363,7 @@ const diff = (t, f, p=f&&f.prev, s) => {
           }
         } else if (!t) unmount(orph.push(f), r = true);
       }
-      (inDiff ? rebasePath : sidediff)();
+      r && (inDiff ? rebasePath : sidediff)();
     }
   } finally { on = inDiff, ctx = context }
   return r;
