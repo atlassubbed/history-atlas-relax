@@ -112,7 +112,7 @@ describe("diffing standalone (unordered) nodes", function(){
       events.length = 0;
       diff(null, r);
       expect(events).to.eql([
-        {mWP: 0}, {mWP: 1}, {mWP: 2}
+        {mWP: 0}, {mWP: 2}, {mWP: 1}
       ])
       r._node = r.s1._node = r.s2._node = null 
       assertDeleted(r), assertDeleted(r.s1), assertDeleted(r.s2)
@@ -130,7 +130,7 @@ describe("diffing standalone (unordered) nodes", function(){
       diff(null, r);
       expect(renderer.tree).to.be.null;
       expect(events).to.eql([
-        {mWP: 0}, {mWP: 4}, {mWP: 5}, {mWP: 3}, {mWP: 2}, {mWP: 1}
+        {mWP: 0}, {mWP: 3}, {mWP: 2}, {mWP: 1}, {mWP: 5}, {mWP: 4}
       ])
       r.s1._node = r.s2._node = null;
       assertDeleted(r.one), assertDeleted(r.two), assertDeleted(r.tre)
@@ -150,7 +150,7 @@ describe("diffing standalone (unordered) nodes", function(){
       diff(null, r);
       expect(renderer.tree).to.be.null;
       expect(events).to.eql([
-        {mWA: 6}, {mWP: 0}, {mWP: 4}, {mWP: 5}, {mWP: 3}, {mWP: 2}, {mWP: 1}, {mWP: 6}
+        {mWA: 6}, {mWP: 0}, {mWP: 3}, {mWP: 2}, {mWP: 1}, {mWP: 6}, {mWP: 5}, {mWP: 4}
       ])
       r.s1._node = r.s2._node = null;
       assertDeleted(r.one), assertDeleted(r.two), assertDeleted(r.tre), assertDeleted(added)
@@ -170,7 +170,7 @@ describe("diffing standalone (unordered) nodes", function(){
       diff(null, r);
       expect(renderer.tree).to.be.null;
       expect(events).to.eql([
-        {mWM: 3}, {mWP: 0}, {mWP: 4}, {mWP: 5}, {mWP: 2}, {mWP: 1}, {mWP: 3}
+        {mWM: 3}, {mWP: 0}, {mWP: 2}, {mWP: 1}, {mWP: 3}, {mWP: 5}, {mWP: 4}
       ])
       r.s1._node = r.s2._node = null;
       assertDeleted(r.one), assertDeleted(r.two), assertDeleted(r.tre)
@@ -190,7 +190,7 @@ describe("diffing standalone (unordered) nodes", function(){
       diff(null, r);
       expect(renderer.tree).to.be.null;
       expect(events).to.eql([
-        {mWM: 1}, {mWP: 0}, {mWP: 4}, {mWP: 5}, {mWP: 1}, {mWP: 3}, {mWP: 2}
+        {mWM: 1}, {mWP: 0}, {mWP: 1}, {mWP: 3}, {mWP: 2}, {mWP: 5}, {mWP: 4}
       ])
       r.s1._node = r.s2._node = null;
       assertDeleted(r.one), assertDeleted(r.two), assertDeleted(r.tre)
@@ -211,7 +211,7 @@ describe("diffing standalone (unordered) nodes", function(){
       diff(null, r);
       expect(renderer.tree).to.be.null;
       expect(events).to.eql([
-        {mWP: 1}, {mWP: 0}, {mWP: 4}, {mWP: 5}, {mWP: 3}, {mWP: 2}
+        {mWP: 1}, {mWP: 0}, {mWP: 3}, {mWP: 2}, {mWP: 5}, {mWP: 4}
       ])
       r.s1._node = r.s2._node = null;
       assertDeleted(r.one), assertDeleted(r.two), assertDeleted(r.tre);

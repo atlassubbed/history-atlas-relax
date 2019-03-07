@@ -3,7 +3,7 @@ const IS_CHLD = 1;
 const IS_CTXL = 2;
 const HAS_EVT = 4;
 const IN_PATH = 8;
-const IS_POST = 16
+const IN_POST = 16
 const ORDER = 32;
 
 // diff states
@@ -250,6 +250,21 @@ const receive = (f, t, e=f.evt) => {
   }
   f.temp = t;
 }
+const remove = (f, p, s, e=f.evt) => {
+  if (e) {
+    if (!isUpd(f) || e.temp){
+      rems.push(f)
+      e.temp = e.temp || f.temp;
+      if (e.next = sib(f) && p)
+        p.temp && unlinkEvent(e, p.evt);
+    } else if (f.cleanup) rems.push(f)
+    sib(f) ? isAdd(p) || dequeue(f, sib(s)) : isUpd(f) && popLeader(f);
+    if (isUpd(f)) f.ph -= HAS_EVT
+  } else if (f.cleanup) rems.push(f);
+  p && p.temp && unlinkNode(f, p, s);
+  if (!inPath(f)) f.ph += IN_PATH
+  relax(f, f.temp = f.affs = f._affs = null)
+}
 
 // PATH
 // compute a topologically ordered path to diff along
@@ -278,24 +293,21 @@ const pushPath = f => {
 
 // DIFF CYCLE
 // unmount queued orphan nodes
-const unmount = (f, isRoot, c) => {
-  while(f = orph.pop()) {
-    if (isRoot && (c = f.affs)) for (c of c) pushPath(c);
-    if (c = f.parent, e = f.evt) {
-      if (!isUpd(f) || e.temp){
-        rems.push(f)
-        e.temp = e.temp || f.temp;
-        if (e.next = sib(f) && c) 
-          c.temp && unlinkEvent(e, c.evt);
-      } else if (f.cleanup) rems.push(f)
-      sib(f) ? isAdd(c) || dequeue(f, sib(f.prev)) : isUpd(f) && popLeader(f);
-      if (isUpd(f)) f.ph -= HAS_EVT
-    } else if (f.cleanup) rems.push(f);
-    c && c.temp && unlinkNode(f, c, f.prev);
-    if (!inPath(f)) f.ph += IN_PATH
-    if (c = f.next) do orph.push(c); while(c = c.sib);
-    if (c = f.next) while(c = c.prev) orph.push(c);
-    relax(f, f.temp = f.affs = f._affs = f.sib = f.parent = f.prev = f.next = null)
+const unmount = (f=orph.pop(), isRoot, c, p, s) => {
+  while(f){
+    p = f.parent, s = f.prev;
+    if (f.temp){ // entering "recursion"
+      if (isRoot && (c = f.affs)) for (c of c) pushPath(c);
+      remove(f, p, s);
+      if (c = f.next) while(c.sib) c = c.sib;
+      if (c) {
+        f = c;
+        continue;
+      }
+    }
+    c = !(p && p.temp) && (s || p);
+    f.sib = f.parent = f.prev = f.next = null;
+    f = c || orph.pop();
   }
 }
 // mount under a node that has no children
@@ -335,8 +347,8 @@ const sidediff = (c, raw=rebasePath(on=DIFF)) => {
         ctx._affs = null;
         raw = ctx.render(c, ctx)
         if (ctx.temp){
-          if (ctx.rendered && !(ctx.ph & IS_POST)){
-            ctx.ph += IS_POST;
+          if (ctx.rendered && !(ctx.ph & IN_POST)){
+            ctx.ph += IN_POST;
             post.push(ctx);
           }
           sib(c = ctx.next) ?
@@ -348,7 +360,7 @@ const sidediff = (c, raw=rebasePath(on=DIFF)) => {
       on = LOCK, flushEvents(0);
       if (!post.length) return on = IDLE, ctx = null;
       on = DIFF; while(ctx = post.pop()) if (ctx.temp){
-        ctx.rendered && ctx.rendered(ctx), ctx.ph -= IS_POST
+        ctx.rendered && ctx.rendered(ctx), ctx.ph -= IN_POST
       }
     }
   } while(1);
@@ -366,7 +378,7 @@ const diff = (t, f, p=f&&f.prev, s) => {
           if (sib(f) && isFrame(s = f.parent) && (!p || p.parent === s)){
             (p = sib(p)) === (s = sib(f.prev)) || move(r = f, f.parent, p, s);
           }
-        } else if (!t) unmount(orph.push(f), r = true);
+        } else if (!t) unmount(f, r = true);
       }
       r && (inDiff ? rebasePath : sidediff)();
     }
