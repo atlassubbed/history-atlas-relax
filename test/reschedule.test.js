@@ -108,11 +108,11 @@ function buildMochaScaffold(){
     asyncTaus.forEach(tau => {
       const rel = tau > 0 ? ">" : "=", id = 0;
       scaffold.push({
-        desc: `should not schedule a tau ${rel} 0 update during willAdd event`,
+        desc: `should not schedule a tau ${rel} 0 update during add event`,
         task: effs => {
           let called = 0;
           const r = diff(h(0), null, effs);
-          diff(h(1), null, {willAdd: f => {
+          diff(h(1), null, {add: f => {
             const res = r.setState({n: 0})
             expect(res).to.be.false;
             called++
@@ -124,11 +124,11 @@ function buildMochaScaffold(){
         ]
       })
       scaffold.push({
-        desc: `should not schedule a tau ${rel} 0 update during willRemove event`,
+        desc: `should not schedule a tau ${rel} 0 update during remove event`,
         task: effs => {
           let called = 0;
           const r = diff(h(0), null, effs);
-          const f = diff(h(1), null, {willRemove: f => {
+          const f = diff(h(1), null, {remove: f => {
             const res = r.setState({n: 0})
             expect(res).to.be.false;
             called++
@@ -141,11 +141,11 @@ function buildMochaScaffold(){
         ]
       })
       scaffold.push({
-        desc: `should not schedule a tau ${rel} 0 update during willReceive event`,
+        desc: `should not schedule a tau ${rel} 0 update during temp event`,
         task: effs => {
           let called = 0;
           const r = diff(h(0), null, effs);
-          const f = diff(h(1), null, {willReceive: f => {
+          const f = diff(h(1), null, {temp: f => {
             const res = r.setState({n: 0})
             expect(res).to.be.false;
             called++
@@ -158,11 +158,11 @@ function buildMochaScaffold(){
         ]
       })
       scaffold.push({
-        desc: `should not schedule a tau ${rel} 0 update during willMove event`,
+        desc: `should not schedule a tau ${rel} 0 update during move event`,
         task: effs => {
           let called = 0;
           const r = diff(h(0), null, effs);
-          const f = diff(h(1, null, [k(2), k(3)]), null, {willMove: f => {
+          const f = diff(h(1, null, [k(2), k(3)]), null, {move: f => {
             if (f.temp.data.id === 3){
               const res = r.setState({n: 0})
               expect(res).to.be.false;

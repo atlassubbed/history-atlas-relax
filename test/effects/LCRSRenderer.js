@@ -30,13 +30,13 @@ module.exports = class LCRSRenderer extends Renderer {
     node.next = next[i = 0];
     while(child = next[i++], sib = next[i]) child.sib = sib;
   }
-  willAdd(f, p, s, t){
+  add(f, p, s, t){
     this.counts.a++;
     const node = f._node = this.node(t);
     if (!p) this.tree = node;
     p && insertAfter(node, p._node, s && s._node);
   }
-  willRemove(f, p, s){
+  remove(f, p, s){
     this.counts.r++;
     const node = f._node;
     if (!p) this.tree = null;
@@ -45,13 +45,13 @@ module.exports = class LCRSRenderer extends Renderer {
      // but garbage collect should work without doing so
     f._node = null;
   }
-  willMove(f, p, ps, ns){
+  move(f, p, ps, ns){
     this.counts.s++;
     const node = f._node, parent = p._node;
     removeAfter(node, parent, ps && ps._node);
     insertAfter(node, parent, ns && ns._node);
   }
-  willReceive(f, t){
+  temp(f, t){
     this.counts.u++
     if (t.data != null) f._node.data = t.data;
   }

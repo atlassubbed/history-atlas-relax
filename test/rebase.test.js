@@ -62,10 +62,10 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.be.null;
         expect(events).to.eql([{wA: 0}, {mWA: 0}, {mWP: 0}])
       })
-      it("should not mount nodes during willAdd mutation event", function(){
+      it("should not mount nodes during add mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
-        diff(h(0), null, [renderer, tracker, {willAdd: f => {
+        diff(h(0), null, [renderer, tracker, {add: f => {
           const res = diff(h(1), null, f);
           expect(res).to.be.false;
           called++
@@ -74,10 +74,10 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0)));
         expect(events).to.eql([{wA: 0}, {mWA: 0}])
       })
-      it("should not mount nodes during willRemove mutation event", function(){
+      it("should not mount nodes during remove mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
-        const f = diff(h(0, null, h(1)), null, [renderer, tracker, {willRemove: (f, p, s, t) => {
+        const f = diff(h(0, null, h(1)), null, [renderer, tracker, {remove: (f, p, s, t) => {
           if (t.data.id === 1){
             const res = diff(h(2), null, f);
             expect(res).to.be.false;
@@ -91,10 +91,10 @@ describe("rebasing (merging a new diff into current diff)", function(){
           {wA: 0}, {wA: 1}, {mWA: 0}, {mWA: 1}, {wU: 0}, {mWP: 1}, {mWR: 0}
         ])
       })
-      it("should not mount nodes during willReceive mutation event", function(){
+      it("should not mount nodes during temp mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
-        const f = diff(h(0), null, [renderer, tracker, {willReceive: f => {
+        const f = diff(h(0), null, [renderer, tracker, {temp: f => {
           const res = diff(h(1), null, f);
           expect(res).to.be.false;
           called++
@@ -106,10 +106,10 @@ describe("rebasing (merging a new diff into current diff)", function(){
           {wA: 0}, {mWA: 0}, {wU: 0}, {mWR: 0},
         ])
       })
-      it("should not mount nodes during willMove mutation event", function(){
+      it("should not mount nodes during move mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
-        const f = diff(h(0, null, [k(1), k(2)]), null, [renderer, tracker, {willMove: f => {
+        const f = diff(h(0, null, [k(1), k(2)]), null, [renderer, tracker, {move: f => {
           if (f.temp.data.id === 2){
             const res = diff(h(3), null, f);
             expect(res).to.be.false;
@@ -256,10 +256,10 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.be.null;
         expect(events).to.be.empty
       })
-      it("should not mount nodes during willAdd mutation event", function(){
+      it("should not mount nodes during add mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
-        diff(h(0), null, {willAdd: f => {
+        diff(h(0), null, {add: f => {
           const res = diff(h(1), null, [renderer, tracker]);
           expect(res).to.be.false;
           called++
@@ -268,10 +268,10 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.be.null
         expect(events).to.be.empty;
       })
-      it("should not mount nodes during willRemove mutation event", function(){
+      it("should not mount nodes during remove mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
-        const f = diff(h(0, null, h(1)), null, {willRemove: (f, p, s, t) => {
+        const f = diff(h(0, null, h(1)), null, {remove: (f, p, s, t) => {
           if (t.data.id === 1){
             const res = diff(h(2), null, [renderer, tracker]);
             expect(res).to.be.false;
@@ -283,10 +283,10 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.be.null
         expect(events).to.be.empty
       })
-      it("should not mount nodes during willReceive mutation event", function(){
+      it("should not mount nodes during temp mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
-        const f = diff(h(0), null, {willReceive: f => {
+        const f = diff(h(0), null, {temp: f => {
           const res = diff(h(1), null, [renderer, tracker]);
           expect(res).to.be.false;
           called++
@@ -296,10 +296,10 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.be.null
         expect(events).to.be.empty;
       })
-      it("should not mount nodes during willMove mutation event", function(){
+      it("should not mount nodes during move mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
-        const f = diff(h(0, null, [k(1), k(2)]), null, {willMove: f => {
+        const f = diff(h(0, null, [k(1), k(2)]), null, {move: f => {
           if (f.temp.data.id === 2){
             const res = diff(h(3), null, [renderer, tracker]);
             expect(res).to.be.false;
@@ -437,12 +437,12 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1))));
         expect(events).to.eql([{wA: 0}, {mWA: 0}, {wA: 1}, {mWA: 1}])
       })
-      it("should not unmount nodes during willAdd mutation event", function(){
+      it("should not unmount nodes during add mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0, null), null, [renderer, tracker]);
         const m = diff(h(1), null, r);
-        diff(h(2), null, {willAdd: f => {
+        diff(h(2), null, {add: f => {
           const res = diff(null, m);
           expect(res).to.be.false;
           called++
@@ -451,12 +451,12 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1))));
         expect(events).to.eql([{wA: 0}, {mWA: 0}, {wA: 1}, {mWA: 1}])
       })
-      it("should not unmount nodes during willRemove mutation event", function(){
+      it("should not unmount nodes during remove mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0, null), null, [renderer, tracker]);
         const m = diff(h(1), null, r);
-        const f = diff(h(2), null, {willRemove: f => {
+        const f = diff(h(2), null, {remove: f => {
           const res = diff(null, m);
           expect(res).to.be.false;
           called++
@@ -466,12 +466,12 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1))));
         expect(events).to.eql([{wA: 0}, {mWA: 0}, {wA: 1}, {mWA: 1}])
       })
-      it("should not unmount nodes during willReceive mutation event", function(){
+      it("should not unmount nodes during temp mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0, null), null, [renderer, tracker]);
         const m = diff(h(1), null, r);
-        const f = diff(h(2), null, {willReceive: f => {
+        const f = diff(h(2), null, {temp: f => {
           const res = diff(null, m);
           expect(res).to.be.false;
           called++
@@ -481,12 +481,12 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1))));
         expect(events).to.eql([{wA: 0}, {mWA: 0}, {wA: 1}, {mWA: 1}])
       })
-      it("should not unmount nodes during willMove mutation event", function(){
+      it("should not unmount nodes during move mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0, null), null, [renderer, tracker]);
         const m = diff(h(1), null, r);
-        const f = diff(h(2, null, [k(3), k(4)]), null, {willMove: f => {
+        const f = diff(h(2, null, [k(3), k(4)]), null, {move: f => {
           if (f.temp.data.id === 4){
             const res = diff(null, m);
             expect(res).to.be.false;
@@ -1078,11 +1078,11 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0)));
         expect(events).to.eql([{wA: 0}, {mWA: 0}])
       })
-      it("should not unmount nodes during willAdd mutation event", function(){
+      it("should not unmount nodes during add mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0), null, [renderer, tracker]);
-        diff(h(1), null, {willAdd: f => {
+        diff(h(1), null, {add: f => {
           const res = diff(null, r);
           expect(res).to.be.false;
           called++
@@ -1091,11 +1091,11 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0)));
         expect(events).to.eql([{wA: 0}, {mWA: 0}])
       })
-      it("should not unmount nodes during willRemove mutation event", function(){
+      it("should not unmount nodes during remove mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0), null, [renderer, tracker]);
-        const f = diff(h(1), null, {willRemove: f => {
+        const f = diff(h(1), null, {remove: f => {
           const res = diff(null, r);
           expect(res).to.be.false;
           called++
@@ -1105,11 +1105,11 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0)));
         expect(events).to.eql([{wA: 0}, {mWA: 0}])
       })
-      it("should not unmount nodes during willReceive mutation event", function(){
+      it("should not unmount nodes during temp mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0), null, [renderer, tracker]);
-        const f = diff(h(1), null, {willReceive: f => {
+        const f = diff(h(1), null, {temp: f => {
           const res = diff(null, r);
           expect(res).to.be.false;
           called++
@@ -1119,11 +1119,11 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0)));
         expect(events).to.eql([{wA: 0}, {mWA: 0}])
       })
-      it("should not unmount nodes during willMove mutation event", function(){
+      it("should not unmount nodes during move mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0), null, [renderer, tracker]);
-        const f = diff(h(1, null, [k(2), k(3)]), null, {willMove: f => {
+        const f = diff(h(1, null, [k(2), k(3)]), null, {move: f => {
           if (f.temp.data.id === 3){
             const res = diff(null, r);
             expect(res).to.be.false;
@@ -1794,12 +1794,12 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1))));
         expect(events).to.eql([{wA: 0}, {mWA: 0}, {wA: 1}, {mWA: 1}])
       })
-      it("should not update nodes during willAdd mutation event", function(){
+      it("should not update nodes during add mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0, null), null, [renderer, tracker]);
         const m = diff(h(1), null, r);
-        diff(h(2), null, {willAdd: f => {
+        diff(h(2), null, {add: f => {
           const res = diff(h(1, {some: "data"}), m);
           expect(res).to.be.false;
           called++
@@ -1808,12 +1808,12 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1))));
         expect(events).to.eql([{wA: 0}, {mWA: 0}, {wA: 1}, {mWA: 1}])
       })
-      it("should not update nodes during willRemove mutation event", function(){
+      it("should not update nodes during remove mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0, null), null, [renderer, tracker]);
         const m = diff(h(1), null, r);
-        const f = diff(h(2), null, {willRemove: f => {
+        const f = diff(h(2), null, {remove: f => {
           const res = diff(h(1, {some: "data"}), m);
           expect(res).to.be.false;
           called++
@@ -1823,12 +1823,12 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1))));
         expect(events).to.eql([{wA: 0}, {mWA: 0}, {wA: 1}, {mWA: 1}])
       })
-      it("should not update nodes during willReceive mutation event", function(){
+      it("should not update nodes during temp mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0, null), null, [renderer, tracker]);
         const m = diff(h(1), null, r);
-        const f = diff(h(2), null, {willReceive: f => {
+        const f = diff(h(2), null, {temp: f => {
           const res = diff(h(1, {some: "data"}), m);
           expect(res).to.be.false;
           called++
@@ -1838,12 +1838,12 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0, null, h(1))));
         expect(events).to.eql([{wA: 0}, {mWA: 0}, {wA: 1}, {mWA: 1}])
       })
-      it("should not update nodes during willMove mutation event", function(){
+      it("should not update nodes during move mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0, null), null, [renderer, tracker]);
         const m = diff(h(1), null, r);
-        const f = diff(h(2, null, [k(3), k(4)]), null, {willMove: f => {
+        const f = diff(h(2, null, [k(3), k(4)]), null, {move: f => {
           if (f.temp.data.id === 4){
             const res = diff(h(1, {some: "data"}), m);
             expect(res).to.be.false;
@@ -2628,11 +2628,11 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0)));
         expect(events).to.eql([{wA: 0}, {mWA: 0}])
       })
-      it("should not update nodes during willAdd mutation event", function(){
+      it("should not update nodes during add mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0), null, [renderer, tracker]);
-        diff(h(1), null, {willAdd: f => {
+        diff(h(1), null, {add: f => {
           const res = diff(h(0, {some: "data"}), r);
           expect(res).to.be.false;
           called++
@@ -2641,11 +2641,11 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0)));
         expect(events).to.eql([{wA: 0}, {mWA: 0}])
       })
-      it("should not update nodes during willRemove mutation event", function(){
+      it("should not update nodes during remove mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0), null, [renderer, tracker]);
-        const f = diff(h(1), null, {willRemove: f => {
+        const f = diff(h(1), null, {remove: f => {
           const res = diff(h(0, {some: "data"}), r);
           expect(res).to.be.false;
           called++
@@ -2655,11 +2655,11 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0)));
         expect(events).to.eql([{wA: 0}, {mWA: 0}])
       })
-      it("should not update nodes during willReceive mutation event", function(){
+      it("should not update nodes during temp mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0), null, [renderer, tracker]);
-        const f = diff(h(1), null, {willReceive: f => {
+        const f = diff(h(1), null, {temp: f => {
           const res = diff(h(0, {some: "data"}), r);
           expect(res).to.be.false;
           called++
@@ -2669,11 +2669,11 @@ describe("rebasing (merging a new diff into current diff)", function(){
         expect(renderer.tree).to.eql(renderer.renderStatic(h(0)));
         expect(events).to.eql([{wA: 0}, {mWA: 0}])
       })
-      it("should not update nodes during willMove mutation event", function(){
+      it("should not update nodes during move mutation event", function(){
         let called = 0;
         const events = [], renderer = new LCRSRenderer, tracker = new Tracker(events);
         const r = diff(h(0), null, [renderer, tracker]);
-        const f = diff(h(1, null, [k(2), k(3)]), null, {willMove: f => {
+        const f = diff(h(1, null, [k(2), k(3)]), null, {move: f => {
           if (f.temp.data.id === 3){
             const res = diff(h(0, {some: "data"}), r);
             expect(res).to.be.false;
@@ -3331,11 +3331,11 @@ describe("rebasing (merging a new diff into current diff)", function(){
       expect(called).to.equal(1);
       expect(events).to.eql([{wA: 0}, {mWA: 0}, {wA: 1}, {mWP: 0}, {mWA: 1}])
     })
-    it("should not update nodes during willAdd mutation event", function(){
+    it("should not update nodes during add mutation event", function(){
       let called = 0;
       const events = [], tracker = new Tracker(events);
       const r = diff(h(0), null, tracker);
-      diff(h(1), null, {willAdd: f => {
+      diff(h(1), null, {add: f => {
         const res = r.setState({n: 0})
         expect(res).to.be.false;
         called++
@@ -3343,11 +3343,11 @@ describe("rebasing (merging a new diff into current diff)", function(){
       expect(called).to.equal(1);
       expect(events).to.eql([{wA: 0}, {mWA: 0}])
     })
-    it("should not update nodes during willRemove mutation event", function(){
+    it("should not update nodes during remove mutation event", function(){
       let called = 0;
       const events = [], tracker = new Tracker(events);
       const r = diff(h(0), null, tracker);
-      const f = diff(h(1), null, {willRemove: f => {
+      const f = diff(h(1), null, {remove: f => {
         const res = r.setState({n: 0})
         expect(res).to.be.false;
         called++
@@ -3356,11 +3356,11 @@ describe("rebasing (merging a new diff into current diff)", function(){
       expect(called).to.equal(1);
       expect(events).to.eql([{wA: 0}, {mWA: 0}])
     })
-    it("should not update nodes during willReceive mutation event", function(){
+    it("should not update nodes during temp mutation event", function(){
       let called = 0;
       const events = [], tracker = new Tracker(events);
       const r = diff(h(0), null, tracker);
-      const f = diff(h(1), null, {willReceive: f => {
+      const f = diff(h(1), null, {temp: f => {
         const res = r.setState({n: 0})
         expect(res).to.be.false;
         called++
@@ -3369,11 +3369,11 @@ describe("rebasing (merging a new diff into current diff)", function(){
       expect(called).to.equal(1);
       expect(events).to.eql([{wA: 0}, {mWA: 0}])
     })
-    it("should not update nodes during willMove mutation event", function(){
+    it("should not update nodes during move mutation event", function(){
       let called = 0;
       const events = [], tracker = new Tracker(events);
       const r = diff(h(0), null, tracker);
-      const f = diff(h(1, null, [k(2), k(3)]), null, {willMove: f => {
+      const f = diff(h(1, null, [k(2), k(3)]), null, {move: f => {
         if (f.temp.data.id === 3){
           const res = r.setState({n: 0})
           expect(res).to.be.false;

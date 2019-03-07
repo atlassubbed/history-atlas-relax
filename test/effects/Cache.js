@@ -6,7 +6,7 @@ module.exports = class Cache {
     this.nodes = nodes
     this.isArr = isArr(nodes);
   }
-  willAdd(f){
+  add(f){
     if(this.isArr) this.nodes.push(f);
     else this.nodes[f.temp.data.id] = f;
   }

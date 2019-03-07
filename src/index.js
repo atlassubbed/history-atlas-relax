@@ -136,7 +136,7 @@ const flushEvents = (c, f, e, p, owner) => {
   if (rems.length) {
     while(f = rems[c++]){
       f.cleanup && f.cleanup(f);
-      if (e = f.evt) emit(e.evt, "willRemove", f, e.next, e.prev, e.temp, f.evt = null);
+      if (e = f.evt) emit(e.evt, "remove", f, e.next, e.prev, e.temp, f.evt = null);
     }
     rems.length = 0;
   }
@@ -148,16 +148,16 @@ const flushEvents = (c, f, e, p, owner) => {
       f.ph -= HAS_EVT, e = f.evt;
       if (!e.temp){
         c = sib(f);
-        emit(e.evt, "willAdd", f, c && p, c && f.prev, f.temp);
+        emit(e.evt, "add", f, c && p, c && f.prev, f.temp);
         if (c && p) linkEvent(e, f, p.evt, sib(f.prev));
         if (sib(f.next)){
           f = f.next;
           continue;
         }
       } else {
-        if (f.temp !== e.temp) emit(e.evt, "willReceive", f, f.temp, e.temp);
+        if (f.temp !== e.temp) emit(e.evt, "temp", f, f.temp, e.temp);
         if ((c = sib(f.prev)) !== e.prev){
-          emit(e.evt, "willMove", f, p, e.prev, c);
+          emit(e.evt, "move", f, p, e.prev, c);
           unlinkEvent(e, p.evt), linkEvent(e, f, p.evt, c);
         }
         e.temp = null;

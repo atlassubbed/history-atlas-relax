@@ -11,5 +11,5 @@ module.exports = class Timer {
     e.state = f.state && Object.assign({}, f.state);
     this.events.push(e);
   }
-  willReceive(f){this.log("wR", f)}
+  temp(f){this.log("wR", f)}
 }
