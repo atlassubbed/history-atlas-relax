@@ -6,6 +6,11 @@ const IN_PATH = 8;
 const IS_POST = 16
 const ORDER = 32;
 
+// diff states
+const IDLE = 0;
+const DIFF = 1;
+const LOCK = 2;
+
 // query bitmasks
 const isCtx = f => f.ph & IS_CTXL;
 const isCh = f => f.ph & IS_CHLD;
@@ -68,7 +73,7 @@ Frame.prototype = {
   },
   // instance (inner) diff (schedule updates for frames)
   diff(tau=-1){
-    return on < 2 && !!this.temp &&
+    return on < LOCK && !!this.temp &&
       !(!isFn(tau) && tau < 0 ?
         (on ? rebasePath : sidediff)(pushPath(this)) :
         excite(this, tau, isFn(tau) && tau))
@@ -76,7 +81,7 @@ Frame.prototype = {
 }
 
 // on = {0: not diffing, 1: diffing, 2: cannot rebase or schedule diff}
-let head, tail, on = 0, ctx = null, keys = new Map;
+let head, tail, on = IDLE, ctx = null, keys = new Map;
 
 // KEY INDEXER
 // indexes explicit and implicit keys in LIFO order
@@ -150,7 +155,7 @@ const flushEvents = (c, f, e, p, owner) => {
           continue;
         }
       } else {
-        if (f.temp !== e.temp) emit(e.evt, "willReceive", f, f.temp);
+        if (f.temp !== e.temp) emit(e.evt, "willReceive", f, f.temp, e.temp);
         if ((c = sib(f.prev)) !== e.prev){
           emit(e.evt, "willMove", f, p, e.prev, c);
           unlinkEvent(e, p.evt), linkEvent(e, f, p.evt, c);
@@ -212,7 +217,7 @@ const unlinkNode = (f, p, s=null, n=f.sib) => {
 // MUTATIONS
 const add = (t, p, s, isRoot, isF, evt) => {
   if (t){
-    isF = isFrame(p), evt = isF ? p.evt && p.evt.evt : p, on = 2;
+    isF = isFrame(p), evt = isF ? p.evt && p.evt.evt : p, on = LOCK;
     if (!isFn(t.name)) t = new Frame(t, evt);
     else {
       const Sub = t.name;
@@ -223,7 +228,7 @@ const add = (t, p, s, isRoot, isF, evt) => {
     t.st = 0;
     // phase and in degree counter
     t.ph = IN_PATH | (evt ? HAS_EVT : 0) | (isRoot ? (!isF && IS_CTXL) : IS_CHLD)
-    p = t.parent = isF ? p : ctx, on = 1;
+    p = t.parent = isF ? p : ctx, on = DIFF;
     if (t.evt) sib(t) ? isAdd(p) || queue(t, s, s ? s.sib : sib(p && p.next)) : pushLeader(t);
     p && linkNode(t, p, s);
     isRoot ? lags.push(t) : stx.push(t);
@@ -246,7 +251,7 @@ const receive = (f, t, e=f.evt) => {
   f.temp = t;
 }
 
-// PATH (working, smaller)
+// PATH
 // compute a topologically ordered path to diff along
 const rebasePath = (f, i, ch) => {
   while(i = stx.length)
@@ -316,7 +321,7 @@ const subdiff = (p, c, next, i, n) => {
   }
 }
 // diff "sideways" across the path
-const sidediff = (c, raw=rebasePath(on=1)) => {
+const sidediff = (c, raw=rebasePath(on=DIFF)) => {
   do {
     if (ctx = path.pop() || lags.pop()){
       if (!inPath(ctx)) {
@@ -340,9 +345,9 @@ const sidediff = (c, raw=rebasePath(on=1)) => {
         }
       }
     } else {
-      on = 2, flushEvents(0);
-      if (!post.length) return on = 0, ctx = null;
-      on = 1; while(ctx = post.pop()) if (ctx.temp){
+      on = LOCK, flushEvents(0);
+      if (!post.length) return on = IDLE, ctx = null;
+      on = DIFF; while(ctx = post.pop()) if (ctx.temp){
         ctx.rendered && ctx.rendered(ctx), ctx.ph -= IS_POST
       }
     }
