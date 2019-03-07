@@ -1,7 +1,7 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
 const { LCRSRenderer, Cache } = require("./effects");
-const { Frame, diff } = require("../src/index");
+const { Frame, diff } = require("../");
 const { isScalar, type, inject, deepIgnore, assertDeleted } = require("./util")
 const { 
   irreducibleBlackboxes: primes, 

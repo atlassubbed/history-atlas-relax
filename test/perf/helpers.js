@@ -1,4 +1,4 @@
-const { Frame, diff } = require("../../src/index");
+const { Frame, diff } = require("../../");
 const { toArr } = require("../util");
 const { shuffle } = require("atlas-random");
 

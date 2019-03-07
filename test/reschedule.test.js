@@ -1,7 +1,7 @@
 const { describe, it, before } = require("mocha")
 const { expect } = require("chai")
 const { Timer } = require("./effects");
-const { diff } = require("../src/index");
+const { diff } = require("../");
 const { StemCell } = require("./cases/Frames");
 const DeferredTests = require("./DeferredTests")
 const { ALLOW, CHECK, T, taus, verify } = require("./time");

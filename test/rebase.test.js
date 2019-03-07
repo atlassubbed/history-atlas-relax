@@ -1,7 +1,7 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
 const { LCRSRenderer, Tracker } = require("./effects");
-const { diff, Frame } = require("../src/index");
+const { diff, Frame } = require("../");
 const { StemCell } = require("./cases/Frames");
 const DeferredTests = require("./DeferredTests")
 const { has, copy, inject } = require("./util")

@@ -1,5 +1,5 @@
 const { TemplateFactory, doWork, asap, makeEntangled } = require("./helpers");
-const { diff, Frame } = require("../../src/index");
+const { diff, Frame } = require("../../");
 const { fillCases, runTests, time, frames, RENDER_WORK, SAMPLES } = require("./perf-helpers");
 
 // don't wanna doWork during initialization

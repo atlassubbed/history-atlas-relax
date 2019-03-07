@@ -1,5 +1,5 @@
 const { TemplateFactory, doWork } = require("./helpers");
-const { diff, Frame } = require("../../src/index");
+const { diff, Frame } = require("../../");
 const { fillCases, runTests, time, frames, RENDER_WORK } = require("./perf-helpers");
 const { isArr } = require("../util")
 

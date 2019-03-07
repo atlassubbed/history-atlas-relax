@@ -1,7 +1,7 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
 const { Tracker } = require("./effects");
-const { Frame, diff } = require("../src/index");
+const { Frame, diff } = require("../");
 const { StemCell: { m } } = require("./cases/Frames");
 const { treeCase } = require("./cases/entangle");
 

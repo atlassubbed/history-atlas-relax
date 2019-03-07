@@ -2,7 +2,7 @@ const { describe, it } = require("mocha")
 const { expect } = require("chai")
 const { LCRSRenderer, Tracker } = require("./effects");
 const { StemCell } = require("./cases/Frames");
-const { Frame, diff } = require("../src/index");
+const { Frame, diff } = require("../");
 const { prevCases, nextCases, finalCases } = require("./cases/squash");
 const { has, isFn, copy } = require("./util")
 

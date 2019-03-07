@@ -1,7 +1,7 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
 const { Tracker } = require("./effects");
-const { diff: rawDiff } = require("../src/index");
+const { diff: rawDiff } = require("../");
 const { rootCase, treeCase, p, a } = require("./cases/entangle");
 const { has } = require("./util");
 

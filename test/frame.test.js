@@ -1,6 +1,6 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
-const { Frame, diff } = require("../src/index");
+const { Frame, diff } = require("../");
 const { StemCell } = require("./cases/Frames");
 
 describe("Frame", function(){

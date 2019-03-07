@@ -1,4 +1,4 @@
-const { Frame, diff } = require("../../src/index");
+const { Frame, diff } = require("../../");
 const { Tracker, Cache } = require("../effects");
 const { toArr } = require("../util");
 const { StemCell, StemCell2 } = require("./Frames");

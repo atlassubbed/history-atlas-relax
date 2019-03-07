@@ -1,5 +1,5 @@
 const { toArr, copy, isFn, merge, asap } = require("../util");
-const { Frame } = require("../../src/index");
+const { Frame } = require("../../");
 
 // Frame classification:
 //   1. Reducibility (irreducible, reducible (stateful, stateless))

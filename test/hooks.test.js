@@ -1,6 +1,6 @@
 const { describe, it } = require("mocha")
 const { expect } = require("chai")
-const { Frame, diff } = require("../src/index");
+const { Frame, diff } = require("../");
 
 
 // * closures are nice, you can specify your rendered callback on every render
