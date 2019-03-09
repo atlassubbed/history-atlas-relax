@@ -16,8 +16,10 @@
       1. We mustn't set state into a coerced 32 bit, or we'd lose ~21 bits of entropy for counters.
           * we would lose ~21 bits of entropy for our counter bits
           * Setting bits via state |= BIT is not allowed
-          * Unsetting bits via state &= ~BIT is not allowed
+            * because i32s drop most sig bits
+          * Unsetting bits via state &= ~BIT is also not allowed
           * Resetting counter via state &= ORDER-1 is allowed
+            * because we're setting most sig bits to zero anyway
           * Querying state via state & BIT is allowed
       2. We mustn't increment counters by anything other than the ORDER of the state space
           * since ORDER = 0 (mod ORDER), we lose no state information. */
