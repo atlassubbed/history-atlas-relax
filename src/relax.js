@@ -12,17 +12,17 @@ const DIFF = 1;
 const LOCK = 2;
 
 // query bitmasks
-const isCtx = f => f.ph & IS_CTXL;
-const isCh = f => f.ph & IS_CHLD;
-const inPath = f => f.ph & IN_PATH;
-const isUpd = f => f.ph & HAS_EVT;
+const isCtx = f => f._ph & IS_CTXL;
+const isCh = f => f._ph & IS_CHLD;
+const inPath = f => f._ph & IN_PATH;
+const isUpd = f => f._ph & HAS_EVT;
 
 // util functions
 const isFn = f => typeof f === "function";
 const norm = t => t != null && t !== true && t !== false && 
   (typeof t === "object" ? t : {name: null, data: String(t)});
 const isFrame = f => f && isFn(f.render);
-const isAdd = f => f && isUpd(f) && !f.evt.temp;
+const isAdd = f => f && isUpd(f) && !f._evt._temp;
 const sib = p => p && !isCtx(p) ? p : null;
 
 // aux data structures
@@ -45,18 +45,18 @@ const emit = (evt, type, f, p, s, ps) => {
 }
 
 // not to be instantiated by caller
-const Frame = function(temp, evt){
-  this.evt = evt ? {
-    evt,
-    temp: null,
-    next: null,
-    sib: null,
-    prev: null,
-    top: null,
-    bot: null
+const Frame = function(temp, _evt){
+  this._evt = _evt ? {
+    _evt,
+    _temp: null,
+    _next: null,
+    _sib: null,
+    _prev: null,
+    _top: null,
+    _bot: null
   } : null;
-  this.affs = this._affs = this.parent =
-  this.next = this.sib = this.prev = this.top = this.bot = null;
+  this.affs = this._affs = this.par =
+  this.next = this.sib = this.prev = this._top = this._bot = null;
   this.temp = temp;
 }
 Frame.prototype = {
@@ -101,13 +101,13 @@ const popIndex = (t, ix, k) =>
 // add leader node to thread
 const pushLeader = f => {
   if (!head) head = tail = f;
-  else (tail.evt.top = f).evt.bot = tail, tail = f;
+  else (tail._evt._top = f)._evt._bot = tail, tail = f;
 }
 // remove leader node from thread
-const popLeader = (ns, f, e=ns.evt, b=e.bot, t=e.top) => {
-  if (f ? (f.evt.bot = b) : b) b.evt.top = f || t, e.bot = null;
+const popLeader = (ns, f, e=ns._evt, b=e._bot, t=e._top) => {
+  if (f ? (f._evt._bot = b) : b) b._evt._top = f || t, e._bot = null;
   else head = f || t;
-  if (f ? (f.evt.top = t) : t) t.evt.bot = f || b, e.top = null;
+  if (f ? (f._evt._top = t) : t) t._evt._bot = f || b, e._top = null;
   else tail = f || b;
 }
 const queue = (f, s, ns) => {
@@ -122,51 +122,51 @@ const dequeue = (f, s, ns=f.sib) => {
   } else if (s && isUpd(s) && ns && isUpd(ns)) popLeader(ns);
 }
 // detach event f after sibling s
-const unlinkEvent = (f, p, s=f.prev, next) => {
-  (next = f.sib) && (next.evt.prev = s);
-  s ? (s.evt.sib = next) : (p.next = next);
+const unlinkEvent = (f, p, s=f._prev, next) => {
+  (next = f._sib) && (next._evt._prev = s);
+  s ? (s._evt._sib = next) : (p._next = next);
 }
 // attach event f after sibling s
 const linkEvent = (e, f, p, s, next) => {
-  (next = e.sib = (e.prev = s) ? s.evt.sib : p.next) && (next.evt.prev = f);
-  s ? (s.evt.sib = f) : (p.next = f)
+  (next = e._sib = (e._prev = s) ? s._evt._sib : p._next) && (next._evt._prev = f);
+  s ? (s._evt._sib = f) : (p._next = f)
 }
 // empties the thread, emitting the queued events
 const flushEvents = (c, f, e, p, owner) => {
   if (rems.length) {
     while(f = rems[c++]){
       f.cleanup && f.cleanup(f);
-      if (e = f.evt) emit(e.evt, "remove", f, e.next, e.prev, e.temp, f.evt = null);
+      if (e = f._evt) emit(e._evt, "remove", f, e._next, e._prev, e._temp, f._evt = null);
     }
     rems.length = 0;
   }
   if (!(f = head)) return;
-  owner = f.parent;
+  owner = f.par;
   while(f) {
-    p = f.parent;
+    p = f.par;
     if (isUpd(f)){
-      f.ph -= HAS_EVT, e = f.evt;
-      if (!e.temp){
+      f._ph -= HAS_EVT, e = f._evt;
+      if (!e._temp){
         c = sib(f);
-        emit(e.evt, "add", f, c && p, c && f.prev, f.temp);
-        if (c && p) linkEvent(e, f, p.evt, sib(f.prev));
+        emit(e._evt, "add", f, c && p, c && f.prev, f.temp);
+        if (c && p) linkEvent(e, f, p._evt, sib(f.prev));
         if (sib(f.next)){
           f = f.next;
           continue;
         }
       } else {
-        if (f.temp !== e.temp) emit(e.evt, "temp", f, f.temp, e.temp);
-        if ((c = sib(f.prev)) !== e.prev){
-          emit(e.evt, "move", f, p, e.prev, c);
-          unlinkEvent(e, p.evt), linkEvent(e, f, p.evt, c);
+        if (f.temp !== e._temp) emit(e._evt, "temp", f, f.temp, e._temp);
+        if ((c = sib(f.prev)) !== e._prev){
+          emit(e._evt, "move", f, p, e._prev, c);
+          unlinkEvent(e, p._evt), linkEvent(e, f, p._evt, c);
         }
-        e.temp = null;
+        e._temp = null;
       }
     }
     if (p !== owner) f = f.sib || p;
     else if (!sib(f) || !(f = f.sib) || !isUpd(f)){
       popLeader(head);
-      if (f = head) owner = f.parent;
+      if (f = head) owner = f.par;
     }
   }
 }
@@ -174,26 +174,26 @@ const flushEvents = (c, f, e, p, owner) => {
 // FIELD
 // remove a node from an oscillator
 const relax = (f, tau, t) => {
-  if (t = f.top){
-    if (t.bot = f.bot) f.bot.top = t;
+  if (t = f._top){
+    if (t._bot = f._bot) f._bot._top = t;
     else if (t.tau !== tau && t === field.get(t.tau))
       (t.clear || clearTimeout)(t.timer), field.delete(t.tau);
-    f.top = f.bot = null;
+    f._top = f._bot = null;
   }
 }
 // add/move a node to an oscillator
 const excite = (f, tau, cb, t) => {
   relax(f, tau);
   if (t = field.get(tau)){
-    if (t.bot) (f.bot = t.bot).top = f;
+    if (t._bot) (f._bot = t._bot)._top = f;
   } else {
     field.set(tau, t = {tau});
     t.timer = (cb || setTimeout)(() => {
-      while(t = t.bot) pushPath(t);
+      while(t = t._bot) pushPath(t);
       sidediff(field.delete(tau));
     }, tau, t);
   }
-  (f.top = t).bot = f;
+  (f._top = t)._bot = f;
 }
 
 // SEG-LIST
@@ -217,7 +217,7 @@ const unlinkNode = (f, p, s=null, n=f.sib) => {
 // MUTATIONS
 const add = (t, p, s, isRoot, isF, evt) => {
   if (t){
-    isF = isFrame(p), evt = isF ? p.evt && p.evt.evt : p, on = LOCK;
+    isF = isFrame(p), evt = isF ? p._evt && p._evt._evt : p, on = LOCK;
     if (!isFn(t.name)) t = new Frame(t, evt);
     else {
       const Sub = t.name;
@@ -225,79 +225,79 @@ const add = (t, p, s, isRoot, isF, evt) => {
       else t = new Frame(t, evt), t.render = Sub;
     }
     // step counter
-    t.st = 0;
+    t._st = 0;
     // phase and in degree counter
-    t.ph = IN_PATH | (evt ? HAS_EVT : 0) | (isRoot ? (!isF && IS_CTXL) : IS_CHLD)
-    p = t.parent = isF ? p : ctx, on = DIFF;
-    if (t.evt) sib(t) ? isAdd(p) || queue(t, s, s ? s.sib : sib(p && p.next)) : pushLeader(t);
+    t._ph = IN_PATH | (evt ? HAS_EVT : 0) | (isRoot ? (!isF && IS_CTXL) : IS_CHLD)
+    p = t.par = isF ? p : ctx, on = DIFF;
+    if (t._evt) sib(t) ? isAdd(p) || queue(t, s, s ? s.sib : sib(p && p.next)) : pushLeader(t);
     p && linkNode(t, p, s);
     isRoot ? lags.push(t) : stx.push(t);
     return t;
   }
 }
-const move = (f, p, s, ps=sib(f.prev), e=f.evt) => {
+const move = (f, p, s, ps=sib(f.prev), e=f._evt) => {
   if (e){
     isAdd(p) || dequeue(f, ps);
-    if (!isUpd(f)) e.temp = f.temp, f.ph += HAS_EVT;
+    if (!isUpd(f)) e._temp = f.temp, f._ph += HAS_EVT;
     isAdd(p) || queue(f, s, s ? s.sib : sib(p && p.next));
   }
   unlinkNode(f, p, f.prev), linkNode(f, p, s);
 }
-const receive = (f, t, e=f.evt) => {
+const receive = (f, t, e=f._evt) => {
   if (e && !isUpd(f)){
     sib(f) ? queue(f, sib(f.prev), f.sib) : pushLeader(f)
-    e.temp = f.temp, f.ph += HAS_EVT;
+    e._temp = f.temp, f._ph += HAS_EVT;
   }
   f.temp = t;
 }
-const remove = (f, p, s, e=f.evt) => {
+const remove = (f, p, s, e=f._evt) => {
   if (e) {
-    if (!isUpd(f) || e.temp){
+    if (!isUpd(f) || e._temp){
       rems.push(f)
-      e.temp = e.temp || f.temp;
-      if (e.next = sib(f) && p)
-        p.temp && unlinkEvent(e, p.evt);
+      e._temp = e._temp || f.temp;
+      if (e._next = sib(f) && p)
+        p.temp && unlinkEvent(e, p._evt);
     } else if (f.cleanup) rems.push(f)
     sib(f) ? isAdd(p) || dequeue(f, sib(s)) : isUpd(f) && popLeader(f);
-    if (isUpd(f)) f.ph -= HAS_EVT
+    if (isUpd(f)) f._ph -= HAS_EVT
   } else if (f.cleanup) rems.push(f);
   p && p.temp && unlinkNode(f, p, s);
-  if (!inPath(f)) f.ph += IN_PATH
+  if (!inPath(f)) f._ph += IN_PATH
   relax(f, f.temp = f.affs = f._affs = null)
 }
 
 // PATH
 // compute a topologically ordered path to diff along
 const rebasePath = (f, i, ch) => {
+  const walkAffs = i => i.temp ? ch.push(i) : i.unsub(f);
   while(i = stx.length)
     if (inPath(f = stx[i-1])) stx.pop();
-    else if (f.st){
-      if (i = --f.st) {
-        if ((i = f._affs[i-1]).st)
+    else if (f._st){
+      if (i = --f._st) {
+        if ((i = f._affs[i-1])._st)
           throw new Error("cycle")
         pushPath(i);
-      } else f.ph += IN_PATH, path.push(stx.pop());
+      } else f._ph += IN_PATH, path.push(stx.pop());
     } else {
-      if (f.st++, ((i = f.next) && isCh(i)) || f.affs){
+      if (f._st++, ((i = f.next) && isCh(i)) || f.affs){
         if (ch = f._affs = [], i && isCh(i))
           do ch.push(i); while(i = i.sib);
-        if (i = f.affs) for (i of i)
-          i.temp ? ch.push(i) : i.unsub(f);
-        f.st += ch.length;
+        if (i = f.affs) i.forEach(walkAffs)
+        f._st += ch.length;
       }
     }
 }
 const pushPath = f => {
-  inPath(f) || stx.push(f), f.ph+=ORDER
+  inPath(f) || stx.push(f), f._ph+=ORDER
 }
 
 // DIFF CYCLE
 // unmount queued orphan nodes
 const unmount = (f=orph.pop(), isRoot, c, p, s) => {
   while(f){
-    p = f.parent, s = f.prev;
+    p = f.par, s = f.prev;
     if (f.temp){ // entering "recursion"
-      if (isRoot && (c = f.affs)) for (c of c) pushPath(c);
+      if (isRoot && (c = f.affs)) c.forEach(pushPath)
       remove(f, p, s);
       if (c = f.next) while(c.sib) c = c.sib;
       if (c) {
@@ -306,7 +306,7 @@ const unmount = (f=orph.pop(), isRoot, c, p, s) => {
       }
     }
     c = !(p && p.temp) && (s || p);
-    f.sib = f.parent = f.prev = f.next = null;
+    f.sib = f.par = f.prev = f.next = null;
     f = c || orph.pop();
   }
 }
@@ -319,7 +319,7 @@ const mount = (f, next, c) => {
 const subdiff = (p, c, next, i, n) => {
   if (next.length){
     do (n = popIndex(c.temp)) ?
-      n === (n.p = c).temp ? ((c.ph-=ORDER) < ORDER) && (c.ph -= IN_PATH) : receive(c, n) :
+      n === (n.p = c).temp ? ((c._ph-=ORDER) < ORDER) && (c._ph -= IN_PATH) : receive(c, n) :
       orph.push(c); while(c = c.sib); unmount();
     for(i = p.next; i && (n = next.pop());)
       (c = n.p) ?
@@ -338,17 +338,17 @@ const sidediff = (c, raw=rebasePath(on=DIFF)) => {
     if (ctx = path.pop() || lags.pop()){
       if (!inPath(ctx)) {
         if (c = ctx._affs) {
-          for (c of c) ((c.ph-=ORDER) < ORDER) && (c.ph -= IN_PATH);
+          for (c of c) ((c._ph-=ORDER) < ORDER) && (c._ph -= IN_PATH);
           ctx._affs = null;
         }
       } else if (c = ctx.temp) {
         relax(ctx);
-        ctx.ph &= (ORDER-IN_PATH-1)
+        ctx._ph &= (ORDER-IN_PATH-1)
         ctx._affs = null;
         raw = ctx.render(c, ctx)
         if (ctx.temp){
-          if (ctx.rendered && !(ctx.ph & IN_POST)){
-            ctx.ph += IN_POST;
+          if (ctx.rendered && !(ctx._ph & IN_POST)){
+            ctx._ph += IN_POST;
             post.push(ctx);
           }
           sib(c = ctx.next) ?
@@ -360,7 +360,7 @@ const sidediff = (c, raw=rebasePath(on=DIFF)) => {
       on = LOCK, flushEvents(0);
       if (!post.length) return on = IDLE, ctx = null;
       on = DIFF; while(ctx = post.pop()) if (ctx.temp){
-        ctx.rendered && ctx.rendered(ctx), ctx.ph -= IN_POST
+        ctx.rendered && ctx.rendered(ctx), ctx._ph -= IN_POST
       }
     }
   } while(1);
@@ -371,12 +371,12 @@ const diff = (t, f, p=f&&f.prev, s) => {
   if (inDiff < 2) try {
     if (!Array.isArray(t = norm(t))){
       if (!isFrame(f) || !f.temp){
-        if (t && (!s || s.parent === p)) r = add(t, p, sib(s), 1)
+        if (t && (!s || s.par === p)) r = add(t, p, sib(s), 1)
       } else if (!isCh(f)){
         if (t && t.name === f.temp.name) {
           if (t !== f.temp) receive(r = f, t, pushPath(f));
-          if (sib(f) && isFrame(s = f.parent) && (!p || p.parent === s)){
-            (p = sib(p)) === (s = sib(f.prev)) || move(r = f, f.parent, p, s);
+          if (sib(f) && isFrame(s = f.par) && (!p || p.par === s)){
+            (p = sib(p)) === (s = sib(f.prev)) || move(r = f, f.par, p, s);
           }
         } else if (!t) unmount(f, r = true);
       }

@@ -12,10 +12,10 @@ describe("Frame", function(){
       const f2 = new Frame(temp2, effs[0])
       const f3 = new Frame(temp2, null);
       expect(f.temp).to.equal(temp)
-      expect(f.evt.evt).to.equal(effs);
-      expect(f2.evt.evt).to.equal(5)
+      expect(f._evt._evt).to.equal(effs);
+      expect(f2._evt._evt).to.equal(5)
       expect(f2.temp).to.equal(temp2)
-      expect(f3.evt).to.be.null;
+      expect(f3._evt).to.be.null;
       expect(f3.temp).to.equal(temp2)
     })
   })

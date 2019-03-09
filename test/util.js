@@ -5,12 +5,13 @@ const assertDeleted = f => {
   expect(f.temp).to.be.null;
   expect(f.next).to.be.null;
   expect(f._affs).to.be.null;
-  expect(f.parent).to.be.null;
+  expect(f.affs).to.be.null;
+  expect(f.par).to.be.null;
   expect(f.sib).to.be.null;
   expect(f.prev).to.be.null;
-  expect(f.top).to.be.null;
-  expect(f.bot).to.be.null;
-  expect(f.evt).to.be.null;
+  expect(f._top).to.be.null;
+  expect(f._bot).to.be.null;
+  expect(f._evt).to.be.null;
 }
 
 const isArr = Array.isArray;
