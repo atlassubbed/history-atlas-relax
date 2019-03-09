@@ -290,9 +290,9 @@ const excite = (f, tau, cb, t) => {
         b1 -- b2 -- b3           this scheme req a firstBlackChild and firstRedChild pointer.
 
     With seglist:          
-      Parent             we segregate the black children from the red children.
-        |                this way, we only require a single pointer.
-        |
+                        Parent   we segregate the black children from the red children.
+                          |      this way, we only require a single pointer.
+                          |
         r3 -- r2 -- r1 -- b1 -- b2 -- b3   
 
     We don't implement a new class here, instead we write methods which act on children objects.
