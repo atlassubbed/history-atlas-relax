@@ -4,7 +4,7 @@ this is old, take it with a grain of salt
 
 Rendering-agnostic data-graph reconciliation layer which can be extended via lifecycle methods.
 
-[![Travis](https://img.shields.io/travis/[username]/[repo].svg)](https://travis-ci.org/[username]/[repo])
+[![Travis](https://img.shields.io/travis/atlassubbed/history-atlas-relax.svg)](https://travis-ci.org/atlassubbed/history-atlas-relax)
 
 ---
 
