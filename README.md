@@ -1,3 +1,5 @@
+this is old, take it with a grain of salt
+
 # atlas-frame
 
 Rendering-agnostic data-graph reconciliation layer which can be extended via lifecycle methods.
